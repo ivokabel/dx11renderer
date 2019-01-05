@@ -8,7 +8,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(RENDERER_SOURCES
     main.cpp
-    #renderer.cpp
+    renderer.hpp
+    renderer.cpp
     )
 
 add_executable(dx11renderer ${RENDERER_SOURCES})
