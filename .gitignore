@@ -1,6 +1,6 @@
 *.cmake
 CMakeCache.txt
-/CMakeFiles/
+/CMakeBin/
 Makefile
 /Debug/
 /Release/
