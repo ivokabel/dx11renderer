@@ -1,10 +1,18 @@
 #include "renderer.hpp"
 
-#include <stdio.h>
+#include <windows.h>
 
-int main(int argc, char *argv[])
+
+//--------------------------------------------------------------------------------------
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
-    printf("Hello world!\n");
+    UNREFERENCED_PARAMETER(hInstance);
+    UNREFERENCED_PARAMETER(hPrevInstance);
+    UNREFERENCED_PARAMETER(lpCmdLine);
+    UNREFERENCED_PARAMETER(nCmdShow);
+
+    OutputDebugStringW(L"Hello world!\n");
+    OutputDebugString("Hello world!\n");
 
     return 0;
 }

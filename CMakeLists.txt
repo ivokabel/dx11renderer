@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(RENDERER_SOURCES
+    WIN32
     main.cpp
     renderer.hpp
     renderer.cpp
