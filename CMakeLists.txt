@@ -6,16 +6,16 @@ endif()
 
 project(dx11renderer LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
 set(RENDERER_SOURCES
     WIN32
     main.cpp
     renderer.hpp
     renderer.cpp
     )
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(dx11renderer ${RENDERER_SOURCES})
 #install(TARGETS dx11renderer DESTINATION bin)
