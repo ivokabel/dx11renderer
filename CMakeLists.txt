@@ -1,5 +1,9 @@
 ﻿cmake_minimum_required(VERSION 3.5)
 
+if (NOT WIN32)
+    message(FATAL_ERROR "Only Windows environment is supported for this project!")
+endif()
+
 project(dx11renderer LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
