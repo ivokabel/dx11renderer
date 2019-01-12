@@ -36,6 +36,7 @@ target_link_libraries(dx11renderer
 if ( CMAKE_CXX_COMPILER_ID MATCHES "MSVC" )
     add_compile_options(/W4)
     SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
+    add_definitions(-DUNICODE -D_UNICODE)
 endif()
 if ( CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang|GNU" )
     add_compile_options(-Wall -Wextra -Wpedantic -Wunreachable-code)
