@@ -11,8 +11,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
     UNREFERENCED_PARAMETER(lpCmdLine);
     UNREFERENCED_PARAMETER(nCmdShow);
 
-    OutputDebugStringW(L"Hello world!\n");
-    OutputDebugString("Hello world!\n");
+    //// debug
+    //OutputDebugStringW(L"Hello world!\n");
+    //OutputDebugString("Hello world!\n");
 
-    return 0;
+    SimpleDirectX11Renderer renderer;
+    
+    if (!renderer.Init(hInstance, nCmdShow, 640u, 480u))
+        return -1;
+
+    return renderer.Run();
 }
