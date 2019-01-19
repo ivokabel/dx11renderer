@@ -4,13 +4,13 @@
 
 SimpleDX11Renderer::SimpleDX11Renderer()
 {
-    Utils::Log(L"Constructing renderer");
+    Utils::Log(Utils::eDebug, L"Constructing renderer");
 }
 
 
 SimpleDX11Renderer::~SimpleDX11Renderer()
 {
-    Utils::Log(L"Destructing renderer");
+    Utils::Log(Utils::eDebug, L"Destructing renderer");
 
     DestroyWindow();
     DestroyDevice();
@@ -28,7 +28,7 @@ SimpleDX11Renderer::~SimpleDX11Renderer()
 bool SimpleDX11Renderer::Init(HINSTANCE instance, int cmdShow,
                               int32_t wndWidth, int32_t wndHeight)
 {
-    Utils::Log(L"Initializing renderer");
+    Utils::Log(Utils::eDebug, L"Initializing renderer");
 
     mWndWidth = wndWidth;
     mWndHeight = wndHeight;
@@ -118,7 +118,7 @@ LRESULT CALLBACK SimpleDX11Renderer::WndProc(HWND wnd, UINT message, WPARAM wPar
 
 int SimpleDX11Renderer::Run()
 {
-    Utils::Log(L"Running renderer...");
+    Utils::Log(Utils::eDebug, L"Running renderer...");
 
     // Message loop
     MSG msg = {};
@@ -191,6 +191,8 @@ bool SimpleDX11Renderer::CreateDevice()
     }
     if (FAILED(hr))
         return false;
+
+    Utils::Log(Utils::eDebug, L"Created device: %s", L"TODO :)");
 
     // Create a render target view
     ID3D11Texture2D* backBuffer = nullptr;
