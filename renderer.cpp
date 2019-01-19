@@ -137,6 +137,49 @@ int SimpleDX11Renderer::Run()
 }
 
 
+const wchar_t * DriverTypeToString(D3D_DRIVER_TYPE type)
+{
+    switch (type)
+    {
+    case D3D_DRIVER_TYPE_UNKNOWN:
+    default:
+        return L"Unknown";
+    case D3D_DRIVER_TYPE_HARDWARE:
+        return L"HAL";
+    case D3D_DRIVER_TYPE_REFERENCE:
+        return L"Reference";
+    case D3D_DRIVER_TYPE_NULL:
+        return L"Null";
+    case D3D_DRIVER_TYPE_SOFTWARE:
+        return L"Software";
+    case D3D_DRIVER_TYPE_WARP:
+        return L"WARP";
+    }
+}
+
+
+const wchar_t * FeatureLevelToString(D3D_FEATURE_LEVEL level)
+{
+    switch (level)
+    {
+    case D3D_FEATURE_LEVEL_9_1:
+        return L"9.1";
+    case D3D_FEATURE_LEVEL_9_2:
+        return L"9.2";
+    case D3D_FEATURE_LEVEL_9_3:
+        return L"9.3";
+    case D3D_FEATURE_LEVEL_10_0:
+        return L"10.0";
+    case D3D_FEATURE_LEVEL_10_1:
+        return L"10.1";
+    case D3D_FEATURE_LEVEL_11_0:
+        return L"11.0";
+    default:
+        return L"Uknonwn";
+    }
+}
+
+
 bool SimpleDX11Renderer::CreateDevice()
 {
     HRESULT hr = S_OK;
@@ -190,7 +233,10 @@ bool SimpleDX11Renderer::CreateDevice()
     if (FAILED(hr))
         return false;
 
-    Utils::Log(Utils::eDebug, L"Created device: %s", L"TODO :)");
+    Utils::Log(Utils::eDebug,
+               L"Created device: type %s, feature level %s",
+               DriverTypeToString(mDriverType),
+               FeatureLevelToString(mFeatureLevel));
 
     // Create a render target view
     ID3D11Texture2D* backBuffer = nullptr;
