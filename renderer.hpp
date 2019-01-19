@@ -33,16 +33,14 @@ private:
     const wchar_t * const       mWndClassName   = L"SimpleDirectX11RendererWndClass";
     const wchar_t * const       mWndName        = L"Simple DirectX 11 Renderer";
 
-    // TODO: Refactor g_* names
-
     int32_t                     mWndWidth = 0u;
     int32_t                     mWndHeight = 0u;
-    HINSTANCE                   g_hInst = nullptr;
-    HWND                        g_hWnd = nullptr;
-    D3D_DRIVER_TYPE             g_driverType = D3D_DRIVER_TYPE_NULL;
-    D3D_FEATURE_LEVEL           g_featureLevel = D3D_FEATURE_LEVEL_11_0;
-    ID3D11Device*               g_pd3dDevice = nullptr;
-    ID3D11DeviceContext*        g_pImmediateContext = nullptr;
-    IDXGISwapChain*             g_pSwapChain = nullptr;
-    ID3D11RenderTargetView*     g_pRenderTargetView = nullptr;
+    HINSTANCE                   mInstance = nullptr;
+    HWND                        mWnd = nullptr;
+    D3D_DRIVER_TYPE             mDriverType = D3D_DRIVER_TYPE_NULL;
+    D3D_FEATURE_LEVEL           mFeatureLevel = D3D_FEATURE_LEVEL_11_0;
+    ID3D11Device*               mD3dDevice = nullptr;
+    ID3D11DeviceContext*        mImmediateContext = nullptr;
+    IDXGISwapChain*             mSwapChain = nullptr;
+    ID3D11RenderTargetView*     mRenderTargetView = nullptr;
 };

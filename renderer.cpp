@@ -15,7 +15,7 @@ SimpleDirectX11Renderer::~SimpleDirectX11Renderer()
 
 bool SimpleDirectX11Renderer::IsValid() const
 {
-    return g_hWnd
+    return mWnd
         && (mWndWidth > 0u)
         && (mWndHeight > 0u);
 }
@@ -60,17 +60,17 @@ bool SimpleDirectX11Renderer::InitWindow(HINSTANCE hInstance, int nCmdShow)
         return false;
 
     // Create window
-    g_hInst = hInstance;
+    mInstance = hInstance;
     RECT rc = { 0, 0, mWndWidth, mWndHeight };
     AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
-    g_hWnd = CreateWindow(mWndClassName, mWndName,
-                          WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
-                          rc.right - rc.left, rc.bottom - rc.top,
-                          nullptr, nullptr, hInstance, nullptr);
-    if (!g_hWnd)
+    mWnd = CreateWindow(mWndClassName, mWndName,
+                        WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
+                        rc.right - rc.left, rc.bottom - rc.top,
+                        nullptr, nullptr, hInstance, nullptr);
+    if (!mWnd)
         return false;
 
-    ShowWindow(g_hWnd, nCmdShow);
+    ShowWindow(mWnd, nCmdShow);
 
     return true;
 }
@@ -78,9 +78,9 @@ bool SimpleDirectX11Renderer::InitWindow(HINSTANCE hInstance, int nCmdShow)
 
 void SimpleDirectX11Renderer::DestroyWindow()
 {
-    ::DestroyWindow(g_hWnd);
-    g_hWnd = nullptr;
-    g_hInst = nullptr;
+    ::DestroyWindow(mWnd);
+    mWnd = nullptr;
+    mInstance = nullptr;
 }
 
 
@@ -132,7 +132,7 @@ bool SimpleDirectX11Renderer::CreateDxDevice()
     HRESULT hr = S_OK;
 
     RECT rc;
-    GetClientRect(g_hWnd, &rc);
+    GetClientRect(mWnd, &rc);
     UINT width = rc.right - rc.left;
     UINT height = rc.bottom - rc.top;
 
@@ -166,16 +166,16 @@ bool SimpleDirectX11Renderer::CreateDxDevice()
     sd.BufferDesc.RefreshRate.Numerator = 60;
     sd.BufferDesc.RefreshRate.Denominator = 1;
     sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    sd.OutputWindow = g_hWnd;
+    sd.OutputWindow = mWnd;
     sd.SampleDesc.Count = 1;
     sd.SampleDesc.Quality = 0;
     sd.Windowed = TRUE;
 
     for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++)
     {
-        g_driverType = driverTypes[driverTypeIndex];
-        hr = D3D11CreateDeviceAndSwapChain(NULL, g_driverType, NULL, createDeviceFlags, featureLevels, numFeatureLevels,
-            D3D11_SDK_VERSION, &sd, &g_pSwapChain, &g_pd3dDevice, &g_featureLevel, &g_pImmediateContext);
+        mDriverType = driverTypes[driverTypeIndex];
+        hr = D3D11CreateDeviceAndSwapChain(NULL, mDriverType, NULL, createDeviceFlags, featureLevels, numFeatureLevels,
+            D3D11_SDK_VERSION, &sd, &mSwapChain, &mD3dDevice, &mFeatureLevel, &mImmediateContext);
         if (SUCCEEDED(hr))
             break;
     }
@@ -184,16 +184,16 @@ bool SimpleDirectX11Renderer::CreateDxDevice()
 
     // Create a render target view
     ID3D11Texture2D* pBackBuffer = NULL;
-    hr = g_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+    hr = mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
     if (FAILED(hr))
         return false;
 
-    hr = g_pd3dDevice->CreateRenderTargetView(pBackBuffer, NULL, &g_pRenderTargetView);
+    hr = mD3dDevice->CreateRenderTargetView(pBackBuffer, NULL, &mRenderTargetView);
     pBackBuffer->Release();
     if (FAILED(hr))
         return false;
 
-    g_pImmediateContext->OMSetRenderTargets(1, &g_pRenderTargetView, NULL);
+    mImmediateContext->OMSetRenderTargets(1, &mRenderTargetView, NULL);
 
     // Setup the viewport
     D3D11_VIEWPORT vp;
@@ -203,7 +203,7 @@ bool SimpleDirectX11Renderer::CreateDxDevice()
     vp.MaxDepth = 1.0f;
     vp.TopLeftX = 0;
     vp.TopLeftY = 0;
-    g_pImmediateContext->RSSetViewports(1, &vp);
+    mImmediateContext->RSSetViewports(1, &vp);
 
     return true;
 }
@@ -213,17 +213,17 @@ void SimpleDirectX11Renderer::Render()
 {
     // Just clear the backbuffer
     float ClearColor[4] = { 0.1f, 0.225f, 0.5f, 1.0f }; //red,green,blue,alpha
-    g_pImmediateContext->ClearRenderTargetView(g_pRenderTargetView, ClearColor);
-    g_pSwapChain->Present(0, 0);
+    mImmediateContext->ClearRenderTargetView(mRenderTargetView, ClearColor);
+    mSwapChain->Present(0, 0);
 }
 
 
 void SimpleDirectX11Renderer::DestroyDxDevice()
 {
-    if (g_pImmediateContext) g_pImmediateContext->ClearState();
+    if (mImmediateContext) mImmediateContext->ClearState();
 
-    if (g_pRenderTargetView) g_pRenderTargetView->Release();
-    if (g_pSwapChain) g_pSwapChain->Release();
-    if (g_pImmediateContext) g_pImmediateContext->Release();
-    if (g_pd3dDevice) g_pd3dDevice->Release();
+    if (mRenderTargetView) mRenderTargetView->Release();
+    if (mSwapChain) mSwapChain->Release();
+    if (mImmediateContext) mImmediateContext->Release();
+    if (mD3dDevice) mD3dDevice->Release();
 }
