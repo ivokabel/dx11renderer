@@ -186,7 +186,7 @@ bool SimpleDX11Renderer::CreateDevice()
 
     RECT rc;
     GetClientRect(mWnd, &rc);
-    UINT width = rc.right - rc.left;
+    UINT width  = rc.right  - rc.left;
     UINT height = rc.bottom - rc.top;
 
     UINT createDeviceFlags = 0;
@@ -208,25 +208,27 @@ bool SimpleDX11Renderer::CreateDevice()
     };
     const UINT numFeatureLevels = ARRAYSIZE(featureLevels);
 
-    DXGI_SWAP_CHAIN_DESC sd;
-    ZeroMemory(&sd, sizeof(sd));
-    sd.BufferCount = 1;
-    sd.BufferDesc.Width = width;
-    sd.BufferDesc.Height = height;
-    sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    sd.BufferDesc.RefreshRate.Numerator = 60;
-    sd.BufferDesc.RefreshRate.Denominator = 1;
-    sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    sd.OutputWindow = mWnd;
-    sd.SampleDesc.Count = 1;
-    sd.SampleDesc.Quality = 0;
-    sd.Windowed = TRUE;
+    DXGI_SWAP_CHAIN_DESC scd;
+    ZeroMemory(&scd, sizeof(scd));
+    scd.BufferCount = 1;
+    scd.BufferDesc.Width = width;
+    scd.BufferDesc.Height = height;
+    scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    scd.BufferDesc.RefreshRate.Numerator = 60;
+    scd.BufferDesc.RefreshRate.Denominator = 1;
+    scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    scd.OutputWindow = mWnd;
+    scd.SampleDesc.Count = 1;
+    scd.SampleDesc.Quality = 0;
+    scd.Windowed = TRUE;
 
     for (UINT index = 0; index < numDriverTypes; index++)
     {
         mDriverType = driverTypes[index];
-        hr = D3D11CreateDeviceAndSwapChain(nullptr, mDriverType, nullptr, createDeviceFlags, featureLevels, numFeatureLevels,
-            D3D11_SDK_VERSION, &sd, &mSwapChain, &mD3dDevice, &mFeatureLevel, &mImmediateContext);
+        hr = D3D11CreateDeviceAndSwapChain(nullptr, mDriverType, nullptr,
+                                           createDeviceFlags, featureLevels, numFeatureLevels,
+                                           D3D11_SDK_VERSION, &scd,
+                                           &mSwapChain, &mD3dDevice, &mFeatureLevel, &mImmediateContext);
         if (SUCCEEDED(hr))
             break;
     }
