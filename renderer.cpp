@@ -17,12 +17,12 @@ SimpleDX11Renderer::~SimpleDX11Renderer()
 }
 
 
-bool SimpleDX11Renderer::IsValid() const
-{
-    return mWnd
-        && (mWndWidth > 0u)
-        && (mWndHeight > 0u);
-}
+//bool SimpleDX11Renderer::IsValid() const
+//{
+//    return mWnd
+//        && (mWndWidth > 0u)
+//        && (mWndHeight > 0u);
+//}
 
 
 bool SimpleDX11Renderer::Init(HINSTANCE instance, int cmdShow,

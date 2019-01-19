@@ -34,7 +34,7 @@ public:
 
 private:
 
-    bool IsValid() const;
+    //bool IsValid() const;
 
     bool InitWindow(HINSTANCE instance, int cmdShow);
     void DestroyWindow();
