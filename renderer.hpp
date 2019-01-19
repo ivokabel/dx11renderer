@@ -23,6 +23,8 @@ public:
     SimpleDX11Renderer();
     ~SimpleDX11Renderer();
 
+    SimpleDX11Renderer & operator=(const SimpleDX11Renderer &renderer) = delete;
+
     bool Init(HINSTANCE instance, int cmdShow,
               int32_t wndWidth, int32_t wndHeight);
     int Run();
