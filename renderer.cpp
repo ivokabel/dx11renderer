@@ -272,6 +272,7 @@ void SimpleDX11Renderer::Render()
     // Just clear the backbuffer
     float clearColor[4] = { 0.1f, 0.225f, 0.5f, 1.0f }; //red,green,blue,alpha
     mImmediateContext->ClearRenderTargetView(mRenderTargetView, clearColor);
+
     mSwapChain->Present(0, 0);
 }
 
