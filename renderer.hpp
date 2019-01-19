@@ -1,5 +1,9 @@
 #pragma once
 
+// ------------------------------------------------------------------------------------------------
+// Simple DirectX 11 renderer for learning purposes heavily based on DX11 SDK tutorials.
+// ------------------------------------------------------------------------------------------------
+
 #include <windows.h>
 #include <d3d11.h>
 #include <d3dx11.h>
