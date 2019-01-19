@@ -13,7 +13,7 @@ SimpleDX11Renderer::~SimpleDX11Renderer()
     Utils::Log(L"Destructing renderer");
 
     DestroyWindow();
-    DestroyDxDevice();
+    DestroyDevice();
 }
 
 
@@ -36,9 +36,9 @@ bool SimpleDX11Renderer::Init(HINSTANCE instance, int cmdShow,
     if (!InitWindow(instance, cmdShow))
         return false;
 
-    if (!CreateDxDevice())
+    if (!CreateDevice())
     {
-        DestroyDxDevice();
+        DestroyDevice();
         return false;
     }
 
@@ -137,7 +137,7 @@ int SimpleDX11Renderer::Run()
 }
 
 
-bool SimpleDX11Renderer::CreateDxDevice()
+bool SimpleDX11Renderer::CreateDevice()
 {
     HRESULT hr = S_OK;
 
@@ -228,13 +228,13 @@ void SimpleDX11Renderer::Render()
 }
 
 
-void SimpleDX11Renderer::DestroyDxDevice()
+void SimpleDX11Renderer::DestroyDevice()
 {
     if (mImmediateContext)
         mImmediateContext->ClearState();
 
-    Utils::ReleaseAndMakeNull(mRenderTargetView);
-    Utils::ReleaseAndMakeNull(mSwapChain);
-    Utils::ReleaseAndMakeNull(mImmediateContext);
-    Utils::ReleaseAndMakeNull(mD3dDevice);
+    Utils::ReleaseAndMakeNullptr(mRenderTargetView);
+    Utils::ReleaseAndMakeNullptr(mSwapChain);
+    Utils::ReleaseAndMakeNullptr(mImmediateContext);
+    Utils::ReleaseAndMakeNullptr(mD3dDevice);
 }

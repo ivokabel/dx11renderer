@@ -1,8 +1,11 @@
 #pragma once
 
 // ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 // Simple DirectX 11 renderer for learning purposes heavily based on DX11 SDK tutorials.
 // ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+
 
 #include <windows.h>
 
@@ -37,9 +40,9 @@ private:
     void DestroyWindow();
     static LRESULT CALLBACK WndProc(HWND wnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-    bool CreateDxDevice();
+    bool CreateDevice();
     void Render();
-    void DestroyDxDevice();
+    void DestroyDevice();
 
 private:
 
