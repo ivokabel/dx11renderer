@@ -1,13 +1,17 @@
 #include "renderer.hpp"
+#include "utils.hpp"
 
 
 SimpleDX11Renderer::SimpleDX11Renderer()
 {
+    Utils::Log(L"Constructing renderer");
 }
 
 
 SimpleDX11Renderer::~SimpleDX11Renderer()
 {
+    Utils::Log(L"Destructing renderer");
+
     DestroyWindow();
     DestroyDxDevice();
 }
@@ -24,7 +28,9 @@ bool SimpleDX11Renderer::IsValid() const
 bool SimpleDX11Renderer::Init(HINSTANCE instance, int cmdShow,
                               int32_t wndWidth, int32_t wndHeight)
 {
-    mWndWidth  = wndWidth;
+    Utils::Log(L"Initializing renderer");
+
+    mWndWidth = wndWidth;
     mWndHeight = wndHeight;
 
     if (!InitWindow(instance, cmdShow))
@@ -112,6 +118,8 @@ LRESULT CALLBACK SimpleDX11Renderer::WndProc(HWND wnd, UINT message, WPARAM wPar
 
 int SimpleDX11Renderer::Run()
 {
+    Utils::Log(L"Running renderer...");
+
     // Message loop
     MSG msg = {};
     while (WM_QUIT != msg.message)
@@ -220,24 +228,13 @@ void SimpleDX11Renderer::Render()
 }
 
 
-template <typename T>
-void ReleaseAndMakeNull(T &value)
-{
-    if (value)
-    {
-        value->Release();
-        value = nullptr;
-    }
-}
-
-
 void SimpleDX11Renderer::DestroyDxDevice()
 {
     if (mImmediateContext)
         mImmediateContext->ClearState();
 
-    ReleaseAndMakeNull(mRenderTargetView);
-    ReleaseAndMakeNull(mSwapChain);
-    ReleaseAndMakeNull(mImmediateContext);
-    ReleaseAndMakeNull(mD3dDevice);
+    Utils::ReleaseAndMakeNull(mRenderTargetView);
+    Utils::ReleaseAndMakeNull(mSwapChain);
+    Utils::ReleaseAndMakeNull(mImmediateContext);
+    Utils::ReleaseAndMakeNull(mD3dDevice);
 }

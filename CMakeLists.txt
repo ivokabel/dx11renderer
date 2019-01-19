@@ -11,6 +11,8 @@ set(RENDERER_SOURCES
     main.cpp
     renderer.hpp
     renderer.cpp
+    utils.hpp
+    utils.cpp
     )
 
 set(CMAKE_CXX_STANDARD 11)

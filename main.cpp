@@ -1,5 +1,5 @@
 #include "renderer.hpp"
-
+#include "utils.hpp"
 #include <windows.h>
 
 
@@ -10,10 +10,6 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
     UNREFERENCED_PARAMETER(prevInstance);
     UNREFERENCED_PARAMETER(cmdLine);
     UNREFERENCED_PARAMETER(cmdShow);
-
-    //// debug
-    //OutputDebugStringW(L"Hello world!\n");
-    //OutputDebugString("Hello world!\n");
 
     SimpleDX11Renderer renderer;
     
