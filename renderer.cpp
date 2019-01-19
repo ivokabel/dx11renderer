@@ -220,12 +220,24 @@ void SimpleDirectX11Renderer::Render()
 }
 
 
+template <typename T>
+void ReleaseAndMakeNull(T &value)
+{
+    if (value)
+    {
+        value->Release();
+        value = nullptr;
+    }
+}
+
+
 void SimpleDirectX11Renderer::DestroyDxDevice()
 {
-    if (mImmediateContext) mImmediateContext->ClearState();
+    if (mImmediateContext)
+        mImmediateContext->ClearState();
 
-    if (mRenderTargetView) mRenderTargetView->Release();
-    if (mSwapChain) mSwapChain->Release();
-    if (mImmediateContext) mImmediateContext->Release();
-    if (mD3dDevice) mD3dDevice->Release();
+    ReleaseAndMakeNull(mRenderTargetView);
+    ReleaseAndMakeNull(mSwapChain);
+    ReleaseAndMakeNull(mImmediateContext);
+    ReleaseAndMakeNull(mD3dDevice);
 }
