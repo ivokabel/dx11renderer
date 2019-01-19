@@ -116,7 +116,7 @@ int SimpleDirectX11Renderer::Run()
     MSG msg = {};
     while (WM_QUIT != msg.message)
     {
-        if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+        if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
         {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
@@ -176,7 +176,7 @@ bool SimpleDirectX11Renderer::CreateDxDevice()
     for (UINT index = 0; index < numDriverTypes; index++)
     {
         mDriverType = driverTypes[index];
-        hr = D3D11CreateDeviceAndSwapChain(NULL, mDriverType, NULL, createDeviceFlags, featureLevels, numFeatureLevels,
+        hr = D3D11CreateDeviceAndSwapChain(nullptr, mDriverType, nullptr, createDeviceFlags, featureLevels, numFeatureLevels,
             D3D11_SDK_VERSION, &sd, &mSwapChain, &mD3dDevice, &mFeatureLevel, &mImmediateContext);
         if (SUCCEEDED(hr))
             break;
@@ -185,17 +185,17 @@ bool SimpleDirectX11Renderer::CreateDxDevice()
         return false;
 
     // Create a render target view
-    ID3D11Texture2D* backBuffer = NULL;
+    ID3D11Texture2D* backBuffer = nullptr;
     hr = mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&backBuffer);
     if (FAILED(hr))
         return false;
 
-    hr = mD3dDevice->CreateRenderTargetView(backBuffer, NULL, &mRenderTargetView);
+    hr = mD3dDevice->CreateRenderTargetView(backBuffer, nullptr, &mRenderTargetView);
     backBuffer->Release();
     if (FAILED(hr))
         return false;
 
-    mImmediateContext->OMSetRenderTargets(1, &mRenderTargetView, NULL);
+    mImmediateContext->OMSetRenderTargets(1, &mRenderTargetView, nullptr);
 
     // Setup the viewport
     D3D11_VIEWPORT vp;
