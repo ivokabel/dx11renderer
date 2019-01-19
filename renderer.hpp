@@ -12,7 +12,7 @@ public:
     SimpleDirectX11Renderer();
     ~SimpleDirectX11Renderer();
 
-    bool Init(HINSTANCE hInstance, int nCmdShow,
+    bool Init(HINSTANCE instance, int cmdShow,
               int32_t wndWidth, int32_t wndHeight);
     int Run();
 
@@ -20,9 +20,9 @@ private:
 
     bool IsValid() const;
 
-    bool InitWindow(HINSTANCE hInstance, int nCmdShow);
+    bool InitWindow(HINSTANCE instance, int cmdShow);
     void DestroyWindow();
-    static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+    static LRESULT CALLBACK WndProc(HWND wnd, UINT message, WPARAM wParam, LPARAM lParam);
 
     bool CreateDxDevice();
     void Render();

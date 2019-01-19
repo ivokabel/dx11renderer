@@ -21,13 +21,13 @@ bool SimpleDirectX11Renderer::IsValid() const
 }
 
 
-bool SimpleDirectX11Renderer::Init(HINSTANCE hInstance, int nCmdShow,
+bool SimpleDirectX11Renderer::Init(HINSTANCE instance, int cmdShow,
                                    int32_t wndWidth, int32_t wndHeight)
 {
     mWndWidth = wndWidth;
     mWndHeight = wndHeight;
 
-    if (!InitWindow(hInstance, nCmdShow))
+    if (!InitWindow(instance, cmdShow))
         return false;
 
     if (!CreateDxDevice())
@@ -40,7 +40,7 @@ bool SimpleDirectX11Renderer::Init(HINSTANCE hInstance, int nCmdShow,
 }
 
 
-bool SimpleDirectX11Renderer::InitWindow(HINSTANCE hInstance, int nCmdShow)
+bool SimpleDirectX11Renderer::InitWindow(HINSTANCE instance, int cmdShow)
 {
     // Register class
     WNDCLASSEX wcex;
@@ -49,28 +49,28 @@ bool SimpleDirectX11Renderer::InitWindow(HINSTANCE hInstance, int nCmdShow)
     wcex.lpfnWndProc = WndProc;
     wcex.cbClsExtra = 0;
     wcex.cbWndExtra = 0;
-    wcex.hInstance = hInstance;
-    wcex.hIcon = nullptr; // TODO: LoadIcon(hInstance, (LPCTSTR)IDI_TUTORIAL1);
+    wcex.hInstance = instance;
+    wcex.hIcon = nullptr; // TODO: LoadIcon(instance, (LPCTSTR)IDI_XXX);
     wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wcex.lpszMenuName = nullptr;
     wcex.lpszClassName = mWndClassName;
-    wcex.hIconSm = nullptr; // TODO: LoadIcon(wcex.hInstance, (LPCTSTR)IDI_TUTORIAL1);
+    wcex.hIconSm = nullptr; // TODO: LoadIcon(instance, (LPCTSTR)IDI_XXX);
     if (!RegisterClassEx(&wcex))
         return false;
 
     // Create window
-    mInstance = hInstance;
+    mInstance = instance;
     RECT rc = { 0, 0, mWndWidth, mWndHeight };
     AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
     mWnd = CreateWindow(mWndClassName, mWndName,
                         WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
                         rc.right - rc.left, rc.bottom - rc.top,
-                        nullptr, nullptr, hInstance, nullptr);
+                        nullptr, nullptr, instance, nullptr);
     if (!mWnd)
         return false;
 
-    ShowWindow(mWnd, nCmdShow);
+    ShowWindow(mWnd, cmdShow);
 
     return true;
 }
@@ -84,24 +84,26 @@ void SimpleDirectX11Renderer::DestroyWindow()
 }
 
 
-LRESULT CALLBACK SimpleDirectX11Renderer::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK SimpleDirectX11Renderer::WndProc(HWND wnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    PAINTSTRUCT ps;
-    HDC hdc;
-
     switch (message)
     {
     case WM_PAINT:
-        hdc = BeginPaint(hWnd, &ps);
-        EndPaint(hWnd, &ps);
+    {
+        PAINTSTRUCT ps;
+        HDC hdc;
+
+        hdc = BeginPaint(wnd, &ps);
+        EndPaint(wnd, &ps);
         break;
+    }
 
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
 
     default:
-        return DefWindowProc(hWnd, message, wParam, lParam);
+        return DefWindowProc(wnd, message, wParam, lParam);
     }
 
     return 0;
@@ -110,8 +112,8 @@ LRESULT CALLBACK SimpleDirectX11Renderer::WndProc(HWND hWnd, UINT message, WPARA
 
 int SimpleDirectX11Renderer::Run()
 {
-    // Main message loop
-    MSG msg = { 0 };
+    // Message loop
+    MSG msg = {};
     while (WM_QUIT != msg.message)
     {
         if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
@@ -171,9 +173,9 @@ bool SimpleDirectX11Renderer::CreateDxDevice()
     sd.SampleDesc.Quality = 0;
     sd.Windowed = TRUE;
 
-    for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++)
+    for (UINT index = 0; index < numDriverTypes; index++)
     {
-        mDriverType = driverTypes[driverTypeIndex];
+        mDriverType = driverTypes[index];
         hr = D3D11CreateDeviceAndSwapChain(NULL, mDriverType, NULL, createDeviceFlags, featureLevels, numFeatureLevels,
             D3D11_SDK_VERSION, &sd, &mSwapChain, &mD3dDevice, &mFeatureLevel, &mImmediateContext);
         if (SUCCEEDED(hr))
@@ -183,13 +185,13 @@ bool SimpleDirectX11Renderer::CreateDxDevice()
         return false;
 
     // Create a render target view
-    ID3D11Texture2D* pBackBuffer = NULL;
-    hr = mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+    ID3D11Texture2D* backBuffer = NULL;
+    hr = mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&backBuffer);
     if (FAILED(hr))
         return false;
 
-    hr = mD3dDevice->CreateRenderTargetView(pBackBuffer, NULL, &mRenderTargetView);
-    pBackBuffer->Release();
+    hr = mD3dDevice->CreateRenderTargetView(backBuffer, NULL, &mRenderTargetView);
+    backBuffer->Release();
     if (FAILED(hr))
         return false;
 
@@ -212,8 +214,8 @@ bool SimpleDirectX11Renderer::CreateDxDevice()
 void SimpleDirectX11Renderer::Render()
 {
     // Just clear the backbuffer
-    float ClearColor[4] = { 0.1f, 0.225f, 0.5f, 1.0f }; //red,green,blue,alpha
-    mImmediateContext->ClearRenderTargetView(mRenderTargetView, ClearColor);
+    float clearColor[4] = { 0.1f, 0.225f, 0.5f, 1.0f }; //red,green,blue,alpha
+    mImmediateContext->ClearRenderTargetView(mRenderTargetView, clearColor);
     mSwapChain->Present(0, 0);
 }
 

@@ -4,12 +4,12 @@
 
 
 //--------------------------------------------------------------------------------------
-int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
+int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, int cmdShow)
 {
-    UNREFERENCED_PARAMETER(hInstance);
-    UNREFERENCED_PARAMETER(hPrevInstance);
-    UNREFERENCED_PARAMETER(lpCmdLine);
-    UNREFERENCED_PARAMETER(nCmdShow);
+    UNREFERENCED_PARAMETER(instance);
+    UNREFERENCED_PARAMETER(prevInstance);
+    UNREFERENCED_PARAMETER(cmdLine);
+    UNREFERENCED_PARAMETER(cmdShow);
 
     //// debug
     //OutputDebugStringW(L"Hello world!\n");
@@ -17,7 +17,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
     SimpleDirectX11Renderer renderer;
     
-    if (!renderer.Init(hInstance, nCmdShow, 640u, 480u))
+    if (!renderer.Init(instance, cmdShow, 640u, 480u))
         return -1;
 
     return renderer.Run();
