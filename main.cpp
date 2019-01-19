@@ -15,7 +15,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
     //OutputDebugStringW(L"Hello world!\n");
     //OutputDebugString("Hello world!\n");
 
-    SimpleDirectX11Renderer renderer;
+    SimpleDX11Renderer renderer;
     
     if (!renderer.Init(instance, cmdShow, 640u, 480u))
         return -1;

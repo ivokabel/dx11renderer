@@ -1,19 +1,19 @@
 #include "renderer.hpp"
 
 
-SimpleDirectX11Renderer::SimpleDirectX11Renderer()
+SimpleDX11Renderer::SimpleDX11Renderer()
 {
 }
 
 
-SimpleDirectX11Renderer::~SimpleDirectX11Renderer()
+SimpleDX11Renderer::~SimpleDX11Renderer()
 {
     DestroyWindow();
     DestroyDxDevice();
 }
 
 
-bool SimpleDirectX11Renderer::IsValid() const
+bool SimpleDX11Renderer::IsValid() const
 {
     return mWnd
         && (mWndWidth > 0u)
@@ -21,10 +21,10 @@ bool SimpleDirectX11Renderer::IsValid() const
 }
 
 
-bool SimpleDirectX11Renderer::Init(HINSTANCE instance, int cmdShow,
-                                   int32_t wndWidth, int32_t wndHeight)
+bool SimpleDX11Renderer::Init(HINSTANCE instance, int cmdShow,
+                              int32_t wndWidth, int32_t wndHeight)
 {
-    mWndWidth = wndWidth;
+    mWndWidth  = wndWidth;
     mWndHeight = wndHeight;
 
     if (!InitWindow(instance, cmdShow))
@@ -40,7 +40,7 @@ bool SimpleDirectX11Renderer::Init(HINSTANCE instance, int cmdShow,
 }
 
 
-bool SimpleDirectX11Renderer::InitWindow(HINSTANCE instance, int cmdShow)
+bool SimpleDX11Renderer::InitWindow(HINSTANCE instance, int cmdShow)
 {
     // Register class
     WNDCLASSEX wcex;
@@ -76,7 +76,7 @@ bool SimpleDirectX11Renderer::InitWindow(HINSTANCE instance, int cmdShow)
 }
 
 
-void SimpleDirectX11Renderer::DestroyWindow()
+void SimpleDX11Renderer::DestroyWindow()
 {
     ::DestroyWindow(mWnd);
     mWnd = nullptr;
@@ -84,7 +84,7 @@ void SimpleDirectX11Renderer::DestroyWindow()
 }
 
 
-LRESULT CALLBACK SimpleDirectX11Renderer::WndProc(HWND wnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK SimpleDX11Renderer::WndProc(HWND wnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
@@ -110,7 +110,7 @@ LRESULT CALLBACK SimpleDirectX11Renderer::WndProc(HWND wnd, UINT message, WPARAM
 }
 
 
-int SimpleDirectX11Renderer::Run()
+int SimpleDX11Renderer::Run()
 {
     // Message loop
     MSG msg = {};
@@ -129,7 +129,7 @@ int SimpleDirectX11Renderer::Run()
 }
 
 
-bool SimpleDirectX11Renderer::CreateDxDevice()
+bool SimpleDX11Renderer::CreateDxDevice()
 {
     HRESULT hr = S_OK;
 
@@ -211,7 +211,7 @@ bool SimpleDirectX11Renderer::CreateDxDevice()
 }
 
 
-void SimpleDirectX11Renderer::Render()
+void SimpleDX11Renderer::Render()
 {
     // Just clear the backbuffer
     float clearColor[4] = { 0.1f, 0.225f, 0.5f, 1.0f }; //red,green,blue,alpha
@@ -231,7 +231,7 @@ void ReleaseAndMakeNull(T &value)
 }
 
 
-void SimpleDirectX11Renderer::DestroyDxDevice()
+void SimpleDX11Renderer::DestroyDxDevice()
 {
     if (mImmediateContext)
         mImmediateContext->ClearState();

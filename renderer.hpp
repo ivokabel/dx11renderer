@@ -9,12 +9,12 @@
 #include <d3dx11.h>
 #include <cstdint>
 
-class SimpleDirectX11Renderer
+class SimpleDX11Renderer
 {
 public:
 
-    SimpleDirectX11Renderer();
-    ~SimpleDirectX11Renderer();
+    SimpleDX11Renderer();
+    ~SimpleDX11Renderer();
 
     bool Init(HINSTANCE instance, int cmdShow,
               int32_t wndWidth, int32_t wndHeight);
