@@ -12,7 +12,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
     UNREFERENCED_PARAMETER(cmdShow);
 
     SimpleDX11Renderer renderer;
-    
+
     if (!renderer.Init(instance, cmdShow, 640u, 480u))
         return -1;
 
