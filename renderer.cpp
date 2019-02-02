@@ -1,5 +1,6 @@
 #include "renderer.hpp"
 #include "utils.hpp"
+#include <array>
 
 
 SimpleDX11Renderer::SimpleDX11Renderer()
@@ -194,19 +195,17 @@ bool SimpleDX11Renderer::CreateDevice()
     createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
-    D3D_DRIVER_TYPE driverTypes[] = {
+    std::array<D3D_DRIVER_TYPE, 3> driverTypes = {
         D3D_DRIVER_TYPE_HARDWARE,
         D3D_DRIVER_TYPE_WARP,
         D3D_DRIVER_TYPE_REFERENCE,
     };
-    const UINT numDriverTypes = ARRAYSIZE(driverTypes);
 
-    D3D_FEATURE_LEVEL featureLevels[] = {
+    std::array<D3D_FEATURE_LEVEL, 3> featureLevels = {
         D3D_FEATURE_LEVEL_11_0,
         D3D_FEATURE_LEVEL_10_1,
         D3D_FEATURE_LEVEL_10_0,
     };
-    const UINT numFeatureLevels = ARRAYSIZE(featureLevels);
 
     DXGI_SWAP_CHAIN_DESC scd;
     ZeroMemory(&scd, sizeof(scd));
@@ -222,15 +221,17 @@ bool SimpleDX11Renderer::CreateDevice()
     scd.SampleDesc.Quality = 0;
     scd.Windowed = TRUE;
 
-    for (UINT index = 0; index < numDriverTypes; index++)
+    for (auto driverType : driverTypes)
     {
-        mDriverType = driverTypes[index];
-        hr = D3D11CreateDeviceAndSwapChain(nullptr, mDriverType, nullptr,
-                                           createDeviceFlags, featureLevels, numFeatureLevels,
-                                           D3D11_SDK_VERSION, &scd,
-                                           &mSwapChain, &mD3dDevice, &mFeatureLevel, &mImmediateContext);
+        hr = D3D11CreateDeviceAndSwapChain(nullptr, driverType, nullptr, createDeviceFlags,
+                                           featureLevels.data(), (UINT)featureLevels.size(),
+                                           D3D11_SDK_VERSION, &scd, &mSwapChain,
+                                           &mD3dDevice, &mFeatureLevel, &mImmediateContext);
         if (SUCCEEDED(hr))
+        {
+            mDriverType = driverType;
             break;
+        }
     }
     if (FAILED(hr))
         return false;
