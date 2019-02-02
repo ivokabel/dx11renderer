@@ -28,6 +28,9 @@ endif()
 #    add_compile_options(-Wall -Wextra -Wpedantic -Wunreachable-code)
 #endif()
 
+# A little workaround 0:-) Needs to be called before creating a target
+link_directories("$ENV{DXSDK_DIR}Lib\\x64\\")
+
 add_executable(dx11renderer ${RENDERER_SOURCES})
 #install(TARGETS dx11renderer DESTINATION bin)
 
@@ -36,9 +39,9 @@ include_directories("$ENV{DXSDK_DIR}Include\\")
 target_link_libraries(dx11renderer
     d3d11
     d3dcompiler
-    #d3dx11d
-    #d3dx9d
-    #dxerr
+    d3dx11d
+    d3dx9d
+    dxerr
     dxguid
     winmm
     comctl32
