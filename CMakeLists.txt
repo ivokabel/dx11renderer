@@ -11,6 +11,7 @@ set(RENDERER_SOURCES
     main.cpp
     renderer.hpp
     renderer.cpp
+    shaders.fx
     utils.hpp
     utils.cpp
     )

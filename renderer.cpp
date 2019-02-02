@@ -1,6 +1,16 @@
 #include "renderer.hpp"
 #include "utils.hpp"
+
+#include <d3dcompiler.h>
+#include <xnamath.h>
+
 #include <array>
+
+
+struct SimpleVertex
+{
+    XMFLOAT3 Pos;
+};
 
 
 SimpleDX11Renderer::SimpleDX11Renderer()
@@ -264,17 +274,83 @@ bool SimpleDX11Renderer::CreateDevice()
     vp.TopLeftY = 0;
     mImmediateContext->RSSetViewports(1, &vp);
 
+    // Compile vertex shader
+    ID3DBlob* pVSBlob = NULL;
+    if (!CompileShader(L"../shaders.fx", "VS", "vs_4_0", &pVSBlob))
+    {
+        Utils::Log(Utils::eError, L"The FX file failed to compile.");
+        return false;
+    }
+
+    // Create vertex shader
+    hr = mD3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(),
+                                        pVSBlob->GetBufferSize(),
+                                        NULL, &mVertexShader);
+    if (FAILED(hr))
+    {
+        pVSBlob->Release();
+        return false;
+    }
+
+    // Input layout
+    const std::array<D3D11_INPUT_ELEMENT_DESC, 1> layout =
+    {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    };
+    hr = mD3dDevice->CreateInputLayout(layout.data(), (UINT)layout.size(),
+                                       pVSBlob->GetBufferPointer(),
+                                       pVSBlob->GetBufferSize(),
+                                       &mVertexLayout);
+    pVSBlob->Release();
+    if (FAILED(hr))
+        return false;
+    mImmediateContext->IASetInputLayout(mVertexLayout);
+
+    // Compile pixel shader
+    ID3DBlob* pPSBlob = NULL;
+    if (!CompileShader(L"../shaders.fx", "PS", "ps_4_0", &pPSBlob))
+    {
+        Utils::Log(Utils::eError, L"The FX file failed to compile.");
+        return false;
+    }
+
+    // Create pixel shader
+    hr = mD3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(),
+                                       pPSBlob->GetBufferSize(),
+                                       NULL, &mPixelShader);
+    pPSBlob->Release();
+    if (FAILED(hr))
+        return false;
+
+    // Create vertex buffer
+    const std::array<SimpleVertex, 3> vertices =
+    {
+        XMFLOAT3( 0.0f,  0.5f, 0.5f),
+        XMFLOAT3( 0.5f, -0.5f, 0.5f),
+        XMFLOAT3(-0.5f, -0.5f, 0.5f),
+    };
+    D3D11_BUFFER_DESC bd;
+    ZeroMemory(&bd, sizeof(bd));
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = (UINT)(sizeof(SimpleVertex) * vertices.size());
+    bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    bd.CPUAccessFlags = 0;
+    D3D11_SUBRESOURCE_DATA InitData;
+    ZeroMemory(&InitData, sizeof(InitData));
+    InitData.pSysMem = vertices.data();
+    hr = mD3dDevice->CreateBuffer(&bd, &InitData, &mVertexBuffer);
+    if (FAILED(hr))
+        return false;
+
+    // Set vertex buffer
+    UINT stride = sizeof(SimpleVertex);
+    UINT offset = 0;
+    mImmediateContext->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offset);
+
+    // Set primitive topology
+    mImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
     return true;
-}
-
-
-void SimpleDX11Renderer::Render()
-{
-    // Just clear the backbuffer
-    float clearColor[4] = { 0.1f, 0.225f, 0.5f, 1.0f }; //red,green,blue,alpha
-    mImmediateContext->ClearRenderTargetView(mRenderTargetView, clearColor);
-
-    mSwapChain->Present(0, 0);
 }
 
 
@@ -287,4 +363,61 @@ void SimpleDX11Renderer::DestroyDevice()
     Utils::ReleaseAndMakeNullptr(mSwapChain);
     Utils::ReleaseAndMakeNullptr(mImmediateContext);
     Utils::ReleaseAndMakeNullptr(mD3dDevice);
+    Utils::ReleaseAndMakeNullptr(mVertexBuffer);
+    Utils::ReleaseAndMakeNullptr(mVertexLayout);
+    Utils::ReleaseAndMakeNullptr(mVertexShader);
+    Utils::ReleaseAndMakeNullptr(mPixelShader);
 }
+
+
+bool SimpleDX11Renderer::CompileShader(WCHAR* szFileName,
+                                       LPCSTR szEntryPoint,
+                                       LPCSTR szShaderModel,
+                                       ID3DBlob** ppBlobOut)
+{
+    HRESULT hr = S_OK;
+
+    DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
+#if defined( DEBUG ) || defined( _DEBUG )
+    // Set the D3DCOMPILE_DEBUG flag to embed debug information in the shaders.
+    // Setting this flag improves the shader debugging experience, but still allows 
+    // the shaders to be optimized and to run exactly the way they will run in 
+    // the release configuration of this program.
+    dwShaderFlags |= D3DCOMPILE_DEBUG;
+#endif
+
+    ID3DBlob* pErrorBlob;
+    hr = D3DX11CompileFromFile(szFileName, nullptr, nullptr, szEntryPoint, szShaderModel,
+                               dwShaderFlags, 0, nullptr, ppBlobOut, &pErrorBlob, nullptr);
+    if (FAILED(hr))
+    {
+        if (pErrorBlob)
+            Utils::Log(Utils::eError,
+                       L"CompileShader: D3DX11CompileFromFile failed: \"%S\"",
+                       (char*)pErrorBlob->GetBufferPointer());
+        if (pErrorBlob)
+            pErrorBlob->Release();
+        return false;
+    }
+
+    if (pErrorBlob)
+        pErrorBlob->Release();
+
+    return true;
+}
+
+
+void SimpleDX11Renderer::Render()
+{
+    // Clear backbuffer
+    float clearColor[4] = { 0.1f, 0.225f, 0.5f, 1.0f }; // red,green,blue,alpha
+    mImmediateContext->ClearRenderTargetView(mRenderTargetView, clearColor);
+
+    // Render one triangle
+    mImmediateContext->VSSetShader(mVertexShader, NULL, 0);
+    mImmediateContext->PSSetShader(mPixelShader, NULL, 0);
+    mImmediateContext->Draw(3, 0);
+
+    mSwapChain->Present(0, 0);
+}
+

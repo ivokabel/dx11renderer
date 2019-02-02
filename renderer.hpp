@@ -38,19 +38,27 @@ private:
 
     bool InitWindow(HINSTANCE instance, int cmdShow);
     void DestroyWindow();
-    static LRESULT CALLBACK WndProc(HWND wnd, UINT message, WPARAM wParam, LPARAM lParam);
+    static LRESULT CALLBACK WndProc(HWND wnd,
+                                    UINT message,
+                                    WPARAM wParam,
+                                    LPARAM lParam);
 
     bool CreateDevice();
-    void Render();
     void DestroyDevice();
+    bool CompileShader(WCHAR* szFileName,
+                       LPCSTR szEntryPoint,
+                       LPCSTR szShaderModel,
+                       ID3DBlob** ppBlobOut);
+    void Render();
 
 private:
 
-    const wchar_t * const       mWndClassName   = L"SimpleDirectX11RendererWndClass";
-    const wchar_t * const       mWndName        = L"Simple DirectX 11 Renderer";
+    const wchar_t * const       mWndClassName    = L"SimpleDirectX11RendererWndClass";
+    const wchar_t * const       mWndName         = L"Simple DirectX 11 Renderer";
 
     int32_t                     mWndWidth = 0u;
     int32_t                     mWndHeight = 0u;
+
     HINSTANCE                   mInstance = nullptr;
     HWND                        mWnd = nullptr;
     D3D_DRIVER_TYPE             mDriverType = D3D_DRIVER_TYPE_NULL;
@@ -59,4 +67,8 @@ private:
     ID3D11DeviceContext*        mImmediateContext = nullptr;
     IDXGISwapChain*             mSwapChain = nullptr;
     ID3D11RenderTargetView*     mRenderTargetView = nullptr;
+    ID3D11VertexShader*         mVertexShader = nullptr;
+    ID3D11PixelShader*          mPixelShader = nullptr;
+    ID3D11InputLayout*          mVertexLayout = nullptr;
+    ID3D11Buffer*               mVertexBuffer = nullptr;
 };
