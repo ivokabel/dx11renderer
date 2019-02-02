@@ -29,7 +29,7 @@ namespace Utils
         swprintf_s(tmpBuff1, msg, args...);
 
         wchar_t tmpBuff2[1024] = { 0 };
-        swprintf_s(tmpBuff2, L"% 7s: %s\n", LogLevelToString(level), tmpBuff1);
+        swprintf_s(tmpBuff2, L"[% 7s] %s\n", LogLevelToString(level), tmpBuff1);
 
         OutputDebugString(tmpBuff2);
     }
