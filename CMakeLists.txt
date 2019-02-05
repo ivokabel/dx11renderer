@@ -29,7 +29,8 @@ endif()
 #    add_compile_options(-Wall -Wextra -Wpedantic -Wunreachable-code)
 #endif()
 
-# A little workaround 0:-) Needs to be called before creating a target
+# A little workaround 0:-)
+# Needs to be called before creating a target
 link_directories("$ENV{DXSDK_DIR}Lib\\x64\\")
 
 add_executable(dx11renderer ${RENDERER_SOURCES})
