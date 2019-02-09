@@ -69,6 +69,7 @@ SimpleDX11Renderer::~SimpleDX11Renderer()
 
     DestroyWindow();
     DestroyDevice();
+    DestroySceneData();
 }
 
 
@@ -92,6 +93,7 @@ bool SimpleDX11Renderer::Init(HINSTANCE instance, int cmdShow,
     if (!CreateSceneData())
     {
         DestroyDevice();
+        DestroySceneData();
         return false;
     }
 
@@ -235,6 +237,8 @@ const wchar_t * FeatureLevelToString(D3D_FEATURE_LEVEL level)
 
 bool SimpleDX11Renderer::CreateDevice()
 {
+    Log::Debug(L"Creating device");
+
     HRESULT hr = S_OK;
 
     UINT createDeviceFlags = 0;
@@ -316,6 +320,8 @@ bool SimpleDX11Renderer::CreateDevice()
 
 void SimpleDX11Renderer::DestroyDevice()
 {
+    Log::Debug(L"Destroying device");
+
     if (mImmediateContext)
         mImmediateContext->ClearState();
 
@@ -323,18 +329,13 @@ void SimpleDX11Renderer::DestroyDevice()
     Utils::ReleaseAndMakeNullptr(mSwapChain);
     Utils::ReleaseAndMakeNullptr(mImmediateContext);
     Utils::ReleaseAndMakeNullptr(mD3dDevice);
-
-    Utils::ReleaseAndMakeNullptr(mVertexBuffer);
-    Utils::ReleaseAndMakeNullptr(mIndexBuffer);
-    Utils::ReleaseAndMakeNullptr(mConstantBuffer);
-    Utils::ReleaseAndMakeNullptr(mVertexLayout);
-    Utils::ReleaseAndMakeNullptr(mVertexShader);
-    Utils::ReleaseAndMakeNullptr(mPixelShader);
 }
 
 
 bool SimpleDX11Renderer::CreateSceneData()
 {
+    Log::Debug(L"Creating scene data");
+
     HRESULT hr = S_OK;
 
     // Vertex shader
@@ -445,6 +446,19 @@ bool SimpleDX11Renderer::CreateSceneData()
     mProjectionMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV2, (FLOAT)mWndWidth / mWndHeight, 0.01f, 100.0f);
 
     return true;
+}
+
+
+void SimpleDX11Renderer::DestroySceneData()
+{
+    Log::Debug(L"Destroying scene data");
+
+    Utils::ReleaseAndMakeNullptr(mVertexBuffer);
+    Utils::ReleaseAndMakeNullptr(mIndexBuffer);
+    Utils::ReleaseAndMakeNullptr(mConstantBuffer);
+    Utils::ReleaseAndMakeNullptr(mVertexLayout);
+    Utils::ReleaseAndMakeNullptr(mVertexShader);
+    Utils::ReleaseAndMakeNullptr(mPixelShader);
 }
 
 
