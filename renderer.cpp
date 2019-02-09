@@ -4,6 +4,7 @@
 
 #include <d3dcompiler.h>
 #include <xnamath.h>
+#include <cmath>
 
 #include <array>
 
@@ -11,6 +12,48 @@
 struct SimpleVertex
 {
     XMFLOAT3 Pos;
+    XMFLOAT4 Color;
+};
+
+
+const std::array<SimpleVertex, 8> sVertices = {
+    SimpleVertex{ XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
+    SimpleVertex{ XMFLOAT3(1.0f, 1.0f, -1.0f),  XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
+    SimpleVertex{ XMFLOAT3(1.0f, 1.0f, 1.0f),   XMFLOAT4(0.0f, 1.0f, 1.0f, 1.0f) },
+    SimpleVertex{ XMFLOAT3(-1.0f, 1.0f, 1.0f),  XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
+    SimpleVertex{ XMFLOAT3(-1.0f, -1.0f, -1.0f),XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f) },
+    SimpleVertex{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f) },
+    SimpleVertex{ XMFLOAT3(1.0f, -1.0f, 1.0f),  XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f) },
+    SimpleVertex{ XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
+};
+
+
+const std::array<WORD, 36> sIndices = {
+    3, 1, 0,
+    2, 1, 3,
+
+    0, 5, 4,
+    1, 5, 0,
+
+    3, 4, 7,
+    0, 4, 3,
+
+    1, 6, 5,
+    2, 6, 1,
+
+    2, 7, 6,
+    3, 7, 2,
+
+    6, 4, 5,
+    7, 4, 6,
+};
+
+
+struct ConstantBuffer
+{
+    XMMATRIX World;
+    XMMATRIX View;
+    XMMATRIX Projection;
 };
 
 
@@ -27,14 +70,6 @@ SimpleDX11Renderer::~SimpleDX11Renderer()
     DestroyWindow();
     DestroyDevice();
 }
-
-
-//bool SimpleDX11Renderer::IsValid() const
-//{
-//    return mWnd
-//        && (mWndWidth > 0u)
-//        && (mWndHeight > 0u);
-//}
 
 
 bool SimpleDX11Renderer::Init(HINSTANCE instance, int cmdShow,
@@ -202,11 +237,6 @@ bool SimpleDX11Renderer::CreateDevice()
 {
     HRESULT hr = S_OK;
 
-    RECT rc;
-    GetClientRect(mWnd, &rc);
-    UINT width  = rc.right  - rc.left;
-    UINT height = rc.bottom - rc.top;
-
     UINT createDeviceFlags = 0;
 #ifdef _DEBUG
     createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
@@ -227,8 +257,8 @@ bool SimpleDX11Renderer::CreateDevice()
     DXGI_SWAP_CHAIN_DESC scd;
     ZeroMemory(&scd, sizeof(scd));
     scd.BufferCount = 1;
-    scd.BufferDesc.Width = width;
-    scd.BufferDesc.Height = height;
+    scd.BufferDesc.Width = mWndWidth;
+    scd.BufferDesc.Height = mWndHeight;
     scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
     scd.BufferDesc.RefreshRate.Numerator = 60;
     scd.BufferDesc.RefreshRate.Denominator = 1;
@@ -272,8 +302,8 @@ bool SimpleDX11Renderer::CreateDevice()
 
     // Setup the viewport
     D3D11_VIEWPORT vp;
-    vp.Width = (FLOAT)width;
-    vp.Height = (FLOAT)height;
+    vp.Width = (FLOAT)mWndWidth;
+    vp.Height = (FLOAT)mWndHeight;
     vp.MinDepth = 0.0f;
     vp.MaxDepth = 1.0f;
     vp.TopLeftX = 0;
@@ -293,7 +323,10 @@ void SimpleDX11Renderer::DestroyDevice()
     Utils::ReleaseAndMakeNullptr(mSwapChain);
     Utils::ReleaseAndMakeNullptr(mImmediateContext);
     Utils::ReleaseAndMakeNullptr(mD3dDevice);
+
     Utils::ReleaseAndMakeNullptr(mVertexBuffer);
+    Utils::ReleaseAndMakeNullptr(mIndexBuffer);
+    Utils::ReleaseAndMakeNullptr(mConstantBuffer);
     Utils::ReleaseAndMakeNullptr(mVertexLayout);
     Utils::ReleaseAndMakeNullptr(mVertexShader);
     Utils::ReleaseAndMakeNullptr(mPixelShader);
@@ -306,7 +339,7 @@ bool SimpleDX11Renderer::CreateSceneData()
 
     // Vertex shader
 
-    ID3DBlob* pVSBlob = NULL;
+    ID3DBlob* pVSBlob = nullptr;
     if (!CompileShader(L"../shaders.fx", "VS", "vs_4_0", &pVSBlob))
     {
         Log::Error(L"The FX file failed to compile.");
@@ -315,7 +348,7 @@ bool SimpleDX11Renderer::CreateSceneData()
 
     hr = mD3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(),
                                         pVSBlob->GetBufferSize(),
-                                        NULL, &mVertexShader);
+                                        nullptr, &mVertexShader);
     if (FAILED(hr))
     {
         pVSBlob->Release();
@@ -324,9 +357,11 @@ bool SimpleDX11Renderer::CreateSceneData()
 
     // Input layout
 
-    const std::array<D3D11_INPUT_ELEMENT_DESC, 1> layout =
+    typedef D3D11_INPUT_ELEMENT_DESC InputElmDesc;
+    const std::array<InputElmDesc, 2> layout =
     {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        InputElmDesc{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        InputElmDesc{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
     };
     hr = mD3dDevice->CreateInputLayout(layout.data(), (UINT)layout.size(),
                                        pVSBlob->GetBufferPointer(),
@@ -339,7 +374,7 @@ bool SimpleDX11Renderer::CreateSceneData()
 
     // Pixel shader
 
-    ID3DBlob* pPSBlob = NULL;
+    ID3DBlob* pPSBlob = nullptr;
     if (!CompileShader(L"../shaders.fx", "PS", "ps_4_0", &pPSBlob))
     {
         Log::Error(L"The FX file failed to compile.");
@@ -348,28 +383,22 @@ bool SimpleDX11Renderer::CreateSceneData()
 
     hr = mD3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(),
                                        pPSBlob->GetBufferSize(),
-                                       NULL, &mPixelShader);
+                                       nullptr, &mPixelShader);
     pPSBlob->Release();
     if (FAILED(hr))
         return false;
 
     // Create vertex buffer
-    const std::array<SimpleVertex, 3> vertices =
-    {
-        XMFLOAT3( 0.0f,  0.5f, 0.5f),
-        XMFLOAT3( 0.5f, -0.5f, 0.5f),
-        XMFLOAT3(-0.5f, -0.5f, 0.5f),
-    };
     D3D11_BUFFER_DESC bd;
     ZeroMemory(&bd, sizeof(bd));
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = (UINT)(sizeof(SimpleVertex) * vertices.size());
+    bd.ByteWidth = (UINT)(sizeof(SimpleVertex) * sVertices.size());
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bd.CPUAccessFlags = 0;
-    D3D11_SUBRESOURCE_DATA InitData;
-    ZeroMemory(&InitData, sizeof(InitData));
-    InitData.pSysMem = vertices.data();
-    hr = mD3dDevice->CreateBuffer(&bd, &InitData, &mVertexBuffer);
+    D3D11_SUBRESOURCE_DATA initData;
+    ZeroMemory(&initData, sizeof(initData));
+    initData.pSysMem = sVertices.data();
+    hr = mD3dDevice->CreateBuffer(&bd, &initData, &mVertexBuffer);
     if (FAILED(hr))
         return false;
 
@@ -377,7 +406,43 @@ bool SimpleDX11Renderer::CreateSceneData()
     UINT stride = sizeof(SimpleVertex);
     UINT offset = 0;
     mImmediateContext->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offset);
+
+    // Create index buffer
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = sizeof(WORD) * (UINT)sIndices.size();
+    bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+    bd.CPUAccessFlags = 0;
+    initData.pSysMem = sIndices.data();
+    hr = mD3dDevice->CreateBuffer(&bd, &initData, &mIndexBuffer);
+    if (FAILED(hr))
+        return false;
+
+    // Set index buffer
+    mImmediateContext->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+
+    // Primitive topology
     mImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    // Create the constant buffer
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = sizeof(ConstantBuffer);
+    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    bd.CPUAccessFlags = 0;
+    hr = mD3dDevice->CreateBuffer(&bd, nullptr, &mConstantBuffer);
+    if (FAILED(hr))
+        return false;
+
+    // World matrix
+    mWorldMatrix = XMMatrixIdentity();
+
+    // View matrix
+    XMVECTOR vecEye = XMVectorSet(0.0f, 1.0f, -5.0f, 0.0f);
+    XMVECTOR vecAt  = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+    XMVECTOR vecUp  = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+    mViewMatrix = XMMatrixLookAtLH(vecEye, vecAt, vecUp);
+
+    // Projection matrix
+    mProjectionMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV2, (FLOAT)mWndWidth / mWndHeight, 0.01f, 100.0f);
 
     return true;
 }
@@ -421,14 +486,47 @@ bool SimpleDX11Renderer::CompileShader(WCHAR* szFileName,
 
 void SimpleDX11Renderer::Render()
 {
+    // Update time
+    static float time = 0.0f;
+    if (mDriverType == D3D_DRIVER_TYPE_REFERENCE)
+    {
+        time += (float)XM_PI * 0.0125f;
+    }
+    else
+    {
+        static DWORD dwTimeStart = 0;
+        DWORD dwTimeCur = GetTickCount();
+        if (dwTimeStart == 0)
+            dwTimeStart = dwTimeCur;
+        time = (dwTimeCur - dwTimeStart) / 1000.0f;
+    }
+
+    // Animation
+    mWorldMatrix = XMMatrixRotationY(time);
+    //auto Rotation = XMMatrixRotationY(time);
+    //const float scaleBase = fmod(time, 1.f);
+    //const float scalePulse = 0.5f * (cos(scaleBase * XM_2PI) + 1.f); // 0-1
+    //const float scaleFactor = 1.5f * scalePulse + 0.1f;
+    //auto Scaling = XMMatrixScaling(scaleFactor, scaleFactor, scaleFactor);
+    //mWorldMatrix = XMMatrixMultiply(Scaling, Rotation);
+    //mWorldMatrix = Scaling;
+
     // Clear backbuffer
     float clearColor[4] = { 0.10f, 0.34f, 0.51f, 1.0f }; // RGBA
     mImmediateContext->ClearRenderTargetView(mRenderTargetView, clearColor);
 
-    // Render one triangle
-    mImmediateContext->VSSetShader(mVertexShader, NULL, 0);
-    mImmediateContext->PSSetShader(mPixelShader, NULL, 0);
-    mImmediateContext->Draw(3, 0);
+    // Update constant buffer
+    ConstantBuffer cb;
+    cb.World       = XMMatrixTranspose(mWorldMatrix);
+    cb.View        = XMMatrixTranspose(mViewMatrix);
+    cb.Projection  = XMMatrixTranspose(mProjectionMatrix);
+    mImmediateContext->UpdateSubresource(mConstantBuffer, 0, nullptr, &cb, 0, 0);
+
+    // Render cube
+    mImmediateContext->VSSetShader(mVertexShader, nullptr, 0);
+    mImmediateContext->VSSetConstantBuffers(0, 1, &mConstantBuffer);
+    mImmediateContext->PSSetShader(mPixelShader, nullptr, 0);
+    mImmediateContext->DrawIndexed((UINT)sIndices.size(), 0, 0);
 
     mSwapChain->Present(0, 0);
 }

@@ -17,6 +17,9 @@
 #include <d3dx11.h>
 #pragma warning(pop)
 
+#include <xnamath.h>
+
+#include <array>
 #include <cstdint>
 
 class SimpleDX11Renderer
@@ -33,8 +36,6 @@ public:
     int Run();
 
 private:
-
-    //bool IsValid() const;
 
     bool InitWindow(HINSTANCE instance, int cmdShow);
     void DestroyWindow();
@@ -68,8 +69,15 @@ private:
     ID3D11DeviceContext*        mImmediateContext = nullptr;
     IDXGISwapChain*             mSwapChain = nullptr;
     ID3D11RenderTargetView*     mRenderTargetView = nullptr;
+
     ID3D11VertexShader*         mVertexShader = nullptr;
     ID3D11PixelShader*          mPixelShader = nullptr;
     ID3D11InputLayout*          mVertexLayout = nullptr;
     ID3D11Buffer*               mVertexBuffer = nullptr;
+    ID3D11Buffer*               mIndexBuffer = nullptr;
+    ID3D11Buffer*               mConstantBuffer = nullptr;
+
+    XMMATRIX                    mWorldMatrix;
+    XMMATRIX                    mViewMatrix;
+    XMMATRIX                    mProjectionMatrix;
 };
