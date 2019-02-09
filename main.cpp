@@ -15,7 +15,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
 
     wchar_t buffer[1024] = {};
     GetCurrentDirectory(1024, buffer);
-    Log::Log(Log::eDebug,
+    Log::Write(Log::eDebug,
                 L"Entering WinMain: cmd \"%s\", current dir \"%s\"",
                 cmdLine, buffer);
 

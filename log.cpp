@@ -1,9 +1,9 @@
 #include "log.hpp"
 
-const Log::ELogLevel Log::sLoggingLevel = Log::eDebug;
+const Log::ELoggingLevel Log::sLoggingLevel = Log::eDebug;
 
 
-const wchar_t * Log::LogLevelToString(ELogLevel level)
+const wchar_t * Log::LogLevelToString(ELoggingLevel level)
 {
     switch (level)
     {

@@ -2,7 +2,7 @@
 
 namespace Log
 {
-    enum ELogLevel
+    enum ELoggingLevel
     {
         eDebug,
         eWarning,
@@ -10,14 +10,14 @@ namespace Log
     };
 
 
-    extern const ELogLevel sLoggingLevel;
+    extern const ELoggingLevel sLoggingLevel;
 
 
-    const wchar_t * LogLevelToString(ELogLevel level);
+    const wchar_t * LogLevelToString(ELoggingLevel level);
 
 
     template <typename... Args>
-    void Log(ELogLevel level, const wchar_t *msg, Args... args)
+    void Write(ELoggingLevel level, const wchar_t *msg, Args... args)
     {
         if (level < sLoggingLevel)
             return;
