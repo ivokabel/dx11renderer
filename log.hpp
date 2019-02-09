@@ -32,4 +32,23 @@ namespace Log
     }
 
 
+    template <typename... Args>
+    void Debug(const wchar_t *msg, Args... args)
+    {
+        Write(ELoggingLevel::eDebug, msg, args...);
+    }
+
+
+    template <typename... Args>
+    void Warning(const wchar_t *msg, Args... args)
+    {
+        Write(ELoggingLevel::eWarning, msg, args...);
+    }
+
+
+    template <typename... Args>
+    void Error(const wchar_t *msg, Args... args)
+    {
+        Write(ELoggingLevel::eError, msg, args...);
+    }
 }

@@ -15,9 +15,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
 
     wchar_t buffer[1024] = {};
     GetCurrentDirectory(1024, buffer);
-    Log::Write(Log::eDebug,
-                L"Entering WinMain: cmd \"%s\", current dir \"%s\"",
-                cmdLine, buffer);
+    Log::Debug(L"Entering WinMain: cmd \"%s\", current dir \"%s\"",
+               cmdLine, buffer);
 
     SimpleDX11Renderer renderer;
 
