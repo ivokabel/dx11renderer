@@ -49,6 +49,17 @@ const std::array<WORD, 36> sIndices = {
 };
 
 
+struct {
+    XMVECTOR vecEye;
+    XMVECTOR vecAt;
+    XMVECTOR vecUp;
+} sViewData = {
+    XMVectorSet(0.0f, 2.0f, -4.0f, 0.0f),
+    XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
+    XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
+};
+
+
 struct ConstantBuffer
 {
     XMMATRIX World;
@@ -437,10 +448,9 @@ bool SimpleDX11Renderer::CreateSceneData()
     mWorldMatrix = XMMatrixIdentity();
 
     // View matrix
-    XMVECTOR vecEye = XMVectorSet(0.0f, 1.0f, -5.0f, 0.0f);
-    XMVECTOR vecAt  = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-    XMVECTOR vecUp  = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-    mViewMatrix = XMMatrixLookAtLH(vecEye, vecAt, vecUp);
+    mViewMatrix = XMMatrixLookAtLH(sViewData.vecEye,
+                                   sViewData.vecAt,
+                                   sViewData.vecUp);
 
     // Projection matrix
     mProjectionMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV2, (FLOAT)mWndWidth / mWndHeight, 0.01f, 100.0f);
@@ -501,18 +511,18 @@ bool SimpleDX11Renderer::CompileShader(WCHAR* szFileName,
 void SimpleDX11Renderer::Render()
 {
     // Update time
-    static float time = 0.0f;
+    static float time = 0.0f; // seconds
     if (mDriverType == D3D_DRIVER_TYPE_REFERENCE)
     {
         time += (float)XM_PI * 0.0125f;
     }
     else
     {
-        static DWORD dwTimeStart = 0;
-        DWORD dwTimeCur = GetTickCount();
-        if (dwTimeStart == 0)
-            dwTimeStart = dwTimeCur;
-        time = (dwTimeCur - dwTimeStart) / 1000.0f;
+        static DWORD timeStart = 0;
+        const DWORD timeCur = GetTickCount();
+        if (timeStart == 0)
+            timeStart = timeCur;
+        time = (timeCur - timeStart) / 1000.0f;
     }
 
     // Animation
@@ -526,7 +536,7 @@ void SimpleDX11Renderer::Render()
     //mWorldMatrix = Scaling;
 
     // Clear backbuffer
-    float clearColor[4] = { 0.10f, 0.34f, 0.51f, 1.0f }; // RGBA
+    float clearColor[4] = { 0.08f, 0.18f, 0.29f, 1.0f }; // RGBA
     mImmediateContext->ClearRenderTargetView(mRenderTargetView, clearColor);
 
     // Update constant buffer
