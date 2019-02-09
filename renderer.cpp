@@ -277,7 +277,7 @@ bool SimpleDX11Renderer::CreateDevice()
         hr = D3D11CreateDeviceAndSwapChain(nullptr, driverType, nullptr, createDeviceFlags,
                                            featureLevels.data(), (UINT)featureLevels.size(),
                                            D3D11_SDK_VERSION, &scd, &mSwapChain,
-                                           &mD3dDevice, &mFeatureLevel, &mImmediateContext);
+                                           &mDevice, &mFeatureLevel, &mImmediateContext);
         if (SUCCEEDED(hr))
         {
             mDriverType = driverType;
@@ -297,7 +297,7 @@ bool SimpleDX11Renderer::CreateDevice()
     if (FAILED(hr))
         return false;
 
-    hr = mD3dDevice->CreateRenderTargetView(backBuffer, nullptr, &mRenderTargetView);
+    hr = mDevice->CreateRenderTargetView(backBuffer, nullptr, &mRenderTargetView);
     backBuffer->Release();
     if (FAILED(hr))
         return false;
@@ -328,7 +328,7 @@ void SimpleDX11Renderer::DestroyDevice()
     Utils::ReleaseAndMakeNullptr(mRenderTargetView);
     Utils::ReleaseAndMakeNullptr(mSwapChain);
     Utils::ReleaseAndMakeNullptr(mImmediateContext);
-    Utils::ReleaseAndMakeNullptr(mD3dDevice);
+    Utils::ReleaseAndMakeNullptr(mDevice);
 }
 
 
@@ -347,9 +347,9 @@ bool SimpleDX11Renderer::CreateSceneData()
         return false;
     }
 
-    hr = mD3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(),
-                                        pVSBlob->GetBufferSize(),
-                                        nullptr, &mVertexShader);
+    hr = mDevice->CreateVertexShader(pVSBlob->GetBufferPointer(),
+                                     pVSBlob->GetBufferSize(),
+                                     nullptr, &mVertexShader);
     if (FAILED(hr))
     {
         pVSBlob->Release();
@@ -364,10 +364,10 @@ bool SimpleDX11Renderer::CreateSceneData()
         InputElmDesc{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
         InputElmDesc{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
     };
-    hr = mD3dDevice->CreateInputLayout(layout.data(), (UINT)layout.size(),
-                                       pVSBlob->GetBufferPointer(),
-                                       pVSBlob->GetBufferSize(),
-                                       &mVertexLayout);
+    hr = mDevice->CreateInputLayout(layout.data(), (UINT)layout.size(),
+                                    pVSBlob->GetBufferPointer(),
+                                    pVSBlob->GetBufferSize(),
+                                    &mVertexLayout);
     pVSBlob->Release();
     if (FAILED(hr))
         return false;
@@ -382,9 +382,9 @@ bool SimpleDX11Renderer::CreateSceneData()
         return false;
     }
 
-    hr = mD3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(),
-                                       pPSBlob->GetBufferSize(),
-                                       nullptr, &mPixelShader);
+    hr = mDevice->CreatePixelShader(pPSBlob->GetBufferPointer(),
+                                    pPSBlob->GetBufferSize(),
+                                    nullptr, &mPixelShader);
     pPSBlob->Release();
     if (FAILED(hr))
         return false;
@@ -399,7 +399,7 @@ bool SimpleDX11Renderer::CreateSceneData()
     D3D11_SUBRESOURCE_DATA initData;
     ZeroMemory(&initData, sizeof(initData));
     initData.pSysMem = sVertices.data();
-    hr = mD3dDevice->CreateBuffer(&bd, &initData, &mVertexBuffer);
+    hr = mDevice->CreateBuffer(&bd, &initData, &mVertexBuffer);
     if (FAILED(hr))
         return false;
 
@@ -414,7 +414,7 @@ bool SimpleDX11Renderer::CreateSceneData()
     bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
     bd.CPUAccessFlags = 0;
     initData.pSysMem = sIndices.data();
-    hr = mD3dDevice->CreateBuffer(&bd, &initData, &mIndexBuffer);
+    hr = mDevice->CreateBuffer(&bd, &initData, &mIndexBuffer);
     if (FAILED(hr))
         return false;
 
@@ -429,7 +429,7 @@ bool SimpleDX11Renderer::CreateSceneData()
     bd.ByteWidth = sizeof(ConstantBuffer);
     bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     bd.CPUAccessFlags = 0;
-    hr = mD3dDevice->CreateBuffer(&bd, nullptr, &mConstantBuffer);
+    hr = mDevice->CreateBuffer(&bd, nullptr, &mConstantBuffer);
     if (FAILED(hr))
         return false;
 
