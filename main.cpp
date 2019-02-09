@@ -1,4 +1,5 @@
 #include "renderer.hpp"
+#include "log.hpp"
 #include "utils.hpp"
 #include <windows.h>
 #include <array>
@@ -14,7 +15,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
 
     wchar_t buffer[1024] = {};
     GetCurrentDirectory(1024, buffer);
-    Utils::Log(Utils::eDebug,
+    Log::Log(Log::eDebug,
                 L"Entering WinMain: cmd \"%s\", current dir \"%s\"",
                 cmdLine, buffer);
 

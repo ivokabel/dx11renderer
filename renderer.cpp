@@ -1,4 +1,5 @@
 #include "renderer.hpp"
+#include "log.hpp"
 #include "utils.hpp"
 
 #include <d3dcompiler.h>
@@ -15,13 +16,13 @@ struct SimpleVertex
 
 SimpleDX11Renderer::SimpleDX11Renderer()
 {
-    Utils::Log(Utils::eDebug, L"Constructing renderer");
+    Log::Log(Log::eDebug, L"Constructing renderer");
 }
 
 
 SimpleDX11Renderer::~SimpleDX11Renderer()
 {
-    Utils::Log(Utils::eDebug, L"Destructing renderer");
+    Log::Log(Log::eDebug, L"Destructing renderer");
 
     DestroyWindow();
     DestroyDevice();
@@ -39,7 +40,7 @@ SimpleDX11Renderer::~SimpleDX11Renderer()
 bool SimpleDX11Renderer::Init(HINSTANCE instance, int cmdShow,
                               int32_t wndWidth, int32_t wndHeight)
 {
-    Utils::Log(Utils::eDebug, L"Initializing renderer");
+    Log::Log(Log::eDebug, L"Initializing renderer");
 
     mWndWidth = wndWidth;
     mWndHeight = wndHeight;
@@ -129,7 +130,7 @@ LRESULT CALLBACK SimpleDX11Renderer::WndProc(HWND wnd, UINT message, WPARAM wPar
 
 int SimpleDX11Renderer::Run()
 {
-    Utils::Log(Utils::eDebug, L"Running renderer...");
+    Log::Log(Log::eDebug, L"Running renderer...");
 
     // Message loop
     MSG msg = {};
@@ -246,7 +247,7 @@ bool SimpleDX11Renderer::CreateDevice()
     if (FAILED(hr))
         return false;
 
-    Utils::Log(Utils::eDebug,
+    Log::Log(Log::eDebug,
                L"Created device: type %s, feature level %s",
                DriverTypeToString(mDriverType),
                FeatureLevelToString(mFeatureLevel));
@@ -278,7 +279,9 @@ bool SimpleDX11Renderer::CreateDevice()
     ID3DBlob* pVSBlob = NULL;
     if (!CompileShader(L"../shaders.fx", "VS", "vs_4_0", &pVSBlob))
     {
-        Utils::Log(Utils::eError, L"The FX file failed to compile.");
+        Log::Log(Log::eError, L"The FX file failed to compile.");
+        //Log::Write(Log::eError, L"The FX file failed to compile.");
+        //Log::Error(L"The FX file failed to compile.");
         return false;
     }
 
@@ -310,7 +313,7 @@ bool SimpleDX11Renderer::CreateDevice()
     ID3DBlob* pPSBlob = NULL;
     if (!CompileShader(L"../shaders.fx", "PS", "ps_4_0", &pPSBlob))
     {
-        Utils::Log(Utils::eError, L"The FX file failed to compile.");
+        Log::Log(Log::eError, L"The FX file failed to compile.");
         return false;
     }
 
@@ -392,7 +395,7 @@ bool SimpleDX11Renderer::CompileShader(WCHAR* szFileName,
     if (FAILED(hr))
     {
         if (pErrorBlob)
-            Utils::Log(Utils::eError,
+            Log::Log(Log::eError,
                        L"CompileShader: D3DX11CompileFromFile failed: \"%S\"",
                        (char*)pErrorBlob->GetBufferPointer());
         if (pErrorBlob)

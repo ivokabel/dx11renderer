@@ -12,6 +12,8 @@ set(RENDERER_SOURCES
     renderer.hpp
     renderer.cpp
     shaders.fx
+    log.hpp
+    log.cpp
     utils.hpp
     utils.cpp
     )
