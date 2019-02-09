@@ -377,8 +377,6 @@ bool SimpleDX11Renderer::CreateSceneData()
     UINT stride = sizeof(SimpleVertex);
     UINT offset = 0;
     mImmediateContext->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offset);
-
-    // Set primitive topology
     mImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     return true;
@@ -424,7 +422,7 @@ bool SimpleDX11Renderer::CompileShader(WCHAR* szFileName,
 void SimpleDX11Renderer::Render()
 {
     // Clear backbuffer
-    float clearColor[4] = { 0.1f, 0.225f, 0.5f, 1.0f }; // red,green,blue,alpha
+    float clearColor[4] = { 0.10f, 0.34f, 0.51f, 1.0f }; // RGBA
     mImmediateContext->ClearRenderTargetView(mRenderTargetView, clearColor);
 
     // Render one triangle
