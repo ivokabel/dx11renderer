@@ -45,6 +45,7 @@ private:
 
     bool CreateDevice();
     void DestroyDevice();
+    bool CreateSceneData();
     bool CompileShader(WCHAR* szFileName,
                        LPCSTR szEntryPoint,
                        LPCSTR szShaderModel,

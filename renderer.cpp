@@ -54,6 +54,12 @@ bool SimpleDX11Renderer::Init(HINSTANCE instance, int cmdShow,
         return false;
     }
 
+    if (!CreateSceneData())
+    {
+        DestroyDevice();
+        return false;
+    }
+
     return true;
 }
 
@@ -274,7 +280,32 @@ bool SimpleDX11Renderer::CreateDevice()
     vp.TopLeftY = 0;
     mImmediateContext->RSSetViewports(1, &vp);
 
-    // Compile vertex shader
+    return true;
+}
+
+
+void SimpleDX11Renderer::DestroyDevice()
+{
+    if (mImmediateContext)
+        mImmediateContext->ClearState();
+
+    Utils::ReleaseAndMakeNullptr(mRenderTargetView);
+    Utils::ReleaseAndMakeNullptr(mSwapChain);
+    Utils::ReleaseAndMakeNullptr(mImmediateContext);
+    Utils::ReleaseAndMakeNullptr(mD3dDevice);
+    Utils::ReleaseAndMakeNullptr(mVertexBuffer);
+    Utils::ReleaseAndMakeNullptr(mVertexLayout);
+    Utils::ReleaseAndMakeNullptr(mVertexShader);
+    Utils::ReleaseAndMakeNullptr(mPixelShader);
+}
+
+
+bool SimpleDX11Renderer::CreateSceneData()
+{
+    HRESULT hr = S_OK;
+
+    // Vertex shader
+
     ID3DBlob* pVSBlob = NULL;
     if (!CompileShader(L"../shaders.fx", "VS", "vs_4_0", &pVSBlob))
     {
@@ -282,7 +313,6 @@ bool SimpleDX11Renderer::CreateDevice()
         return false;
     }
 
-    // Create vertex shader
     hr = mD3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(),
                                         pVSBlob->GetBufferSize(),
                                         NULL, &mVertexShader);
@@ -293,6 +323,7 @@ bool SimpleDX11Renderer::CreateDevice()
     }
 
     // Input layout
+
     const std::array<D3D11_INPUT_ELEMENT_DESC, 1> layout =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -306,7 +337,8 @@ bool SimpleDX11Renderer::CreateDevice()
         return false;
     mImmediateContext->IASetInputLayout(mVertexLayout);
 
-    // Compile pixel shader
+    // Pixel shader
+
     ID3DBlob* pPSBlob = NULL;
     if (!CompileShader(L"../shaders.fx", "PS", "ps_4_0", &pPSBlob))
     {
@@ -314,7 +346,6 @@ bool SimpleDX11Renderer::CreateDevice()
         return false;
     }
 
-    // Create pixel shader
     hr = mD3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(),
                                        pPSBlob->GetBufferSize(),
                                        NULL, &mPixelShader);
@@ -351,22 +382,6 @@ bool SimpleDX11Renderer::CreateDevice()
     mImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     return true;
-}
-
-
-void SimpleDX11Renderer::DestroyDevice()
-{
-    if (mImmediateContext)
-        mImmediateContext->ClearState();
-
-    Utils::ReleaseAndMakeNullptr(mRenderTargetView);
-    Utils::ReleaseAndMakeNullptr(mSwapChain);
-    Utils::ReleaseAndMakeNullptr(mImmediateContext);
-    Utils::ReleaseAndMakeNullptr(mD3dDevice);
-    Utils::ReleaseAndMakeNullptr(mVertexBuffer);
-    Utils::ReleaseAndMakeNullptr(mVertexLayout);
-    Utils::ReleaseAndMakeNullptr(mVertexShader);
-    Utils::ReleaseAndMakeNullptr(mPixelShader);
 }
 
 
