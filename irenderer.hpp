@@ -14,7 +14,15 @@ class IRenderer
 {
 public:
     virtual ID3D11Device*           GetDevice() = 0;
+
     virtual ID3D11DeviceContext*    GetImmediateContext() = 0;
+
+    virtual bool                    CompileShader(WCHAR* szFileName,
+                                                  LPCSTR szEntryPoint,
+                                                  LPCSTR szShaderModel,
+                                                  ID3DBlob** ppBlobOut) = 0;
+
+    virtual float GetCurrentAnimationTime() const = 0; // In seconds
 
     virtual ~IRenderer() {};
 

@@ -42,6 +42,11 @@ public:
     // IRenderer interface
     virtual ID3D11Device*           GetDevice();
     virtual ID3D11DeviceContext*    GetImmediateContext();
+    virtual bool CompileShader(WCHAR* szFileName,
+                               LPCSTR szEntryPoint,
+                               LPCSTR szShaderModel,
+                               ID3DBlob** ppBlobOut);
+    virtual float GetCurrentAnimationTime() const; // In seconds
 
 private:
 
@@ -56,13 +61,7 @@ private:
     void DestroyDevice();
     bool InitScene();
     void DestroyScene();
-    bool CompileShader(WCHAR* szFileName,
-                       LPCSTR szEntryPoint,
-                       LPCSTR szShaderModel,
-                       ID3DBlob** ppBlobOut);
     void Render();
-
-    float GetCurrentAnimationTime() const; // In seconds
 
 private:
 
@@ -84,15 +83,20 @@ private:
     ID3D11Texture2D*            mDepthStencil = nullptr;
     ID3D11DepthStencilView*     mDepthStencilView = nullptr;
 
-    ID3D11VertexShader*         mVertexShader = nullptr;
-    ID3D11PixelShader*          mPixelShader = nullptr;
-    ID3D11InputLayout*          mVertexLayout = nullptr;
-    ID3D11Buffer*               mVertexBuffer = nullptr;
-    ID3D11Buffer*               mIndexBuffer = nullptr;
-    ID3D11Buffer*               mConstantBuffer = nullptr;
+    // TODO: Move to separate file
+    class Scene /*: public IScene*/
+    {
+    public:
+        ID3D11VertexShader*         mVertexShader = nullptr;
+        ID3D11PixelShader*          mPixelShader = nullptr;
+        ID3D11InputLayout*          mVertexLayout = nullptr;
+        ID3D11Buffer*               mVertexBuffer = nullptr;
+        ID3D11Buffer*               mIndexBuffer = nullptr;
+        ID3D11Buffer*               mConstantBuffer = nullptr;
 
-    XMMATRIX                    mWorldMatrix1;
-    XMMATRIX                    mWorldMatrix2;
-    XMMATRIX                    mViewMatrix;
-    XMMATRIX                    mProjectionMatrix;
+        XMMATRIX                    mWorldMatrix1;
+        XMMATRIX                    mWorldMatrix2;
+        XMMATRIX                    mViewMatrix;
+        XMMATRIX                    mProjectionMatrix;
+    } mScene;
 };
