@@ -9,6 +9,7 @@ project(dx11renderer LANGUAGES CXX)
 set(RENDERER_SOURCES
     WIN32
     main.cpp
+    irenderer.hpp
     renderer.hpp
     renderer.cpp
     shaders.fx

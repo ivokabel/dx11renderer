@@ -203,6 +203,18 @@ int SimpleDX11Renderer::Run()
 }
 
 
+ID3D11Device* SimpleDX11Renderer::GetDevice()
+{
+    return mDevice;
+}
+
+
+ID3D11DeviceContext* SimpleDX11Renderer::GetImmediateContext()
+{
+    return mImmediateContext;
+}
+
+
 const wchar_t * DriverTypeToString(D3D_DRIVER_TYPE type)
 {
     switch (type)

@@ -7,6 +7,8 @@
 // ------------------------------------------------------------------------------------------------
 
 
+#include "irenderer.hpp"
+
 #include <windows.h>
 
 // We are using an older version of DirectX headers which causes 
@@ -22,18 +24,24 @@
 #include <array>
 #include <cstdint>
 
-class SimpleDX11Renderer
+class SimpleDX11Renderer : public IRenderer
 {
 public:
 
     SimpleDX11Renderer();
-    ~SimpleDX11Renderer();
+    virtual ~SimpleDX11Renderer();
 
     SimpleDX11Renderer & operator=(const SimpleDX11Renderer &renderer) = delete;
 
-    bool Init(HINSTANCE instance, int cmdShow,
-              int32_t wndWidth, int32_t wndHeight);
+    bool Init(HINSTANCE instance,
+              int cmdShow,
+              int32_t wndWidth,
+              int32_t wndHeight);
     int Run();
+
+    // IRenderer interface
+    virtual ID3D11Device*           GetDevice();
+    virtual ID3D11DeviceContext*    GetImmediateContext();
 
 private:
 
