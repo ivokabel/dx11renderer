@@ -54,6 +54,8 @@ private:
                        ID3DBlob** ppBlobOut);
     void Render();
 
+    float GetCurrentAnimationTime() const; // In seconds
+
 private:
 
     const wchar_t * const       mWndClassName    = L"SimpleDirectX11RendererWndClass";

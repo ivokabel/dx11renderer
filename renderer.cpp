@@ -54,8 +54,8 @@ struct {
     XMVECTOR vecAt;
     XMVECTOR vecUp;
 } sViewData = {
-    XMVectorSet(0.0f, 2.0f, -4.0f, 0.0f),
-    XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
+    XMVectorSet(0.0f, 2.0f, -2.5f, 0.0f),
+    XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f),
     XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
 };
 
@@ -444,16 +444,14 @@ bool SimpleDX11Renderer::CreateSceneData()
     if (FAILED(hr))
         return false;
 
-    // World matrix
+    // Matrices
     mWorldMatrix = XMMatrixIdentity();
-
-    // View matrix
     mViewMatrix = XMMatrixLookAtLH(sViewData.vecEye,
                                    sViewData.vecAt,
                                    sViewData.vecUp);
-
-    // Projection matrix
-    mProjectionMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV2, (FLOAT)mWndWidth / mWndHeight, 0.01f, 100.0f);
+    mProjectionMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV2,
+                                                 (FLOAT)mWndWidth / mWndHeight,
+                                                 0.01f, 100.0f);
 
     return true;
 }
@@ -510,25 +508,15 @@ bool SimpleDX11Renderer::CompileShader(WCHAR* szFileName,
 
 void SimpleDX11Renderer::Render()
 {
-    // Update time
-    static float time = 0.0f; // seconds
-    if (mDriverType == D3D_DRIVER_TYPE_REFERENCE)
-    {
-        time += (float)XM_PI * 0.0125f;
-    }
-    else
-    {
-        static DWORD timeStart = 0;
-        const DWORD timeCur = GetTickCount();
-        if (timeStart == 0)
-            timeStart = timeCur;
-        time = (timeCur - timeStart) / 1000.0f;
-    }
+    const float time = GetCurrentAnimationTime();
 
     // Animation
-    mWorldMatrix = XMMatrixRotationY(time);
-    //auto Rotation = XMMatrixRotationY(time);
-    //const float scaleBase = fmod(time, 1.f);
+    const float period = 20.f; //seconds
+    const float totalAnimPos = time / period;
+    const float angle = totalAnimPos * XM_2PI;
+    mWorldMatrix = XMMatrixRotationY(angle);
+    //auto Rotation = XMMatrixRotationY(angle);
+    //const float scaleBase = fmod(totalAnimPos, 1.f);
     //const float scalePulse = 0.5f * (cos(scaleBase * XM_2PI) + 1.f); // 0-1
     //const float scaleFactor = 1.5f * scalePulse + 0.1f;
     //auto Scaling = XMMatrixScaling(scaleFactor, scaleFactor, scaleFactor);
@@ -553,5 +541,26 @@ void SimpleDX11Renderer::Render()
     mImmediateContext->DrawIndexed((UINT)sIndices.size(), 0, 0);
 
     mSwapChain->Present(0, 0);
+}
+
+
+float SimpleDX11Renderer::GetCurrentAnimationTime() const
+{
+    static float time = 0.0f; // seconds
+
+    if (mDriverType == D3D_DRIVER_TYPE_REFERENCE)
+    {
+        time += (float)XM_PI * 0.0125f;
+    }
+    else
+    {
+        static DWORD timeStart = 0;
+        const DWORD timeCur = GetTickCount();
+        if (timeStart == 0)
+            timeStart = timeCur;
+        time = (timeCur - timeStart) / 1000.0f;
+    }
+
+    return time;
 }
 
