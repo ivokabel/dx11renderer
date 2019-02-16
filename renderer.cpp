@@ -50,12 +50,12 @@ const std::array<WORD, 36> sIndices = {
 
 
 struct {
-    XMVECTOR vecEye;
-    XMVECTOR vecAt;
-    XMVECTOR vecUp;
+    XMVECTOR eye;
+    XMVECTOR at;
+    XMVECTOR up;
 } sViewData = {
-    XMVectorSet(0.0f, 2.0f, -2.5f, 0.0f),
-    XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f),
+    XMVectorSet(0.0f, 2.0f, -5.f, 0.0f),
+    XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f),
     XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
 };
 
@@ -313,11 +313,39 @@ bool SimpleDX11Renderer::CreateDevice()
     if (FAILED(hr))
         return false;
 
-    mImmediateContext->OMSetRenderTargets(1, &mRenderTargetView, nullptr);
+    // Depth stencil texture
+    D3D11_TEXTURE2D_DESC descDepth;
+    ZeroMemory(&descDepth, sizeof(descDepth));
+    descDepth.Width  = mWndWidth;
+    descDepth.Height = mWndHeight;
+    descDepth.MipLevels = 1;
+    descDepth.ArraySize = 1;
+    descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    descDepth.SampleDesc.Count = 1;
+    descDepth.SampleDesc.Quality = 0;
+    descDepth.Usage = D3D11_USAGE_DEFAULT;
+    descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+    descDepth.CPUAccessFlags = 0;
+    descDepth.MiscFlags = 0;
+    hr = mDevice->CreateTexture2D(&descDepth, nullptr, &mDepthStencil);
+    if (FAILED(hr))
+        return false;
+
+    // Depth stencil view
+    D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
+    ZeroMemory(&descDSV, sizeof(descDSV));
+    descDSV.Format = descDepth.Format;
+    descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+    descDSV.Texture2D.MipSlice = 0;
+    hr = mDevice->CreateDepthStencilView(mDepthStencil, &descDSV, &mDepthStencilView);
+    if (FAILED(hr))
+        return false;
+
+    mImmediateContext->OMSetRenderTargets(1, &mRenderTargetView, mDepthStencilView);
 
     // Setup the viewport
     D3D11_VIEWPORT vp;
-    vp.Width = (FLOAT)mWndWidth;
+    vp.Width  = (FLOAT)mWndWidth;
     vp.Height = (FLOAT)mWndHeight;
     vp.MinDepth = 0.0f;
     vp.MaxDepth = 1.0f;
@@ -336,6 +364,8 @@ void SimpleDX11Renderer::DestroyDevice()
     if (mImmediateContext)
         mImmediateContext->ClearState();
 
+    Utils::ReleaseAndMakeNullptr(mDepthStencil);
+    Utils::ReleaseAndMakeNullptr(mDepthStencilView);
     Utils::ReleaseAndMakeNullptr(mRenderTargetView);
     Utils::ReleaseAndMakeNullptr(mSwapChain);
     Utils::ReleaseAndMakeNullptr(mImmediateContext);
@@ -445,10 +475,9 @@ bool SimpleDX11Renderer::CreateSceneData()
         return false;
 
     // Matrices
-    mWorldMatrix = XMMatrixIdentity();
-    mViewMatrix = XMMatrixLookAtLH(sViewData.vecEye,
-                                   sViewData.vecAt,
-                                   sViewData.vecUp);
+    mWorldMatrix1 = XMMatrixIdentity();
+    mWorldMatrix2 = XMMatrixIdentity();
+    mViewMatrix = XMMatrixLookAtLH(sViewData.eye, sViewData.at, sViewData.up);
     mProjectionMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV2,
                                                  (FLOAT)mWndWidth / mWndHeight,
                                                  0.01f, 100.0f);
@@ -510,34 +539,48 @@ void SimpleDX11Renderer::Render()
 {
     const float time = GetCurrentAnimationTime();
 
-    // Animation
     const float period = 20.f; //seconds
     const float totalAnimPos = time / period;
     const float angle = totalAnimPos * XM_2PI;
-    mWorldMatrix = XMMatrixRotationY(angle);
-    //auto Rotation = XMMatrixRotationY(angle);
-    //const float scaleBase = fmod(totalAnimPos, 1.f);
-    //const float scalePulse = 0.5f * (cos(scaleBase * XM_2PI) + 1.f); // 0-1
-    //const float scaleFactor = 1.5f * scalePulse + 0.1f;
-    //auto Scaling = XMMatrixScaling(scaleFactor, scaleFactor, scaleFactor);
-    //mWorldMatrix = XMMatrixMultiply(Scaling, Rotation);
-    //mWorldMatrix = Scaling;
+
+    // Animate first cube
+    mWorldMatrix1 = XMMatrixRotationY(angle);
+
+    // Animate second cube
+    XMMATRIX spinMat = XMMatrixRotationZ(-angle * 20.f);
+    XMMATRIX orbitMat = XMMatrixRotationY(-angle * 2.f);
+    XMMATRIX translateMat = XMMatrixTranslation(-4.0f, 0.0f, 0.0f);
+    XMMATRIX scaleMat = XMMatrixScaling(0.05f, 0.05f, 0.4f);
+    mWorldMatrix2 = scaleMat * spinMat * translateMat * orbitMat;
 
     // Clear backbuffer
     float clearColor[4] = { 0.08f, 0.18f, 0.29f, 1.0f }; // RGBA
     mImmediateContext->ClearRenderTargetView(mRenderTargetView, clearColor);
 
-    // Update constant buffer
-    ConstantBuffer cb;
-    cb.World       = XMMatrixTranspose(mWorldMatrix);
-    cb.View        = XMMatrixTranspose(mViewMatrix);
-    cb.Projection  = XMMatrixTranspose(mProjectionMatrix);
-    mImmediateContext->UpdateSubresource(mConstantBuffer, 0, nullptr, &cb, 0, 0);
+    // Clear depth buffer
+    mImmediateContext->ClearDepthStencilView(mDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-    // Render cube
+    // Update constant buffer - first cube
+    ConstantBuffer cb1;
+    cb1.World       = XMMatrixTranspose(mWorldMatrix1);
+    cb1.View        = XMMatrixTranspose(mViewMatrix);
+    cb1.Projection  = XMMatrixTranspose(mProjectionMatrix);
+    mImmediateContext->UpdateSubresource(mConstantBuffer, 0, nullptr, &cb1, 0, 0);
+
+    // Render first cube
     mImmediateContext->VSSetShader(mVertexShader, nullptr, 0);
     mImmediateContext->VSSetConstantBuffers(0, 1, &mConstantBuffer);
     mImmediateContext->PSSetShader(mPixelShader, nullptr, 0);
+    mImmediateContext->DrawIndexed((UINT)sIndices.size(), 0, 0);
+
+    // Update variables - second cube
+    ConstantBuffer cb2;
+    cb2.World = XMMatrixTranspose(mWorldMatrix2);
+    cb2.View = XMMatrixTranspose(mViewMatrix);
+    cb2.Projection = XMMatrixTranspose(mProjectionMatrix);
+    mImmediateContext->UpdateSubresource(mConstantBuffer, 0, nullptr, &cb2, 0, 0);
+
+    // Render second cube
     mImmediateContext->DrawIndexed((UINT)sIndices.size(), 0, 0);
 
     mSwapChain->Present(0, 0);

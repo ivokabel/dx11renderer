@@ -66,12 +66,15 @@ private:
 
     HINSTANCE                   mInstance = nullptr;
     HWND                        mWnd = nullptr;
+
     D3D_DRIVER_TYPE             mDriverType = D3D_DRIVER_TYPE_NULL;
     D3D_FEATURE_LEVEL           mFeatureLevel = D3D_FEATURE_LEVEL_11_0;
     ID3D11Device*               mDevice = nullptr;
     ID3D11DeviceContext*        mImmediateContext = nullptr;
     IDXGISwapChain*             mSwapChain = nullptr;
     ID3D11RenderTargetView*     mRenderTargetView = nullptr;
+    ID3D11Texture2D*            mDepthStencil = nullptr;
+    ID3D11DepthStencilView*     mDepthStencilView = nullptr;
 
     ID3D11VertexShader*         mVertexShader = nullptr;
     ID3D11PixelShader*          mPixelShader = nullptr;
@@ -80,7 +83,8 @@ private:
     ID3D11Buffer*               mIndexBuffer = nullptr;
     ID3D11Buffer*               mConstantBuffer = nullptr;
 
-    XMMATRIX                    mWorldMatrix;
+    XMMATRIX                    mWorldMatrix1;
+    XMMATRIX                    mWorldMatrix2;
     XMMATRIX                    mViewMatrix;
     XMMATRIX                    mProjectionMatrix;
 };
