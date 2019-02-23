@@ -12,6 +12,9 @@ set(RENDERER_SOURCES
     irenderer.hpp
     renderer.hpp
     renderer.cpp
+    iscene.hpp
+    scene.hpp
+    scene.cpp
     shaders.fx
     log.hpp
     log.cpp

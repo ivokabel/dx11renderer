@@ -8,6 +8,7 @@
 
 
 #include "irenderer.hpp"
+#include "iscene.hpp"
 
 #include <windows.h>
 
@@ -22,31 +23,34 @@
 #include <xnamath.h>
 
 #include <array>
+#include <memory>
 #include <cstdint>
 
 class SimpleDX11Renderer : public IRenderer
 {
 public:
 
-    SimpleDX11Renderer();
+    SimpleDX11Renderer(std::shared_ptr<IScene> scene);
     virtual ~SimpleDX11Renderer();
 
     SimpleDX11Renderer & operator=(const SimpleDX11Renderer &renderer) = delete;
 
     bool Init(HINSTANCE instance,
               int cmdShow,
-              int32_t wndWidth,
-              int32_t wndHeight);
+              uint32_t wndWidth,
+              uint32_t wndHeight);
     int Run();
 
     // IRenderer interface
-    virtual ID3D11Device*           GetDevice();
-    virtual ID3D11DeviceContext*    GetImmediateContext();
-    virtual bool CompileShader(WCHAR* szFileName,
-                               LPCSTR szEntryPoint,
-                               LPCSTR szShaderModel,
-                               ID3DBlob** ppBlobOut);
-    virtual float GetCurrentAnimationTime() const; // In seconds
+    virtual ID3D11Device*           GetDevice() const;
+    virtual ID3D11DeviceContext*    GetImmediateContext() const;
+    virtual bool                    CompileShader(WCHAR* szFileName,
+                                                  LPCSTR szEntryPoint,
+                                                  LPCSTR szShaderModel,
+                                                  ID3DBlob** ppBlobOut) const;
+    virtual bool                    GetWindowSize(uint32_t &width,
+                                                  uint32_t &height) const;
+    virtual float                   GetCurrentAnimationTime() const; // In seconds
 
 private:
 
@@ -68,8 +72,8 @@ private:
     const wchar_t * const       mWndClassName    = L"SimpleDirectX11RendererWndClass";
     const wchar_t * const       mWndName         = L"Simple DirectX 11 Renderer";
 
-    int32_t                     mWndWidth = 0u;
-    int32_t                     mWndHeight = 0u;
+    uint32_t                    mWndWidth = 0u;
+    uint32_t                    mWndHeight = 0u;
 
     HINSTANCE                   mInstance = nullptr;
     HWND                        mWnd = nullptr;
@@ -83,20 +87,5 @@ private:
     ID3D11Texture2D*            mDepthStencil = nullptr;
     ID3D11DepthStencilView*     mDepthStencilView = nullptr;
 
-    // TODO: Move to separate file
-    class Scene /*: public IScene*/
-    {
-    public:
-        ID3D11VertexShader*         mVertexShader = nullptr;
-        ID3D11PixelShader*          mPixelShader = nullptr;
-        ID3D11InputLayout*          mVertexLayout = nullptr;
-        ID3D11Buffer*               mVertexBuffer = nullptr;
-        ID3D11Buffer*               mIndexBuffer = nullptr;
-        ID3D11Buffer*               mConstantBuffer = nullptr;
-
-        XMMATRIX                    mWorldMatrix1;
-        XMMATRIX                    mWorldMatrix2;
-        XMMATRIX                    mViewMatrix;
-        XMMATRIX                    mProjectionMatrix;
-    } mScene;
+    std::shared_ptr<IScene>     mScene;
 };

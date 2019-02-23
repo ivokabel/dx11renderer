@@ -1,4 +1,5 @@
 #include "renderer.hpp"
+#include "scene.hpp"
 #include "log.hpp"
 #include "utils.hpp"
 #include <windows.h>
@@ -18,9 +19,10 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
     Log::Debug(L"Entering WinMain: cmd \"%s\", current dir \"%s\"",
                cmdLine, buffer);
 
-    SimpleDX11Renderer renderer;
+    auto scene = std::make_shared<Scene>();
+    SimpleDX11Renderer renderer(scene);
 
-    if (!renderer.Init(instance, cmdShow, 640u, 480u))
+    if (!renderer.Init(instance, cmdShow, 800u, 600u))
         return -1;
 
     return renderer.Run();

@@ -5,70 +5,11 @@
 #include <d3dcompiler.h>
 #include <xnamath.h>
 #include <cmath>
-
 #include <array>
 
 
-struct SimpleVertex
-{
-    XMFLOAT3 Pos;
-    XMFLOAT4 Color;
-};
-
-
-const std::array<SimpleVertex, 8> sVertices = {
-    SimpleVertex{ XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
-    SimpleVertex{ XMFLOAT3(1.0f, 1.0f, -1.0f),  XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
-    SimpleVertex{ XMFLOAT3(1.0f, 1.0f, 1.0f),   XMFLOAT4(0.0f, 1.0f, 1.0f, 1.0f) },
-    SimpleVertex{ XMFLOAT3(-1.0f, 1.0f, 1.0f),  XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
-    SimpleVertex{ XMFLOAT3(-1.0f, -1.0f, -1.0f),XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f) },
-    SimpleVertex{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f) },
-    SimpleVertex{ XMFLOAT3(1.0f, -1.0f, 1.0f),  XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f) },
-    SimpleVertex{ XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
-};
-
-
-const std::array<WORD, 36> sIndices = {
-    3, 1, 0,
-    2, 1, 3,
-
-    0, 5, 4,
-    1, 5, 0,
-
-    3, 4, 7,
-    0, 4, 3,
-
-    1, 6, 5,
-    2, 6, 1,
-
-    2, 7, 6,
-    3, 7, 2,
-
-    6, 4, 5,
-    7, 4, 6,
-};
-
-
-struct {
-    XMVECTOR eye;
-    XMVECTOR at;
-    XMVECTOR up;
-} sViewData = {
-    XMVectorSet(0.0f, 2.0f, -5.f, 0.0f),
-    XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f),
-    XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
-};
-
-
-struct ConstantBuffer
-{
-    XMMATRIX World;
-    XMMATRIX View;
-    XMMATRIX Projection;
-};
-
-
-SimpleDX11Renderer::SimpleDX11Renderer()
+SimpleDX11Renderer::SimpleDX11Renderer(std::shared_ptr<IScene> scene) :
+    mScene(scene)
 {
     Log::Debug(L"Constructing renderer");
 }
@@ -85,11 +26,11 @@ SimpleDX11Renderer::~SimpleDX11Renderer()
 
 
 bool SimpleDX11Renderer::Init(HINSTANCE instance, int cmdShow,
-                              int32_t wndWidth, int32_t wndHeight)
+                              uint32_t wndWidth, uint32_t wndHeight)
 {
     Log::Debug(L"Initializing renderer");
 
-    mWndWidth = wndWidth;
+    mWndWidth  = wndWidth;
     mWndHeight = wndHeight;
 
     if (!InitWindow(instance, cmdShow))
@@ -203,13 +144,13 @@ int SimpleDX11Renderer::Run()
 }
 
 
-ID3D11Device* SimpleDX11Renderer::GetDevice()
+ID3D11Device* SimpleDX11Renderer::GetDevice() const
 {
     return mDevice;
 }
 
 
-ID3D11DeviceContext* SimpleDX11Renderer::GetImmediateContext()
+ID3D11DeviceContext* SimpleDX11Renderer::GetImmediateContext() const
 {
     return mImmediateContext;
 }
@@ -389,129 +330,10 @@ bool SimpleDX11Renderer::InitScene()
 {
     Log::Debug(L"Initializing scene");
 
-    // Init scene
-    bool result = [](IRenderer &renderer, Scene &mScene) -> bool
-    {
-        if (!renderer.IsValid())
-            return false;
-
-        auto device             = renderer.GetDevice();
-        auto immediateContext   = renderer.GetImmediateContext();
-
-        HRESULT hr = S_OK;
-
-        // Vertex shader
-
-        ID3DBlob* pVSBlob = nullptr;
-        if (!renderer.CompileShader(L"../shaders.fx", "VS", "vs_4_0", &pVSBlob))
-        {
-            Log::Error(L"The FX file failed to compile.");
-            return false;
-        }
-
-        hr = device->CreateVertexShader(pVSBlob->GetBufferPointer(),
-                                         pVSBlob->GetBufferSize(),
-                                         nullptr, &mScene.mVertexShader);
-        if (FAILED(hr))
-        {
-            pVSBlob->Release();
-            return false;
-        }
-
-        // Input layout
-
-        typedef D3D11_INPUT_ELEMENT_DESC InputElmDesc;
-        const std::array<InputElmDesc, 2> layout =
-        {
-            InputElmDesc{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            InputElmDesc{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-        };
-        hr = device->CreateInputLayout(layout.data(), (UINT)layout.size(),
-                                        pVSBlob->GetBufferPointer(),
-                                        pVSBlob->GetBufferSize(),
-                                        &mScene.mVertexLayout);
-        pVSBlob->Release();
-        if (FAILED(hr))
-            return false;
-        immediateContext->IASetInputLayout(mScene.mVertexLayout);
-
-        // Pixel shader
-
-        ID3DBlob* pPSBlob = nullptr;
-        if (!renderer.CompileShader(L"../shaders.fx", "PS", "ps_4_0", &pPSBlob))
-        {
-            Log::Error(L"The FX file failed to compile.");
-            return false;
-        }
-
-        hr = device->CreatePixelShader(pPSBlob->GetBufferPointer(),
-                                        pPSBlob->GetBufferSize(),
-                                        nullptr, &mScene.mPixelShader);
-        pPSBlob->Release();
-        if (FAILED(hr))
-            return false;
-
-        // Create vertex buffer
-        D3D11_BUFFER_DESC bd;
-        ZeroMemory(&bd, sizeof(bd));
-        bd.Usage = D3D11_USAGE_DEFAULT;
-        bd.ByteWidth = (UINT)(sizeof(SimpleVertex) * sVertices.size());
-        bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-        bd.CPUAccessFlags = 0;
-        D3D11_SUBRESOURCE_DATA initData;
-        ZeroMemory(&initData, sizeof(initData));
-        initData.pSysMem = sVertices.data();
-        hr = device->CreateBuffer(&bd, &initData, &mScene.mVertexBuffer);
-        if (FAILED(hr))
-            return false;
-
-        // Set vertex buffer
-        UINT stride = sizeof(SimpleVertex);
-        UINT offset = 0;
-        immediateContext->IASetVertexBuffers(0, 1, &mScene.mVertexBuffer, &stride, &offset);
-
-        // Create index buffer
-        bd.Usage = D3D11_USAGE_DEFAULT;
-        bd.ByteWidth = sizeof(WORD) * (UINT)sIndices.size();
-        bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-        bd.CPUAccessFlags = 0;
-        initData.pSysMem = sIndices.data();
-        hr = device->CreateBuffer(&bd, &initData, &mScene.mIndexBuffer);
-        if (FAILED(hr))
-            return false;
-
-        // Set index buffer
-        immediateContext->IASetIndexBuffer(mScene.mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-
-        // Primitive topology
-        immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-        // Create the constant buffer
-        bd.Usage = D3D11_USAGE_DEFAULT;
-        bd.ByteWidth = sizeof(ConstantBuffer);
-        bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-        bd.CPUAccessFlags = 0;
-        hr = device->CreateBuffer(&bd, nullptr, &mScene.mConstantBuffer);
-        if (FAILED(hr))
-            return false;
-
-        // Object->World matrices
-        mScene.mWorldMatrix1 = XMMatrixIdentity();
-        mScene.mWorldMatrix2 = XMMatrixIdentity();
-
-        return true;
-    }
-    (*this, mScene);
-    if (!result)
+    if (mScene)
+        return mScene->Init(*this);
+    else
         return false;
-
-    // System-wide transformations
-    mScene.mViewMatrix = XMMatrixLookAtLH(sViewData.eye, sViewData.at, sViewData.up);
-    mScene.mProjectionMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV2,
-                                                 (FLOAT)mWndWidth / mWndHeight,
-                                                 0.01f, 100.0f);
-
-    return true;
 }
 
 
@@ -519,24 +341,15 @@ void SimpleDX11Renderer::DestroyScene()
 {
     Log::Debug(L"Destroying scene data");
 
-    // TODO...
-    [](Scene &mScene)
-    {
-        Utils::ReleaseAndMakeNullptr(mScene.mVertexBuffer);
-        Utils::ReleaseAndMakeNullptr(mScene.mIndexBuffer);
-        Utils::ReleaseAndMakeNullptr(mScene.mConstantBuffer);
-        Utils::ReleaseAndMakeNullptr(mScene.mVertexLayout);
-        Utils::ReleaseAndMakeNullptr(mScene.mVertexShader);
-        Utils::ReleaseAndMakeNullptr(mScene.mPixelShader);
-    }
-    (mScene);
+    if (mScene)
+        mScene->Destroy();
 }
 
 
 bool SimpleDX11Renderer::CompileShader(WCHAR* szFileName,
                                        LPCSTR szEntryPoint,
                                        LPCSTR szShaderModel,
-                                       ID3DBlob** ppBlobOut)
+                                       ID3DBlob** ppBlobOut) const
 {
     HRESULT hr = S_OK;
 
@@ -571,63 +384,31 @@ bool SimpleDX11Renderer::CompileShader(WCHAR* szFileName,
 
 void SimpleDX11Renderer::Render()
 {
-    // Clear backbuffer
     float clearColor[4] = { 0.08f, 0.18f, 0.29f, 1.0f }; // RGBA
     mImmediateContext->ClearRenderTargetView(mRenderTargetView, clearColor);
 
-    // Clear depth buffer
     mImmediateContext->ClearDepthStencilView(mDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
     // Update and render scene
-    [](IRenderer &renderer, Scene &mScene)
+    if (mScene)
     {
-        if (!renderer.IsValid())
-            return;
-
-        auto immediateContext = renderer.GetImmediateContext();
-
-        const float time = renderer.GetCurrentAnimationTime();
-        const float period = 20.f; //seconds
-        const float totalAnimPos = time / period;
-        const float angle = totalAnimPos * XM_2PI;
-
-        // Animate first cube
-        mScene.mWorldMatrix1 = XMMatrixRotationY(angle);
-
-        // Animate second cube
-        XMMATRIX spinMat = XMMatrixRotationZ(-angle * 20.f);
-        XMMATRIX orbitMat = XMMatrixRotationY(-angle * 2.f);
-        XMMATRIX translateMat = XMMatrixTranslation(-4.0f, 0.0f, 0.0f);
-        XMMATRIX scaleMat = XMMatrixScaling(0.05f, 0.05f, 0.4f);
-        mScene.mWorldMatrix2 = scaleMat * spinMat * translateMat * orbitMat;
-
-        // Update constant buffer - first cube
-        ConstantBuffer cb1;
-        cb1.World = XMMatrixTranspose(mScene.mWorldMatrix1);
-        cb1.View = XMMatrixTranspose(mScene.mViewMatrix);
-        cb1.Projection = XMMatrixTranspose(mScene.mProjectionMatrix);
-        immediateContext->UpdateSubresource(mScene.mConstantBuffer, 0, nullptr, &cb1, 0, 0);
-
-        // Render first cube
-        immediateContext->VSSetShader(mScene.mVertexShader, nullptr, 0);
-        immediateContext->VSSetConstantBuffers(0, 1, &mScene.mConstantBuffer);
-        immediateContext->PSSetShader(mScene.mPixelShader, nullptr, 0);
-        immediateContext->DrawIndexed((UINT)sIndices.size(), 0, 0);
-
-        // Update variables - second cube
-        ConstantBuffer cb2;
-        cb2.World = XMMatrixTranspose(mScene.mWorldMatrix2);
-        cb2.View = XMMatrixTranspose(mScene.mViewMatrix);
-        cb2.Projection = XMMatrixTranspose(mScene.mProjectionMatrix);
-        immediateContext->UpdateSubresource(mScene.mConstantBuffer, 0, nullptr, &cb2, 0, 0);
-
-        // Render second cube
-        // (using the same shaders and constant buffer)
-        immediateContext->DrawIndexed((UINT)sIndices.size(), 0, 0);
+        mScene->Animate(*this);
+        mScene->Render(*this);
     }
-    (*this, mScene);
 
     mSwapChain->Present(0, 0);
+}
+
+
+bool SimpleDX11Renderer::GetWindowSize(uint32_t &width,
+                                       uint32_t &height) const
+{
+    if (!IsValid())
+        return false;
+
+    width   = mWndWidth;
+    height  = mWndHeight;
+    return true;
 }
 
 
