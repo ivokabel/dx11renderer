@@ -66,24 +66,24 @@ struct ConstantBuffer
 };
 
 
-bool Scene::Init(IRenderer &renderer)
+bool Scene::Init(IRenderingContext &ctx)
 {
-    if (!renderer.IsValid())
+    if (!ctx.IsValid())
         return false;
 
     uint32_t wndWidth, wndHeight;
-    if (!renderer.GetWindowSize(wndWidth, wndHeight))
+    if (!ctx.GetWindowSize(wndWidth, wndHeight))
         return false;
 
-    auto device             = renderer.GetDevice();
-    auto immediateContext   = renderer.GetImmediateContext();
+    auto device             = ctx.GetDevice();
+    auto immediateContext   = ctx.GetImmediateContext();
 
     HRESULT hr = S_OK;
 
     // Vertex shader
 
     ID3DBlob* pVSBlob = nullptr;
-    if (!renderer.CompileShader(L"../shaders.fx", "VS", "vs_4_0", &pVSBlob))
+    if (!ctx.CompileShader(L"../shaders.fx", "VS", "vs_4_0", &pVSBlob))
     {
         Log::Error(L"The FX file failed to compile.");
         return false;
@@ -118,7 +118,7 @@ bool Scene::Init(IRenderer &renderer)
     // Pixel shader
 
     ID3DBlob* pPSBlob = nullptr;
-    if (!renderer.CompileShader(L"../shaders.fx", "PS", "ps_4_0", &pPSBlob))
+    if (!ctx.CompileShader(L"../shaders.fx", "PS", "ps_4_0", &pPSBlob))
     {
         Log::Error(L"The FX file failed to compile.");
         return false;
@@ -200,12 +200,12 @@ void Scene::Destroy()
 }
 
 
-void Scene::Animate(IRenderer &renderer)
+void Scene::Animate(IRenderingContext &ctx)
 {
-    if (!renderer.IsValid())
+    if (!ctx.IsValid())
         return;
 
-    const float time = renderer.GetCurrentAnimationTime();
+    const float time = ctx.GetCurrentAnimationTime();
     const float period = 20.f; //seconds
     const float totalAnimPos = time / period;
     const float angle = totalAnimPos * XM_2PI;
@@ -222,12 +222,12 @@ void Scene::Animate(IRenderer &renderer)
 }
 
 
-void Scene::Render(IRenderer &renderer)
+void Scene::Render(IRenderingContext &ctx)
 {
-    if (!renderer.IsValid())
+    if (!ctx.IsValid())
         return;
 
-    auto immediateContext = renderer.GetImmediateContext();
+    auto immediateContext = ctx.GetImmediateContext();
 
     // Update constant buffer - first cube
     ConstantBuffer cb1;

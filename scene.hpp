@@ -15,14 +15,16 @@
 class Scene : public IScene
 {
 public:
+
     virtual ~Scene();
 
-    virtual bool Init(IRenderer &renderer);
+    virtual bool Init(IRenderingContext &ctx);
     virtual void Destroy();
-    virtual void Animate(IRenderer &renderer);
-    virtual void Render(IRenderer &renderer);
+    virtual void Animate(IRenderingContext &ctx);
+    virtual void Render(IRenderingContext &ctx);
 
 private:
+
     ID3D11VertexShader*         mVertexShader = nullptr;
     ID3D11PixelShader*          mPixelShader = nullptr;
     ID3D11InputLayout*          mVertexLayout = nullptr;

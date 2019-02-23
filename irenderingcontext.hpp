@@ -10,12 +10,12 @@
 
 #include <cstdint>
 
-// Interface for a renderer
-// Used by the scene
-class IRenderer // TODO: Rename to IRenderingContext
+// Used by a scene to access necessary renderer internals
+class IRenderingContext
 {
 public:
-    virtual ~IRenderer() {};
+
+    virtual ~IRenderingContext() {};
 
     virtual ID3D11Device*           GetDevice() const = 0;
 

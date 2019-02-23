@@ -1,14 +1,15 @@
 #pragma once
 
-#include "irenderer.hpp"
+#include "irenderingcontext.hpp"
 
 class IScene
 {
 public:
+
     virtual ~IScene() {};
 
-    virtual bool Init(IRenderer &renderer) = 0;
+    virtual bool Init(IRenderingContext &ctx) = 0;
     virtual void Destroy() = 0;
-    virtual void Animate(IRenderer &renderer) = 0;
-    virtual void Render(IRenderer &renderer) = 0;
+    virtual void Animate(IRenderingContext &ctx) = 0;
+    virtual void Render(IRenderingContext &ctx) = 0;
 };

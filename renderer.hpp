@@ -7,7 +7,7 @@
 // ------------------------------------------------------------------------------------------------
 
 
-#include "irenderer.hpp"
+#include "irenderingcontext.hpp"
 #include "iscene.hpp"
 
 #include <windows.h>
@@ -26,14 +26,14 @@
 #include <memory>
 #include <cstdint>
 
-class SimpleDX11Renderer : public IRenderer
+class SimpleDX11Renderer : public IRenderingContext
 {
 public:
 
     SimpleDX11Renderer(std::shared_ptr<IScene> scene);
     virtual ~SimpleDX11Renderer();
 
-    SimpleDX11Renderer & operator=(const SimpleDX11Renderer &renderer) = delete;
+    SimpleDX11Renderer & operator=(const SimpleDX11Renderer &ctx) = delete;
 
     bool Init(HINSTANCE instance,
               int cmdShow,
@@ -41,7 +41,7 @@ public:
               uint32_t wndHeight);
     int Run();
 
-    // IRenderer interface
+    // IRenderingContext interface
     virtual ID3D11Device*           GetDevice() const;
     virtual ID3D11DeviceContext*    GetImmediateContext() const;
     virtual bool                    CompileShader(WCHAR* szFileName,
