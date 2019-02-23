@@ -201,7 +201,7 @@ const wchar_t * FeatureLevelToString(D3D_FEATURE_LEVEL level)
 
 bool SimpleDX11Renderer::CreateDevice()
 {
-    Log::Debug(L"Creating device");
+    Log::Debug(L"Creating device...");
 
     HRESULT hr = S_OK;
 
