@@ -10,19 +10,49 @@ Scene::~Scene() {}
 struct SimpleVertex
 {
     XMFLOAT3 Pos;
-    XMFLOAT4 Color;
+    XMFLOAT3 Normal;
 };
 
 
-const std::array<SimpleVertex, 8> sVertices = {
-    SimpleVertex{ XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
-    SimpleVertex{ XMFLOAT3(1.0f, 1.0f, -1.0f),  XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
-    SimpleVertex{ XMFLOAT3(1.0f, 1.0f, 1.0f),   XMFLOAT4(0.0f, 1.0f, 1.0f, 1.0f) },
-    SimpleVertex{ XMFLOAT3(-1.0f, 1.0f, 1.0f),  XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
-    SimpleVertex{ XMFLOAT3(-1.0f, -1.0f, -1.0f),XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f) },
-    SimpleVertex{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f) },
-    SimpleVertex{ XMFLOAT3(1.0f, -1.0f, 1.0f),  XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f) },
-    SimpleVertex{ XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
+typedef D3D11_INPUT_ELEMENT_DESC InputElmDesc;
+const std::array<InputElmDesc, 2> sVertexLayout =
+{
+    InputElmDesc{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    InputElmDesc{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+};
+
+
+const std::array<SimpleVertex, 6 * 4> sVertices =
+{
+    SimpleVertex{ XMFLOAT3( -1.0f, 1.0f, -1.0f ), XMFLOAT3( 0.0f, 1.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3( 1.0f, 1.0f, -1.0f ), XMFLOAT3( 0.0f, 1.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3( 1.0f, 1.0f, 1.0f ), XMFLOAT3( 0.0f, 1.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3( -1.0f, 1.0f, 1.0f ), XMFLOAT3( 0.0f, 1.0f, 0.0f ) },
+
+    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, -1.0f ), XMFLOAT3( 0.0f, -1.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3( 1.0f, -1.0f, -1.0f ), XMFLOAT3( 0.0f, -1.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3( 1.0f, -1.0f, 1.0f ), XMFLOAT3( 0.0f, -1.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, 1.0f ), XMFLOAT3( 0.0f, -1.0f, 0.0f ) },
+
+    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, 1.0f ), XMFLOAT3( -1.0f, 0.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, -1.0f ), XMFLOAT3( -1.0f, 0.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3( -1.0f, 1.0f, -1.0f ), XMFLOAT3( -1.0f, 0.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3( -1.0f, 1.0f, 1.0f ), XMFLOAT3( -1.0f, 0.0f, 0.0f ) },
+
+    SimpleVertex{ XMFLOAT3( 1.0f, -1.0f, 1.0f ), XMFLOAT3( 1.0f, 0.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3( 1.0f, -1.0f, -1.0f ), XMFLOAT3( 1.0f, 0.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3( 1.0f, 1.0f, -1.0f ), XMFLOAT3( 1.0f, 0.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3( 1.0f, 1.0f, 1.0f ), XMFLOAT3( 1.0f, 0.0f, 0.0f ) },
+
+    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, -1.0f ), XMFLOAT3( 0.0f, 0.0f, -1.0f ) },
+    SimpleVertex{ XMFLOAT3( 1.0f, -1.0f, -1.0f ), XMFLOAT3( 0.0f, 0.0f, -1.0f ) },
+    SimpleVertex{ XMFLOAT3( 1.0f, 1.0f, -1.0f ), XMFLOAT3( 0.0f, 0.0f, -1.0f ) },
+    SimpleVertex{ XMFLOAT3( -1.0f, 1.0f, -1.0f ), XMFLOAT3( 0.0f, 0.0f, -1.0f ) },
+
+    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, 1.0f ), XMFLOAT3( 0.0f, 0.0f, 1.0f ) },
+    SimpleVertex{ XMFLOAT3( 1.0f, -1.0f, 1.0f ), XMFLOAT3( 0.0f, 0.0f, 1.0f ) },
+    SimpleVertex{ XMFLOAT3( 1.0f, 1.0f, 1.0f ), XMFLOAT3( 0.0f, 0.0f, 1.0f ) },
+    SimpleVertex{ XMFLOAT3( -1.0f, 1.0f, 1.0f ), XMFLOAT3( 0.0f, 0.0f, 1.0f ) },
 };
 
 
@@ -30,20 +60,20 @@ const std::array<WORD, 36> sIndices = {
     3, 1, 0,
     2, 1, 3,
 
-    0, 5, 4,
-    1, 5, 0,
-
-    3, 4, 7,
-    0, 4, 3,
-
-    1, 6, 5,
-    2, 6, 1,
-
-    2, 7, 6,
-    3, 7, 2,
-
     6, 4, 5,
     7, 4, 6,
+
+    11, 9, 8,
+    10, 9, 11,
+
+    14, 12, 13,
+    15, 12, 14,
+
+    19, 17, 16,
+    18, 17, 19,
+
+    22, 20, 21,
+    23, 20, 22
 };
 
 
@@ -52,9 +82,27 @@ struct {
     XMVECTOR at;
     XMVECTOR up;
 } sViewData = {
-    XMVectorSet(0.0f, 2.0f, -5.f, 0.0f),
+    XMVectorSet(0.0f, 4.0f, -10.0f, 0.0f),
     XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f),
     XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
+};
+
+
+struct Light
+{
+    const XMFLOAT4 dir;
+          XMFLOAT4 dirTransf;
+    const XMFLOAT4 color;
+
+    Light() = delete;
+    Light& operator =(const Light &a) = delete;
+};
+
+
+std::array<Light, 2> sLights =
+{
+    Light{ XMFLOAT4(-0.577f, 0.577f, -0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f) },
+    Light{ XMFLOAT4(0.0f, 0.0f, -1.0f, 1.0f),        XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.5f, 0.0f, 0.0f, 1.0f) },
 };
 
 
@@ -63,6 +111,10 @@ struct ConstantBuffer
     XMMATRIX World;
     XMMATRIX View;
     XMMATRIX Projection;
+
+    XMFLOAT4 LightDirs[2];
+    XMFLOAT4 LightColors[2];
+    XMFLOAT4 OutputColor;
 };
 
 
@@ -90,8 +142,8 @@ bool Scene::Init(IRenderingContext &ctx)
     }
 
     hr = device->CreateVertexShader(pVSBlob->GetBufferPointer(),
-                                        pVSBlob->GetBufferSize(),
-                                        nullptr, &mVertexShader);
+                                    pVSBlob->GetBufferSize(),
+                                    nullptr, &mVertexShader);
     if (FAILED(hr))
     {
         pVSBlob->Release();
@@ -100,33 +152,41 @@ bool Scene::Init(IRenderingContext &ctx)
 
     // Input layout
 
-    typedef D3D11_INPUT_ELEMENT_DESC InputElmDesc;
-    const std::array<InputElmDesc, 2> layout =
-    {
-        InputElmDesc{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        InputElmDesc{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-    };
-    hr = device->CreateInputLayout(layout.data(), (UINT)layout.size(),
-                                    pVSBlob->GetBufferPointer(),
-                                    pVSBlob->GetBufferSize(),
-                                    &mVertexLayout);
+    hr = device->CreateInputLayout(sVertexLayout.data(),
+                                   (UINT)sVertexLayout.size(),
+                                   pVSBlob->GetBufferPointer(),
+                                   pVSBlob->GetBufferSize(),
+                                   &mVertexLayout);
     pVSBlob->Release();
     if (FAILED(hr))
         return false;
     immediateContext->IASetInputLayout(mVertexLayout);
 
-    // Pixel shader
+    // Pixel shader - illuminated surface
 
     ID3DBlob* pPSBlob = nullptr;
-    if (!ctx.CompileShader(L"../shaders.fx", "PS", "ps_4_0", &pPSBlob))
+    if (!ctx.CompileShader(L"../shaders.fx", "PSIllum", "ps_4_0", &pPSBlob))
     {
         Log::Error(L"The FX file failed to compile.");
         return false;
     }
-
     hr = device->CreatePixelShader(pPSBlob->GetBufferPointer(),
                                    pPSBlob->GetBufferSize(),
-                                   nullptr, &mPixelShader);
+                                   nullptr, &mPixelShaderIllum);
+    pPSBlob->Release();
+    if (FAILED(hr))
+        return false;
+
+    // Pixel shader - surface with solid color
+
+    if (!ctx.CompileShader(L"../shaders.fx", "PSSolid", "ps_4_0", &pPSBlob))
+    {
+        Log::Error(L"The FX file failed to compile.");
+        return false;
+    }
+    hr = device->CreatePixelShader(pPSBlob->GetBufferPointer(),
+                                   pPSBlob->GetBufferSize(),
+                                   nullptr, &mPixelShaderSolid);
     pPSBlob->Release();
     if (FAILED(hr))
         return false;
@@ -160,10 +220,8 @@ bool Scene::Init(IRenderingContext &ctx)
     if (FAILED(hr))
         return false;
 
-    // Set index buffer
+    // Set index buffer w. topology
     immediateContext->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-
-    // Primitive topology
     immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     // Create the constant buffer
@@ -175,13 +233,10 @@ bool Scene::Init(IRenderingContext &ctx)
     if (FAILED(hr))
         return false;
 
-    // Object->World matrices
-    mWorldMatrix1 = XMMatrixIdentity();
-    mWorldMatrix2 = XMMatrixIdentity();
-
-    // System-wide transformations
+    // Matrices
+    mWorldMatrix = XMMatrixIdentity();
     mViewMatrix = XMMatrixLookAtLH(sViewData.eye, sViewData.at, sViewData.up);
-    mProjectionMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV2,
+    mProjectionMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV4,
                                                  (FLOAT)wndWidth / wndHeight,
                                                  0.01f, 100.0f);
 
@@ -196,7 +251,8 @@ void Scene::Destroy()
     Utils::ReleaseAndMakeNullptr(mConstantBuffer);
     Utils::ReleaseAndMakeNullptr(mVertexLayout);
     Utils::ReleaseAndMakeNullptr(mVertexShader);
-    Utils::ReleaseAndMakeNullptr(mPixelShader);
+    Utils::ReleaseAndMakeNullptr(mPixelShaderIllum);
+    Utils::ReleaseAndMakeNullptr(mPixelShaderSolid);
 }
 
 
@@ -210,15 +266,17 @@ void Scene::Animate(IRenderingContext &ctx)
     const float totalAnimPos = time / period;
     const float angle = totalAnimPos * XM_2PI;
 
-    // First cube
-    mWorldMatrix1 = XMMatrixRotationY(angle);
+    // Rotate main cube
+    mWorldMatrix = XMMatrixRotationY(angle);
 
-    // Second cube
-    XMMATRIX spinMat = XMMatrixRotationZ(-angle * 20.f);
-    XMMATRIX orbitMat = XMMatrixRotationY(-angle * 2.f);
-    XMMATRIX translateMat = XMMatrixTranslation(-4.0f, 0.0f, 0.0f);
-    XMMATRIX scaleMat = XMMatrixScaling(0.05f, 0.05f, 0.4f);
-    mWorldMatrix2 = scaleMat * spinMat * translateMat * orbitMat;
+    // First light without rotation
+    sLights[0].dirTransf = sLights[0].dir;
+
+    // Second light is rotated
+    XMMATRIX rotationMat = XMMatrixRotationY(-2.f * angle);
+    XMVECTOR lightDirVec = XMLoadFloat4(&sLights[1].dir);
+    lightDirVec = XMVector3Transform(lightDirVec, rotationMat);
+    XMStoreFloat4(&sLights[1].dirTransf, lightDirVec);
 }
 
 
@@ -229,27 +287,39 @@ void Scene::Render(IRenderingContext &ctx)
 
     auto immediateContext = ctx.GetImmediateContext();
 
-    // Update constant buffer - first cube
-    ConstantBuffer cb1;
-    cb1.World = XMMatrixTranspose(mWorldMatrix1);
-    cb1.View = XMMatrixTranspose(mViewMatrix);
-    cb1.Projection = XMMatrixTranspose(mProjectionMatrix);
-    immediateContext->UpdateSubresource(mConstantBuffer, 0, nullptr, &cb1, 0, 0);
+    // Constant buffer - main cube
+    ConstantBuffer cb;
+    cb.World = XMMatrixTranspose(mWorldMatrix);
+    cb.View = XMMatrixTranspose(mViewMatrix);
+    cb.Projection = XMMatrixTranspose(mProjectionMatrix);
+    cb.LightDirs[0] = sLights[0].dirTransf;
+    cb.LightDirs[1] = sLights[1].dirTransf;
+    cb.LightColors[0] = sLights[0].color;
+    cb.LightColors[1] = sLights[1].color;
+    cb.OutputColor = XMFLOAT4(0, 0, 0, 0);
+    immediateContext->UpdateSubresource(mConstantBuffer, 0, NULL, &cb, 0, 0);
 
-    // Render first cube
+    // Render main cube
     immediateContext->VSSetShader(mVertexShader, nullptr, 0);
     immediateContext->VSSetConstantBuffers(0, 1, &mConstantBuffer);
-    immediateContext->PSSetShader(mPixelShader, nullptr, 0);
+    immediateContext->PSSetShader(mPixelShaderIllum, nullptr, 0);
+    immediateContext->PSSetConstantBuffers(0, 1, &mConstantBuffer);
     immediateContext->DrawIndexed((UINT)sIndices.size(), 0, 0);
 
-    // Update variables - second cube
-    ConstantBuffer cb2;
-    cb2.World = XMMatrixTranspose(mWorldMatrix2);
-    cb2.View = XMMatrixTranspose(mViewMatrix);
-    cb2.Projection = XMMatrixTranspose(mProjectionMatrix);
-    immediateContext->UpdateSubresource(mConstantBuffer, 0, nullptr, &cb2, 0, 0);
+    // Render each light proxy geometry
+    for (int i = 0; i < sLights.size(); i++)
+    {
+        XMMATRIX lightScaleMat = XMMatrixScaling(0.2f, 0.2f, 0.2f);
+        XMMATRIX lightTrnslMat = XMMatrixTranslationFromVector(5.0f * XMLoadFloat4(&sLights[i].dirTransf));
+        XMMATRIX lightMat = lightScaleMat * lightTrnslMat;
 
-    // Render second cube
-    // (using the same shaders and constant buffer)
-    immediateContext->DrawIndexed((UINT)sIndices.size(), 0, 0);
+        cb.World = XMMatrixTranspose(lightMat);
+        cb.OutputColor = sLights[i].color;
+        immediateContext->UpdateSubresource(mConstantBuffer, 0, NULL, &cb, 0, 0);
+
+        immediateContext->PSSetShader(mPixelShaderSolid, NULL, 0);
+        immediateContext->DrawIndexed((UINT)sIndices.size(), 0, 0);
+    }
+
+
 }

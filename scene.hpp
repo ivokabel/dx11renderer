@@ -26,14 +26,14 @@ public:
 private:
 
     ID3D11VertexShader*         mVertexShader = nullptr;
-    ID3D11PixelShader*          mPixelShader = nullptr;
+    ID3D11PixelShader*          mPixelShaderIllum = nullptr;
+    ID3D11PixelShader*          mPixelShaderSolid = nullptr;
     ID3D11InputLayout*          mVertexLayout = nullptr;
     ID3D11Buffer*               mVertexBuffer = nullptr;
     ID3D11Buffer*               mIndexBuffer = nullptr;
     ID3D11Buffer*               mConstantBuffer = nullptr;
 
-    XMMATRIX                    mWorldMatrix1;
-    XMMATRIX                    mWorldMatrix2;
+    XMMATRIX                    mWorldMatrix;
     XMMATRIX                    mViewMatrix;
     XMMATRIX                    mProjectionMatrix;
 };
