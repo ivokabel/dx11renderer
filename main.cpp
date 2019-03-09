@@ -1,3 +1,9 @@
+// Visual studio 2017 (15.8.0 preview 3.0) introduced and ABI-breaking bugfix for make_shared and 
+// requires us to decide wether we want the the old non-conforming behaviour or the correct one
+// until the next ABI breaking release of the libraries.
+// See: https://developercommunity.visualstudio.com/content/problem/274945/stdmake-shared-is-not-honouring-alignment-of-a.html
+#define _ENABLE_EXTENDED_ALIGNED_STORAGE
+
 #include "renderer.hpp"
 #include "scene.hpp"
 #include "log.hpp"

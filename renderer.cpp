@@ -3,7 +3,10 @@
 #include "utils.hpp"
 
 #include <d3dcompiler.h>
+#pragma warning(push)
+#pragma warning(disable: 4838)
 #include <xnamath.h>
+#pragma warning(pop)
 #include <cmath>
 #include <array>
 
@@ -74,7 +77,7 @@ bool SimpleDX11Renderer::InitWindow(HINSTANCE instance, int cmdShow)
 
     // Create window
     mInstance = instance;
-    RECT rc = { 0, 0, mWndWidth, mWndHeight };
+    RECT rc = { 0, 0, (LONG)mWndWidth, (LONG)mWndHeight };
     AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
     mWnd = CreateWindow(mWndClassName, mWndName,
                         WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,

@@ -20,7 +20,10 @@
 #include <d3dx11.h>
 #pragma warning(pop)
 
+#pragma warning(push)
+#pragma warning(disable: 4838)
 #include <xnamath.h>
+#pragma warning(pop)
 
 #include <array>
 #include <memory>
