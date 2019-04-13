@@ -320,12 +320,12 @@ void SimpleDX11Renderer::DestroyDevice()
     if (mImmediateContext)
         mImmediateContext->ClearState();
 
-    Utils::ReleaseAndMakeNullptr(mDepthStencil);
-    Utils::ReleaseAndMakeNullptr(mDepthStencilView);
-    Utils::ReleaseAndMakeNullptr(mRenderTargetView);
-    Utils::ReleaseAndMakeNullptr(mSwapChain);
-    Utils::ReleaseAndMakeNullptr(mImmediateContext);
-    Utils::ReleaseAndMakeNullptr(mDevice);
+    Utils::ReleaseAndMakeNull(mDepthStencil);
+    Utils::ReleaseAndMakeNull(mDepthStencilView);
+    Utils::ReleaseAndMakeNull(mRenderTargetView);
+    Utils::ReleaseAndMakeNull(mSwapChain);
+    Utils::ReleaseAndMakeNull(mImmediateContext);
+    Utils::ReleaseAndMakeNull(mDevice);
 }
 
 

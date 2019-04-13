@@ -257,17 +257,17 @@ bool Scene::Init(IRenderingContext &ctx)
 
 void Scene::Destroy()
 {
-    Utils::ReleaseAndMakeNullptr(mVertexShader);
-    Utils::ReleaseAndMakeNullptr(mPixelShaderIllum);
-    Utils::ReleaseAndMakeNullptr(mPixelShaderSolid);
-    Utils::ReleaseAndMakeNullptr(mVertexLayout);
-    Utils::ReleaseAndMakeNullptr(mVertexBuffer);
-    Utils::ReleaseAndMakeNullptr(mIndexBuffer);
-    Utils::ReleaseAndMakeNullptr(mCbNeverChanges);
-    Utils::ReleaseAndMakeNullptr(mCbChangesOnResize);
-    Utils::ReleaseAndMakeNullptr(mCbChangesEachFrame);
-    Utils::ReleaseAndMakeNullptr(mTextureRV);
-    Utils::ReleaseAndMakeNullptr(mSamplerLinear);
+    Utils::ReleaseAndMakeNull(mVertexShader);
+    Utils::ReleaseAndMakeNull(mPixelShaderIllum);
+    Utils::ReleaseAndMakeNull(mPixelShaderSolid);
+    Utils::ReleaseAndMakeNull(mVertexLayout);
+    Utils::ReleaseAndMakeNull(mVertexBuffer);
+    Utils::ReleaseAndMakeNull(mIndexBuffer);
+    Utils::ReleaseAndMakeNull(mCbNeverChanges);
+    Utils::ReleaseAndMakeNull(mCbChangesOnResize);
+    Utils::ReleaseAndMakeNull(mCbChangesEachFrame);
+    Utils::ReleaseAndMakeNull(mTextureRV);
+    Utils::ReleaseAndMakeNull(mSamplerLinear);
 }
 
 

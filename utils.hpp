@@ -6,7 +6,7 @@
 namespace Utils
 {
     template <typename T>
-    void ReleaseAndMakeNullptr(T &value)
+    void ReleaseAndMakeNull(T &value)
     {
         if (value)
         {
