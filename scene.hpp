@@ -46,5 +46,5 @@ private:
     XMMATRIX                    mViewMtrx;
     XMMATRIX                    mProjectionMtrx;
 
-    XMFLOAT4                    mMeshColor = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
+    XMFLOAT4                    mMeshColor;
 };
