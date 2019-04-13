@@ -235,20 +235,20 @@ bool Scene::Init(IRenderingContext &ctx)
         return hr;
 
     // Matrices
-    mWorldMatrix = XMMatrixIdentity();
-    mViewMatrix = XMMatrixLookAtLH(sViewData.eye, sViewData.at, sViewData.up);
-    mProjectionMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV4,
+    mWorldMtrx = XMMatrixIdentity();
+    mViewMtrx = XMMatrixLookAtLH(sViewData.eye, sViewData.at, sViewData.up);
+    mProjectionMtrx = XMMatrixPerspectiveFovLH(XM_PIDIV4,
                                                  (FLOAT)wndWidth / wndHeight,
                                                  0.01f, 100.0f);
 
     // Update constant buffers which can be updated now
 
     CbNeverChanges cbNeverChanges;
-    cbNeverChanges.View = XMMatrixTranspose(mViewMatrix);
+    cbNeverChanges.View = XMMatrixTranspose(mViewMtrx);
     immCtx->UpdateSubresource(mCbNeverChanges, 0, NULL, &cbNeverChanges, 0, 0);
 
     CbChangesOnResize cbChangesOnResize;
-    cbChangesOnResize.Projection = XMMatrixTranspose(mProjectionMatrix);
+    cbChangesOnResize.Projection = XMMatrixTranspose(mProjectionMtrx);
     immCtx->UpdateSubresource(mCbChangesOnResize, 0, NULL, &cbChangesOnResize, 0, 0);
 
     return true;
@@ -282,7 +282,7 @@ void Scene::Animate(IRenderingContext &ctx)
     const float angle = totalAnimPos * XM_2PI;
 
     // Rotate main cube
-    mWorldMatrix = XMMatrixRotationY(angle);
+    mWorldMtrx = XMMatrixRotationY(angle);
 
     // Update mesh color
     mMeshColor.x = ( sinf( totalAnimPos * 1.0f ) + 1.0f ) * 0.5f;
@@ -293,9 +293,9 @@ void Scene::Animate(IRenderingContext &ctx)
     sLights[0].dirTransf = sLights[0].dir;
 
     // Second light is rotated
-    XMMATRIX rotationMat = XMMatrixRotationY(-2.f * angle);
+    XMMATRIX rotationMtrx = XMMatrixRotationY(-2.f * angle);
     XMVECTOR lightDirVec = XMLoadFloat4(&sLights[1].dir);
-    lightDirVec = XMVector3Transform(lightDirVec, rotationMat);
+    lightDirVec = XMVector3Transform(lightDirVec, rotationMtrx);
     XMStoreFloat4(&sLights[1].dirTransf, lightDirVec);
 }
 
@@ -309,7 +309,7 @@ void Scene::Render(IRenderingContext &ctx)
 
     // Constant buffer - main cube
     CbChangesEachFrame cbEachFrame;
-    cbEachFrame.World = XMMatrixTranspose(mWorldMatrix);
+    cbEachFrame.World = XMMatrixTranspose(mWorldMtrx);
     cbEachFrame.MeshColor = mMeshColor;
     cbEachFrame.LightDirs[0] = sLights[0].dirTransf;
     cbEachFrame.LightDirs[1] = sLights[1].dirTransf;
@@ -331,10 +331,10 @@ void Scene::Render(IRenderingContext &ctx)
     // Render each light proxy geometry
     for (int i = 0; i < sLights.size(); i++)
     {
-        XMMATRIX lightScaleMat = XMMatrixScaling(0.2f, 0.2f, 0.2f);
-        XMMATRIX lightTrnslMat = XMMatrixTranslationFromVector(4.0f * XMLoadFloat4(&sLights[i].dirTransf));
-        XMMATRIX lightMat = lightScaleMat * lightTrnslMat;
-        cbEachFrame.World = XMMatrixTranspose(lightMat);
+        XMMATRIX lightScaleMtrx = XMMatrixScaling(0.2f, 0.2f, 0.2f);
+        XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(4.0f * XMLoadFloat4(&sLights[i].dirTransf));
+        XMMATRIX lightMtrx = lightScaleMtrx * lightTrnslMtrx;
+        cbEachFrame.World = XMMatrixTranspose(lightMtrx);
         cbEachFrame.MeshColor = sLights[i].color;
         immCtx->UpdateSubresource(mCbChangesEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
 

@@ -42,9 +42,9 @@ private:
     ID3D11ShaderResourceView*   mTextureRV = nullptr;
     ID3D11SamplerState*         mSamplerLinear = nullptr;
 
-    XMMATRIX                    mWorldMatrix;
-    XMMATRIX                    mViewMatrix;
-    XMMATRIX                    mProjectionMatrix;
+    XMMATRIX                    mWorldMtrx;
+    XMMATRIX                    mViewMtrx;
+    XMMATRIX                    mProjectionMtrx;
 
     XMFLOAT4                    mMeshColor = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
 };
