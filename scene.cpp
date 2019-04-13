@@ -8,10 +8,11 @@ Scene::~Scene() {}
 
 
 typedef D3D11_INPUT_ELEMENT_DESC InputElmDesc;
-const std::array<InputElmDesc, 2> sVertexLayout =
+const std::array<InputElmDesc, 3> sVertexLayout =
 {
     InputElmDesc{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0 },
     InputElmDesc{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    InputElmDesc{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 };
 
 
@@ -19,40 +20,41 @@ struct SimpleVertex
 {
     XMFLOAT3 Pos;
     XMFLOAT3 Normal;
+    XMFLOAT2 Tex;
 };
 
 
 const std::array<SimpleVertex, 6 * 4> sVertices =
 {
-    SimpleVertex{ XMFLOAT3( -1.0f, 1.0f, -1.0f ), XMFLOAT3( 0.0f, 1.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3( 1.0f, 1.0f, -1.0f ), XMFLOAT3( 0.0f, 1.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3( 1.0f, 1.0f, 1.0f ), XMFLOAT3( 0.0f, 1.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3( -1.0f, 1.0f, 1.0f ), XMFLOAT3( 0.0f, 1.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3( -1.0f, 1.0f, -1.0f ),  XMFLOAT3( 0.0f, 1.0f, 0.0f ),  XMFLOAT2( 0.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3(  1.0f, 1.0f, -1.0f ),  XMFLOAT3( 0.0f, 1.0f, 0.0f ),  XMFLOAT2( 1.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3(  1.0f, 1.0f,  1.0f ),  XMFLOAT3( 0.0f, 1.0f, 0.0f ),  XMFLOAT2( 1.0f, 1.0f ) },
+    SimpleVertex{ XMFLOAT3( -1.0f, 1.0f,  1.0f ),  XMFLOAT3( 0.0f, 1.0f, 0.0f ),  XMFLOAT2( 0.0f, 1.0f ) },
 
-    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, -1.0f ), XMFLOAT3( 0.0f, -1.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3( 1.0f, -1.0f, -1.0f ), XMFLOAT3( 0.0f, -1.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3( 1.0f, -1.0f, 1.0f ), XMFLOAT3( 0.0f, -1.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, 1.0f ), XMFLOAT3( 0.0f, -1.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, -1.0f ), XMFLOAT3( 0.0f, -1.0f, 0.0f ), XMFLOAT2( 0.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3(  1.0f, -1.0f, -1.0f ), XMFLOAT3( 0.0f, -1.0f, 0.0f ), XMFLOAT2( 1.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3(  1.0f, -1.0f,  1.0f ), XMFLOAT3( 0.0f, -1.0f, 0.0f ), XMFLOAT2( 1.0f, 1.0f ) },
+    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f,  1.0f ), XMFLOAT3( 0.0f, -1.0f, 0.0f ), XMFLOAT2( 0.0f, 1.0f ) },
 
-    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, 1.0f ), XMFLOAT3( -1.0f, 0.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, -1.0f ), XMFLOAT3( -1.0f, 0.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3( -1.0f, 1.0f, -1.0f ), XMFLOAT3( -1.0f, 0.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3( -1.0f, 1.0f, 1.0f ), XMFLOAT3( -1.0f, 0.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f,  1.0f ), XMFLOAT3( -1.0f, 0.0f, 0.0f ), XMFLOAT2( 0.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, -1.0f ), XMFLOAT3( -1.0f, 0.0f, 0.0f ), XMFLOAT2( 1.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3( -1.0f,  1.0f, -1.0f ), XMFLOAT3( -1.0f, 0.0f, 0.0f ), XMFLOAT2( 1.0f, 1.0f ) },
+    SimpleVertex{ XMFLOAT3( -1.0f,  1.0f,  1.0f ), XMFLOAT3( -1.0f, 0.0f, 0.0f ), XMFLOAT2( 0.0f, 1.0f ) },
 
-    SimpleVertex{ XMFLOAT3( 1.0f, -1.0f, 1.0f ), XMFLOAT3( 1.0f, 0.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3( 1.0f, -1.0f, -1.0f ), XMFLOAT3( 1.0f, 0.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3( 1.0f, 1.0f, -1.0f ), XMFLOAT3( 1.0f, 0.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3( 1.0f, 1.0f, 1.0f ), XMFLOAT3( 1.0f, 0.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3(  1.0f, -1.0f,  1.0f ), XMFLOAT3( 1.0f, 0.0f, 0.0f ),  XMFLOAT2( 0.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3(  1.0f, -1.0f, -1.0f ), XMFLOAT3( 1.0f, 0.0f, 0.0f ),  XMFLOAT2( 1.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3(  1.0f,  1.0f, -1.0f ), XMFLOAT3( 1.0f, 0.0f, 0.0f ),  XMFLOAT2( 1.0f, 1.0f ) },
+    SimpleVertex{ XMFLOAT3(  1.0f,  1.0f,  1.0f ), XMFLOAT3( 1.0f, 0.0f, 0.0f ),  XMFLOAT2( 0.0f, 1.0f ) },
 
-    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, -1.0f ), XMFLOAT3( 0.0f, 0.0f, -1.0f ) },
-    SimpleVertex{ XMFLOAT3( 1.0f, -1.0f, -1.0f ), XMFLOAT3( 0.0f, 0.0f, -1.0f ) },
-    SimpleVertex{ XMFLOAT3( 1.0f, 1.0f, -1.0f ), XMFLOAT3( 0.0f, 0.0f, -1.0f ) },
-    SimpleVertex{ XMFLOAT3( -1.0f, 1.0f, -1.0f ), XMFLOAT3( 0.0f, 0.0f, -1.0f ) },
+    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, -1.0f ), XMFLOAT3( 0.0f, 0.0f, -1.0f ), XMFLOAT2( 0.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3(  1.0f, -1.0f, -1.0f ), XMFLOAT3( 0.0f, 0.0f, -1.0f ), XMFLOAT2( 1.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3(  1.0f,  1.0f, -1.0f ), XMFLOAT3( 0.0f, 0.0f, -1.0f ), XMFLOAT2( 1.0f, 1.0f ) },
+    SimpleVertex{ XMFLOAT3( -1.0f,  1.0f, -1.0f ), XMFLOAT3( 0.0f, 0.0f, -1.0f ), XMFLOAT2( 0.0f, 1.0f ) },
 
-    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, 1.0f ), XMFLOAT3( 0.0f, 0.0f, 1.0f ) },
-    SimpleVertex{ XMFLOAT3( 1.0f, -1.0f, 1.0f ), XMFLOAT3( 0.0f, 0.0f, 1.0f ) },
-    SimpleVertex{ XMFLOAT3( 1.0f, 1.0f, 1.0f ), XMFLOAT3( 0.0f, 0.0f, 1.0f ) },
-    SimpleVertex{ XMFLOAT3( -1.0f, 1.0f, 1.0f ), XMFLOAT3( 0.0f, 0.0f, 1.0f ) },
+    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, 1.0f ),  XMFLOAT3( 0.0f, 0.0f, 1.0f ),  XMFLOAT2( 0.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3(  1.0f, -1.0f, 1.0f ),  XMFLOAT3( 0.0f, 0.0f, 1.0f ),  XMFLOAT2( 1.0f, 0.0f ) },
+    SimpleVertex{ XMFLOAT3(  1.0f,  1.0f, 1.0f ),  XMFLOAT3( 0.0f, 0.0f, 1.0f ),  XMFLOAT2( 1.0f, 1.0f ) },
+    SimpleVertex{ XMFLOAT3( -1.0f,  1.0f, 1.0f ),  XMFLOAT3( 0.0f, 0.0f, 1.0f ),  XMFLOAT2( 0.0f, 1.0f ) },
 };
 
 
@@ -101,20 +103,27 @@ struct Light
 
 std::array<Light, 2> sLights =
 {
-    Light{ XMFLOAT4(-0.577f, 0.577f, -0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f) },
-    Light{ XMFLOAT4(0.0f, 0.0f, -1.0f, 1.0f),        XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.5f, 0.0f, 0.0f, 1.0f) },
+    Light{ XMFLOAT4(-0.577f, 0.577f, -0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.5f, 0.5f, 1.0f, 1.0f) },
+    Light{ XMFLOAT4(0.0f, 0.0f, -1.0f, 1.0f),        XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.7f, 0.1f, 0.1f, 1.0f) },
 };
 
 
-struct ConstantBuffer
+struct CbNeverChanges
+{
+    XMMATRIX View;
+};
+
+struct CbChangesOnResize
+{
+    XMMATRIX Projection;
+};
+
+struct CbChangesEachFrame
 {
     XMMATRIX World;
-    XMMATRIX View;
-    XMMATRIX Projection;
-
+    XMFLOAT4 MeshColor;
     XMFLOAT4 LightDirs[2];
     XMFLOAT4 LightColors[2];
-    XMFLOAT4 OutputColor;
 };
 
 
@@ -149,11 +158,11 @@ bool Scene::Init(IRenderingContext &ctx)
     immCtx->IASetInputLayout(mVertexLayout);
 
     // Pixel shader - illuminated surface
-    if (!ctx.CreatePixelShader(L"../shaders.fx", "PSIllum", "ps_4_0", mPixelShaderIllum))
+    if (!ctx.CreatePixelShader(L"../shaders.fx", "PsIllumSurf", "ps_4_0", mPixelShaderIllum))
         return false;
 
-    // Pixel shader - surface with solid color
-    if (!ctx.CreatePixelShader(L"../shaders.fx", "PSSolid", "ps_4_0", mPixelShaderSolid))
+    // Pixel shader - light-emitting surface
+    if (!ctx.CreatePixelShader(L"../shaders.fx", "PsEmissiveSurf", "ps_4_0", mPixelShaderSolid))
         return false;
 
     // Create vertex buffer
@@ -189,14 +198,41 @@ bool Scene::Init(IRenderingContext &ctx)
     immCtx->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
     immCtx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    // Create the constant buffer
+    // Create constant buffers
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(ConstantBuffer);
     bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     bd.CPUAccessFlags = 0;
-    hr = device->CreateBuffer(&bd, nullptr, &mConstantBuffer);
+    bd.ByteWidth = sizeof(CbNeverChanges);
+    hr = device->CreateBuffer(&bd, nullptr, &mCbNeverChanges);
     if (FAILED(hr))
         return false;
+    bd.ByteWidth = sizeof(CbChangesOnResize);
+    hr = device->CreateBuffer(&bd, nullptr, &mCbChangesOnResize);
+    if (FAILED(hr))
+        return hr;
+    bd.ByteWidth = sizeof(CbChangesEachFrame);
+    hr = device->CreateBuffer(&bd, nullptr, &mCbChangesEachFrame);
+    if (FAILED(hr))
+        return hr;
+
+    // Load texture
+    hr = D3DX11CreateShaderResourceViewFromFile(device, L"../seafloor.dds", nullptr, nullptr, &mTextureRV, nullptr);
+    if (FAILED(hr))
+        return hr;
+
+    // Create sampler state
+    D3D11_SAMPLER_DESC sampDesc;
+    ZeroMemory(&sampDesc, sizeof(sampDesc));
+    sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+    sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+    sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+    sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+    sampDesc.MinLOD = 0;
+    sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+    hr = device->CreateSamplerState(&sampDesc, &mSamplerLinear);
+    if (FAILED(hr))
+        return hr;
 
     // Matrices
     mWorldMatrix = XMMatrixIdentity();
@@ -205,19 +241,33 @@ bool Scene::Init(IRenderingContext &ctx)
                                                  (FLOAT)wndWidth / wndHeight,
                                                  0.01f, 100.0f);
 
+    // Update constant buffers which can be updated now
+
+    CbNeverChanges cbNeverChanges;
+    cbNeverChanges.View = XMMatrixTranspose(mViewMatrix);
+    immCtx->UpdateSubresource(mCbNeverChanges, 0, NULL, &cbNeverChanges, 0, 0);
+
+    CbChangesOnResize cbChangesOnResize;
+    cbChangesOnResize.Projection = XMMatrixTranspose(mProjectionMatrix);
+    immCtx->UpdateSubresource(mCbChangesOnResize, 0, NULL, &cbChangesOnResize, 0, 0);
+
     return true;
 }
 
 
 void Scene::Destroy()
 {
-    Utils::ReleaseAndMakeNullptr(mVertexBuffer);
-    Utils::ReleaseAndMakeNullptr(mIndexBuffer);
-    Utils::ReleaseAndMakeNullptr(mConstantBuffer);
-    Utils::ReleaseAndMakeNullptr(mVertexLayout);
     Utils::ReleaseAndMakeNullptr(mVertexShader);
     Utils::ReleaseAndMakeNullptr(mPixelShaderIllum);
     Utils::ReleaseAndMakeNullptr(mPixelShaderSolid);
+    Utils::ReleaseAndMakeNullptr(mVertexLayout);
+    Utils::ReleaseAndMakeNullptr(mVertexBuffer);
+    Utils::ReleaseAndMakeNullptr(mIndexBuffer);
+    Utils::ReleaseAndMakeNullptr(mCbNeverChanges);
+    Utils::ReleaseAndMakeNullptr(mCbChangesOnResize);
+    Utils::ReleaseAndMakeNullptr(mCbChangesEachFrame);
+    Utils::ReleaseAndMakeNullptr(mTextureRV);
+    Utils::ReleaseAndMakeNullptr(mSamplerLinear);
 }
 
 
@@ -234,7 +284,12 @@ void Scene::Animate(IRenderingContext &ctx)
     // Rotate main cube
     mWorldMatrix = XMMatrixRotationY(angle);
 
-    // First light without rotation
+    // Update mesh color
+    mMeshColor.x = ( sinf( totalAnimPos * 1.0f ) + 1.0f ) * 0.5f;
+    mMeshColor.y = ( cosf( totalAnimPos * 3.0f ) + 1.0f ) * 0.5f;
+    mMeshColor.z = ( sinf( totalAnimPos * 5.0f ) + 1.0f ) * 0.5f;
+
+    // First light is without rotation
     sLights[0].dirTransf = sLights[0].dir;
 
     // Second light is rotated
@@ -253,38 +308,37 @@ void Scene::Render(IRenderingContext &ctx)
     auto immCtx = ctx.GetImmediateContext();
 
     // Constant buffer - main cube
-    ConstantBuffer cb;
-    cb.World = XMMatrixTranspose(mWorldMatrix);
-    cb.View = XMMatrixTranspose(mViewMatrix);
-    cb.Projection = XMMatrixTranspose(mProjectionMatrix);
-    cb.LightDirs[0] = sLights[0].dirTransf;
-    cb.LightDirs[1] = sLights[1].dirTransf;
-    cb.LightColors[0] = sLights[0].color;
-    cb.LightColors[1] = sLights[1].color;
-    cb.OutputColor = XMFLOAT4(0, 0, 0, 0);
-    immCtx->UpdateSubresource(mConstantBuffer, 0, NULL, &cb, 0, 0);
+    CbChangesEachFrame cbEachFrame;
+    cbEachFrame.World = XMMatrixTranspose(mWorldMatrix);
+    cbEachFrame.MeshColor = mMeshColor;
+    cbEachFrame.LightDirs[0] = sLights[0].dirTransf;
+    cbEachFrame.LightDirs[1] = sLights[1].dirTransf;
+    cbEachFrame.LightColors[0] = sLights[0].color;
+    cbEachFrame.LightColors[1] = sLights[1].color;
+    immCtx->UpdateSubresource(mCbChangesEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
 
     // Render main cube
     immCtx->VSSetShader(mVertexShader, nullptr, 0);
-    immCtx->VSSetConstantBuffers(0, 1, &mConstantBuffer);
+    immCtx->VSSetConstantBuffers(0, 1, &mCbNeverChanges);
+    immCtx->VSSetConstantBuffers(1, 1, &mCbChangesOnResize);
+    immCtx->VSSetConstantBuffers(2, 1, &mCbChangesEachFrame);
     immCtx->PSSetShader(mPixelShaderIllum, nullptr, 0);
-    immCtx->PSSetConstantBuffers(0, 1, &mConstantBuffer);
+    immCtx->PSSetConstantBuffers(2, 1, &mCbChangesEachFrame);
+    immCtx->PSSetShaderResources(0, 1, &mTextureRV);
+    immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
     immCtx->DrawIndexed((UINT)sIndices.size(), 0, 0);
 
     // Render each light proxy geometry
     for (int i = 0; i < sLights.size(); i++)
     {
         XMMATRIX lightScaleMat = XMMatrixScaling(0.2f, 0.2f, 0.2f);
-        XMMATRIX lightTrnslMat = XMMatrixTranslationFromVector(5.0f * XMLoadFloat4(&sLights[i].dirTransf));
+        XMMATRIX lightTrnslMat = XMMatrixTranslationFromVector(4.0f * XMLoadFloat4(&sLights[i].dirTransf));
         XMMATRIX lightMat = lightScaleMat * lightTrnslMat;
+        cbEachFrame.World = XMMatrixTranspose(lightMat);
+        cbEachFrame.MeshColor = sLights[i].color;
+        immCtx->UpdateSubresource(mCbChangesEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
 
-        cb.World = XMMatrixTranspose(lightMat);
-        cb.OutputColor = sLights[i].color;
-        immCtx->UpdateSubresource(mConstantBuffer, 0, NULL, &cb, 0, 0);
-
-        immCtx->PSSetShader(mPixelShaderSolid, NULL, 0);
+        immCtx->PSSetShader(mPixelShaderSolid, nullptr, 0);
         immCtx->DrawIndexed((UINT)sIndices.size(), 0, 0);
     }
-
-
 }

@@ -34,9 +34,17 @@ private:
     ID3D11InputLayout*          mVertexLayout = nullptr;
     ID3D11Buffer*               mVertexBuffer = nullptr;
     ID3D11Buffer*               mIndexBuffer = nullptr;
-    ID3D11Buffer*               mConstantBuffer = nullptr;
+
+    ID3D11Buffer*               mCbNeverChanges = nullptr;
+    ID3D11Buffer*               mCbChangesOnResize = nullptr;
+    ID3D11Buffer*               mCbChangesEachFrame = nullptr;
+
+    ID3D11ShaderResourceView*   mTextureRV = nullptr;
+    ID3D11SamplerState*         mSamplerLinear = nullptr;
 
     XMMATRIX                    mWorldMatrix;
     XMMATRIX                    mViewMatrix;
     XMMATRIX                    mProjectionMatrix;
+
+    XMFLOAT4                    mMeshColor = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
 };
