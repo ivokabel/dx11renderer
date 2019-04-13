@@ -7,18 +7,18 @@
 Scene::~Scene() {}
 
 
-struct SimpleVertex
-{
-    XMFLOAT3 Pos;
-    XMFLOAT3 Normal;
-};
-
-
 typedef D3D11_INPUT_ELEMENT_DESC InputElmDesc;
 const std::array<InputElmDesc, 2> sVertexLayout =
 {
     InputElmDesc{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0 },
     InputElmDesc{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+};
+
+
+struct SimpleVertex
+{
+    XMFLOAT3 Pos;
+    XMFLOAT3 Normal;
 };
 
 
@@ -127,8 +127,8 @@ bool Scene::Init(IRenderingContext &ctx)
     if (!ctx.GetWindowSize(wndWidth, wndHeight))
         return false;
 
-    auto device             = ctx.GetDevice();
-    auto immediateContext   = ctx.GetImmediateContext();
+    auto device = ctx.GetDevice();
+    auto immCtx = ctx.GetImmediateContext();
 
     HRESULT hr = S_OK;
 
@@ -146,7 +146,7 @@ bool Scene::Init(IRenderingContext &ctx)
     pVSBlob->Release();
     if (FAILED(hr))
         return false;
-    immediateContext->IASetInputLayout(mVertexLayout);
+    immCtx->IASetInputLayout(mVertexLayout);
 
     // Pixel shader - illuminated surface
     if (!ctx.CreatePixelShader(L"../shaders.fx", "PSIllum", "ps_4_0", mPixelShaderIllum))
@@ -173,7 +173,7 @@ bool Scene::Init(IRenderingContext &ctx)
     // Set vertex buffer
     UINT stride = sizeof(SimpleVertex);
     UINT offset = 0;
-    immediateContext->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offset);
+    immCtx->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offset);
 
     // Create index buffer
     bd.Usage = D3D11_USAGE_DEFAULT;
@@ -186,8 +186,8 @@ bool Scene::Init(IRenderingContext &ctx)
         return false;
 
     // Set index buffer w. topology
-    immediateContext->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-    immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    immCtx->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+    immCtx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     // Create the constant buffer
     bd.Usage = D3D11_USAGE_DEFAULT;
@@ -250,7 +250,7 @@ void Scene::Render(IRenderingContext &ctx)
     if (!ctx.IsValid())
         return;
 
-    auto immediateContext = ctx.GetImmediateContext();
+    auto immCtx = ctx.GetImmediateContext();
 
     // Constant buffer - main cube
     ConstantBuffer cb;
@@ -262,14 +262,14 @@ void Scene::Render(IRenderingContext &ctx)
     cb.LightColors[0] = sLights[0].color;
     cb.LightColors[1] = sLights[1].color;
     cb.OutputColor = XMFLOAT4(0, 0, 0, 0);
-    immediateContext->UpdateSubresource(mConstantBuffer, 0, NULL, &cb, 0, 0);
+    immCtx->UpdateSubresource(mConstantBuffer, 0, NULL, &cb, 0, 0);
 
     // Render main cube
-    immediateContext->VSSetShader(mVertexShader, nullptr, 0);
-    immediateContext->VSSetConstantBuffers(0, 1, &mConstantBuffer);
-    immediateContext->PSSetShader(mPixelShaderIllum, nullptr, 0);
-    immediateContext->PSSetConstantBuffers(0, 1, &mConstantBuffer);
-    immediateContext->DrawIndexed((UINT)sIndices.size(), 0, 0);
+    immCtx->VSSetShader(mVertexShader, nullptr, 0);
+    immCtx->VSSetConstantBuffers(0, 1, &mConstantBuffer);
+    immCtx->PSSetShader(mPixelShaderIllum, nullptr, 0);
+    immCtx->PSSetConstantBuffers(0, 1, &mConstantBuffer);
+    immCtx->DrawIndexed((UINT)sIndices.size(), 0, 0);
 
     // Render each light proxy geometry
     for (int i = 0; i < sLights.size(); i++)
@@ -280,10 +280,10 @@ void Scene::Render(IRenderingContext &ctx)
 
         cb.World = XMMatrixTranspose(lightMat);
         cb.OutputColor = sLights[i].color;
-        immediateContext->UpdateSubresource(mConstantBuffer, 0, NULL, &cb, 0, 0);
+        immCtx->UpdateSubresource(mConstantBuffer, 0, NULL, &cb, 0, 0);
 
-        immediateContext->PSSetShader(mPixelShaderSolid, NULL, 0);
-        immediateContext->DrawIndexed((UINT)sIndices.size(), 0, 0);
+        immCtx->PSSetShader(mPixelShaderSolid, NULL, 0);
+        immCtx->DrawIndexed((UINT)sIndices.size(), 0, 0);
     }
 
 
