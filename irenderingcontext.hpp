@@ -21,10 +21,16 @@ public:
 
     virtual ID3D11DeviceContext*    GetImmediateContext() const = 0;
 
-    virtual bool                    CompileShader(WCHAR* szFileName,
-                                                  LPCSTR szEntryPoint,
-                                                  LPCSTR szShaderModel,
-                                                  ID3DBlob** ppBlobOut) const = 0;
+    virtual bool                    CreateVertexShader(WCHAR* szFileName,
+                                                       LPCSTR szEntryPoint,
+                                                       LPCSTR szShaderModel,
+                                                       ID3DBlob *&pVSBlob,
+                                                       ID3D11VertexShader *&pVertexShader) const = 0;
+
+    virtual bool                    CreatePixelShader(WCHAR* szFileName,
+                                                      LPCSTR szEntryPoint,
+                                                      LPCSTR szShaderModel,
+                                                      ID3D11PixelShader *&pPixelShader) const = 0;
 
     virtual bool                    GetWindowSize(uint32_t &width,
                                                   uint32_t &height) const = 0;

@@ -45,15 +45,20 @@ public:
     int Run();
 
     // IRenderingContext interface
-    virtual ID3D11Device*           GetDevice() const;
-    virtual ID3D11DeviceContext*    GetImmediateContext() const;
-    virtual bool                    CompileShader(WCHAR* szFileName,
-                                                  LPCSTR szEntryPoint,
-                                                  LPCSTR szShaderModel,
-                                                  ID3DBlob** ppBlobOut) const;
+    virtual ID3D11Device*           GetDevice() const override;
+    virtual ID3D11DeviceContext*    GetImmediateContext() const override;
+    virtual bool                    CreateVertexShader(WCHAR* szFileName,
+                                                       LPCSTR szEntryPoint,
+                                                       LPCSTR szShaderModel,
+                                                       ID3DBlob *&pVSBlob,
+                                                       ID3D11VertexShader *&pVertexShader) const override;
+    virtual bool                    CreatePixelShader(WCHAR* szFileName,
+                                                      LPCSTR szEntryPoint,
+                                                      LPCSTR szShaderModel,
+                                                      ID3D11PixelShader *&pPixelShader) const override;
     virtual bool                    GetWindowSize(uint32_t &width,
-                                                  uint32_t &height) const;
-    virtual float                   GetCurrentAnimationTime() const; // In seconds
+                                                  uint32_t &height) const override;
+    virtual float                   GetCurrentAnimationTime() const override; // In seconds
 
 private:
 
@@ -70,6 +75,10 @@ private:
     void DestroyScene();
     void Render();
 
+    bool                            CompileShader(WCHAR* szFileName,
+                                                  LPCSTR szEntryPoint,
+                                                  LPCSTR szShaderModel,
+                                                  ID3DBlob** ppBlobOut) const;
 private:
 
     const wchar_t * const       mWndClassName    = L"SimpleDirectX11RendererWndClass";

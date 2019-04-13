@@ -385,6 +385,64 @@ bool SimpleDX11Renderer::CompileShader(WCHAR* szFileName,
 }
 
 
+bool SimpleDX11Renderer::CreateVertexShader(WCHAR* szFileName,
+                                            LPCSTR szEntryPoint,
+                                            LPCSTR szShaderModel,
+                                            ID3DBlob *&pVSBlob,
+                                            ID3D11VertexShader *&pVertexShader) const
+{
+    HRESULT hr = S_OK;
+
+    if (!CompileShader(szFileName, szEntryPoint, szShaderModel, &pVSBlob))
+    {
+        Log::Error(L"The FX file failed to compile.");
+        return false;
+    }
+
+    hr = mDevice->CreateVertexShader(pVSBlob->GetBufferPointer(),
+                                     pVSBlob->GetBufferSize(),
+                                     nullptr,
+                                     &pVertexShader);
+    if (FAILED(hr))
+    {
+        Log::Error(L"mDevice->CreateVertexShader failed.");
+        pVSBlob->Release();
+        return false;
+    }
+
+    return true;
+}
+
+
+bool SimpleDX11Renderer::CreatePixelShader(WCHAR* szFileName,
+                                           LPCSTR szEntryPoint,
+                                           LPCSTR szShaderModel,
+                                           ID3D11PixelShader *&pPixelShader) const
+{
+    HRESULT hr = S_OK;
+    ID3DBlob *pPSBlob;
+
+    if (!CompileShader(szFileName, szEntryPoint, szShaderModel, &pPSBlob))
+    {
+        Log::Error(L"The FX file failed to compile.");
+        return false;
+    }
+
+    hr = mDevice->CreatePixelShader(pPSBlob->GetBufferPointer(),
+                                    pPSBlob->GetBufferSize(),
+                                    nullptr,
+                                    &pPixelShader);
+    pPSBlob->Release();
+    if (FAILED(hr))
+    {
+        Log::Error(L"mDevice->CreatePixelShader failed.");
+        return false;
+    }
+
+    return true;
+}
+
+
 void SimpleDX11Renderer::Render()
 {
     float clearColor[4] = { 0.04f, 0.09f, 0.15f, 1.0f }; // RGBA

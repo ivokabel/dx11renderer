@@ -133,25 +133,11 @@ bool Scene::Init(IRenderingContext &ctx)
     HRESULT hr = S_OK;
 
     // Vertex shader
-
     ID3DBlob* pVSBlob = nullptr;
-    if (!ctx.CompileShader(L"../shaders.fx", "VS", "vs_4_0", &pVSBlob))
-    {
-        Log::Error(L"The FX file failed to compile.");
+    if (!ctx.CreateVertexShader(L"../shaders.fx", "VS", "vs_4_0", pVSBlob, mVertexShader))
         return false;
-    }
-
-    hr = device->CreateVertexShader(pVSBlob->GetBufferPointer(),
-                                    pVSBlob->GetBufferSize(),
-                                    nullptr, &mVertexShader);
-    if (FAILED(hr))
-    {
-        pVSBlob->Release();
-        return false;
-    }
 
     // Input layout
-
     hr = device->CreateInputLayout(sVertexLayout.data(),
                                    (UINT)sVertexLayout.size(),
                                    pVSBlob->GetBufferPointer(),
@@ -163,32 +149,11 @@ bool Scene::Init(IRenderingContext &ctx)
     immediateContext->IASetInputLayout(mVertexLayout);
 
     // Pixel shader - illuminated surface
-
-    ID3DBlob* pPSBlob = nullptr;
-    if (!ctx.CompileShader(L"../shaders.fx", "PSIllum", "ps_4_0", &pPSBlob))
-    {
-        Log::Error(L"The FX file failed to compile.");
-        return false;
-    }
-    hr = device->CreatePixelShader(pPSBlob->GetBufferPointer(),
-                                   pPSBlob->GetBufferSize(),
-                                   nullptr, &mPixelShaderIllum);
-    pPSBlob->Release();
-    if (FAILED(hr))
+    if (!ctx.CreatePixelShader(L"../shaders.fx", "PSIllum", "ps_4_0", mPixelShaderIllum))
         return false;
 
     // Pixel shader - surface with solid color
-
-    if (!ctx.CompileShader(L"../shaders.fx", "PSSolid", "ps_4_0", &pPSBlob))
-    {
-        Log::Error(L"The FX file failed to compile.");
-        return false;
-    }
-    hr = device->CreatePixelShader(pPSBlob->GetBufferPointer(),
-                                   pPSBlob->GetBufferSize(),
-                                   nullptr, &mPixelShaderSolid);
-    pPSBlob->Release();
-    if (FAILED(hr))
+    if (!ctx.CreatePixelShader(L"../shaders.fx", "PSSolid", "ps_4_0", mPixelShaderSolid))
         return false;
 
     // Create vertex buffer
