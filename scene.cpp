@@ -26,31 +26,37 @@ struct SimpleVertex
 
 const std::array<SimpleVertex, 6 * 4> sVertices =
 {
+    // Up
     SimpleVertex{ XMFLOAT3( -1.0f, 1.0f, -1.0f ),  XMFLOAT3( 0.0f, 1.0f, 0.0f ),  XMFLOAT2( 0.0f, 0.0f ) },
     SimpleVertex{ XMFLOAT3(  1.0f, 1.0f, -1.0f ),  XMFLOAT3( 0.0f, 1.0f, 0.0f ),  XMFLOAT2( 1.0f, 0.0f ) },
     SimpleVertex{ XMFLOAT3(  1.0f, 1.0f,  1.0f ),  XMFLOAT3( 0.0f, 1.0f, 0.0f ),  XMFLOAT2( 1.0f, 1.0f ) },
     SimpleVertex{ XMFLOAT3( -1.0f, 1.0f,  1.0f ),  XMFLOAT3( 0.0f, 1.0f, 0.0f ),  XMFLOAT2( 0.0f, 1.0f ) },
 
+    // Down
     SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, -1.0f ), XMFLOAT3( 0.0f, -1.0f, 0.0f ), XMFLOAT2( 0.0f, 0.0f ) },
     SimpleVertex{ XMFLOAT3(  1.0f, -1.0f, -1.0f ), XMFLOAT3( 0.0f, -1.0f, 0.0f ), XMFLOAT2( 1.0f, 0.0f ) },
     SimpleVertex{ XMFLOAT3(  1.0f, -1.0f,  1.0f ), XMFLOAT3( 0.0f, -1.0f, 0.0f ), XMFLOAT2( 1.0f, 1.0f ) },
     SimpleVertex{ XMFLOAT3( -1.0f, -1.0f,  1.0f ), XMFLOAT3( 0.0f, -1.0f, 0.0f ), XMFLOAT2( 0.0f, 1.0f ) },
 
+    // Side 1
     SimpleVertex{ XMFLOAT3( -1.0f, -1.0f,  1.0f ), XMFLOAT3( -1.0f, 0.0f, 0.0f ), XMFLOAT2( 0.0f, 0.0f ) },
     SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, -1.0f ), XMFLOAT3( -1.0f, 0.0f, 0.0f ), XMFLOAT2( 1.0f, 0.0f ) },
     SimpleVertex{ XMFLOAT3( -1.0f,  1.0f, -1.0f ), XMFLOAT3( -1.0f, 0.0f, 0.0f ), XMFLOAT2( 1.0f, 1.0f ) },
     SimpleVertex{ XMFLOAT3( -1.0f,  1.0f,  1.0f ), XMFLOAT3( -1.0f, 0.0f, 0.0f ), XMFLOAT2( 0.0f, 1.0f ) },
 
+    // Side 3
     SimpleVertex{ XMFLOAT3(  1.0f, -1.0f,  1.0f ), XMFLOAT3( 1.0f, 0.0f, 0.0f ),  XMFLOAT2( 0.0f, 0.0f ) },
     SimpleVertex{ XMFLOAT3(  1.0f, -1.0f, -1.0f ), XMFLOAT3( 1.0f, 0.0f, 0.0f ),  XMFLOAT2( 1.0f, 0.0f ) },
     SimpleVertex{ XMFLOAT3(  1.0f,  1.0f, -1.0f ), XMFLOAT3( 1.0f, 0.0f, 0.0f ),  XMFLOAT2( 1.0f, 1.0f ) },
     SimpleVertex{ XMFLOAT3(  1.0f,  1.0f,  1.0f ), XMFLOAT3( 1.0f, 0.0f, 0.0f ),  XMFLOAT2( 0.0f, 1.0f ) },
 
+    // Side 2
     SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, -1.0f ), XMFLOAT3( 0.0f, 0.0f, -1.0f ), XMFLOAT2( 0.0f, 0.0f ) },
     SimpleVertex{ XMFLOAT3(  1.0f, -1.0f, -1.0f ), XMFLOAT3( 0.0f, 0.0f, -1.0f ), XMFLOAT2( 1.0f, 0.0f ) },
     SimpleVertex{ XMFLOAT3(  1.0f,  1.0f, -1.0f ), XMFLOAT3( 0.0f, 0.0f, -1.0f ), XMFLOAT2( 1.0f, 1.0f ) },
     SimpleVertex{ XMFLOAT3( -1.0f,  1.0f, -1.0f ), XMFLOAT3( 0.0f, 0.0f, -1.0f ), XMFLOAT2( 0.0f, 1.0f ) },
 
+    // Side 4
     SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, 1.0f ),  XMFLOAT3( 0.0f, 0.0f, 1.0f ),  XMFLOAT2( 0.0f, 0.0f ) },
     SimpleVertex{ XMFLOAT3(  1.0f, -1.0f, 1.0f ),  XMFLOAT3( 0.0f, 0.0f, 1.0f ),  XMFLOAT2( 1.0f, 0.0f ) },
     SimpleVertex{ XMFLOAT3(  1.0f,  1.0f, 1.0f ),  XMFLOAT3( 0.0f, 0.0f, 1.0f ),  XMFLOAT2( 1.0f, 1.0f ) },
@@ -58,22 +64,28 @@ const std::array<SimpleVertex, 6 * 4> sVertices =
 };
 
 
-const std::array<WORD, 36> sIndices = {
+const std::array<WORD, 6 * 6> sIndices = {
+    // Up
     3, 1, 0,
     2, 1, 3,
 
+    // Down
     6, 4, 5,
     7, 4, 6,
 
+    // Side 1
     11, 9, 8,
     10, 9, 11,
 
+    // Side 3
     14, 12, 13,
     15, 12, 14,
 
+    // Side 2
     19, 17, 16,
     18, 17, 19,
 
+    // Side 4
     22, 20, 21,
     23, 20, 22
 };
@@ -104,7 +116,7 @@ struct Light
 std::array<Light, 2> sLights =
 {
     Light{ XMFLOAT4(-0.577f, 0.577f, -0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.5f, 0.5f, 1.0f, 1.0f) },
-    Light{ XMFLOAT4(0.0f, 0.0f, -1.0f, 1.0f),        XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.7f, 0.1f, 0.1f, 1.0f) },
+    Light{ XMFLOAT4(0.0f, 0.0f, -1.0f, 1.0f),        XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.8f, 0.2f, 0.2f, 1.0f) },
 };
 
 
@@ -216,7 +228,7 @@ bool Scene::Init(IRenderingContext &ctx)
         return hr;
 
     // Load texture
-    hr = D3DX11CreateShaderResourceViewFromFile(device, L"../seafloor.dds", nullptr, nullptr, &mTextureRV, nullptr);
+    hr = D3DX11CreateShaderResourceViewFromFile(device, L"../uv_grid_ash.dds", nullptr, nullptr, &mTextureRV, nullptr);
     if (FAILED(hr))
         return hr;
 
@@ -309,7 +321,9 @@ void Scene::Render(IRenderingContext &ctx)
 
     // Constant buffer - main cube
     CbChangesEachFrame cbEachFrame;
-    cbEachFrame.World = XMMatrixTranspose(mWorldMtrx);
+    XMMATRIX mainCubeScaleMtrx = XMMatrixScaling(1.8f, 1.8f, 1.8f);
+    XMMATRIX mainCubeMtrx = mainCubeScaleMtrx * mWorldMtrx;
+    cbEachFrame.World = XMMatrixTranspose(mainCubeMtrx);
     cbEachFrame.MeshColor = mMeshColor;
     cbEachFrame.LightDirs[0] = sLights[0].dirTransf;
     cbEachFrame.LightDirs[1] = sLights[1].dirTransf;
