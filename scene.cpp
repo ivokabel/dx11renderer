@@ -115,8 +115,8 @@ struct Light
 
 std::array<Light, 2> sLights =
 {
-    Light{ XMFLOAT4(-0.577f, 0.577f, -0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.5f, 0.5f, 1.0f, 1.0f) },
-    Light{ XMFLOAT4(0.0f, 0.0f, -1.0f, 1.0f),        XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.8f, 0.2f, 0.2f, 1.0f) },
+    Light{ XMFLOAT4(-0.577f, 0.577f, -0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.3f, 0.5f, 0.3f, 1.0f) },
+    Light{ XMFLOAT4(0.0f, 0.0f, -1.0f, 1.0f),        XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.6f, 0.3f, 0.3f, 1.0f) },
 };
 
 
