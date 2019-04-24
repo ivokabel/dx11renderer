@@ -120,17 +120,17 @@ std::array<Light, 2> sLights =
 };
 
 
-struct CbNeverChanges
+struct CbNeverChanged
 {
     XMMATRIX View;
 };
 
-struct CbChangesOnResize
+struct CbChangedOnResize
 {
     XMMATRIX Projection;
 };
 
-struct CbChangesEachFrame
+struct CbChangedEachFrame
 {
     XMMATRIX World;
     XMFLOAT4 MeshColor;
@@ -214,16 +214,16 @@ bool Scene::Init(IRenderingContext &ctx)
     bd.Usage = D3D11_USAGE_DEFAULT;
     bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     bd.CPUAccessFlags = 0;
-    bd.ByteWidth = sizeof(CbNeverChanges);
-    hr = device->CreateBuffer(&bd, nullptr, &mCbNeverChanges);
+    bd.ByteWidth = sizeof(CbNeverChanged);
+    hr = device->CreateBuffer(&bd, nullptr, &mCbNeverChanged);
     if (FAILED(hr))
         return false;
-    bd.ByteWidth = sizeof(CbChangesOnResize);
-    hr = device->CreateBuffer(&bd, nullptr, &mCbChangesOnResize);
+    bd.ByteWidth = sizeof(CbChangedOnResize);
+    hr = device->CreateBuffer(&bd, nullptr, &mCbChangedOnResize);
     if (FAILED(hr))
         return hr;
-    bd.ByteWidth = sizeof(CbChangesEachFrame);
-    hr = device->CreateBuffer(&bd, nullptr, &mCbChangesEachFrame);
+    bd.ByteWidth = sizeof(CbChangedEachFrame);
+    hr = device->CreateBuffer(&bd, nullptr, &mCbChangedEachFrame);
     if (FAILED(hr))
         return hr;
 
@@ -255,13 +255,13 @@ bool Scene::Init(IRenderingContext &ctx)
 
     // Update constant buffers which can be updated now
 
-    CbNeverChanges cbNeverChanges;
-    cbNeverChanges.View = XMMatrixTranspose(mViewMtrx);
-    immCtx->UpdateSubresource(mCbNeverChanges, 0, NULL, &cbNeverChanges, 0, 0);
+    CbNeverChanged cbNeverChanged;
+    cbNeverChanged.View = XMMatrixTranspose(mViewMtrx);
+    immCtx->UpdateSubresource(mCbNeverChanged, 0, NULL, &cbNeverChanged, 0, 0);
 
-    CbChangesOnResize cbChangesOnResize;
-    cbChangesOnResize.Projection = XMMatrixTranspose(mProjectionMtrx);
-    immCtx->UpdateSubresource(mCbChangesOnResize, 0, NULL, &cbChangesOnResize, 0, 0);
+    CbChangedOnResize cbChangedOnResize;
+    cbChangedOnResize.Projection = XMMatrixTranspose(mProjectionMtrx);
+    immCtx->UpdateSubresource(mCbChangedOnResize, 0, NULL, &cbChangedOnResize, 0, 0);
 
     return true;
 }
@@ -275,9 +275,9 @@ void Scene::Destroy()
     Utils::ReleaseAndMakeNull(mVertexLayout);
     Utils::ReleaseAndMakeNull(mVertexBuffer);
     Utils::ReleaseAndMakeNull(mIndexBuffer);
-    Utils::ReleaseAndMakeNull(mCbNeverChanges);
-    Utils::ReleaseAndMakeNull(mCbChangesOnResize);
-    Utils::ReleaseAndMakeNull(mCbChangesEachFrame);
+    Utils::ReleaseAndMakeNull(mCbNeverChanged);
+    Utils::ReleaseAndMakeNull(mCbChangedOnResize);
+    Utils::ReleaseAndMakeNull(mCbChangedEachFrame);
     Utils::ReleaseAndMakeNull(mTextureRV);
     Utils::ReleaseAndMakeNull(mSamplerLinear);
 }
@@ -320,7 +320,7 @@ void Scene::Render(IRenderingContext &ctx)
     auto immCtx = ctx.GetImmediateContext();
 
     // Constant buffer - main cube
-    CbChangesEachFrame cbEachFrame;
+    CbChangedEachFrame cbEachFrame;
     XMMATRIX mainCubeScaleMtrx = XMMatrixScaling(1.8f, 1.8f, 1.8f);
     XMMATRIX mainCubeMtrx = mainCubeScaleMtrx * mWorldMtrx;
     cbEachFrame.World = XMMatrixTranspose(mainCubeMtrx);
@@ -329,15 +329,15 @@ void Scene::Render(IRenderingContext &ctx)
     cbEachFrame.LightDirs[1] = sLights[1].dirTransf;
     cbEachFrame.LightColors[0] = sLights[0].color;
     cbEachFrame.LightColors[1] = sLights[1].color;
-    immCtx->UpdateSubresource(mCbChangesEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
+    immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
 
     // Render main cube
     immCtx->VSSetShader(mVertexShader, nullptr, 0);
-    immCtx->VSSetConstantBuffers(0, 1, &mCbNeverChanges);
-    immCtx->VSSetConstantBuffers(1, 1, &mCbChangesOnResize);
-    immCtx->VSSetConstantBuffers(2, 1, &mCbChangesEachFrame);
+    immCtx->VSSetConstantBuffers(0, 1, &mCbNeverChanged);
+    immCtx->VSSetConstantBuffers(1, 1, &mCbChangedOnResize);
+    immCtx->VSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
     immCtx->PSSetShader(mPixelShaderIllum, nullptr, 0);
-    immCtx->PSSetConstantBuffers(2, 1, &mCbChangesEachFrame);
+    immCtx->PSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
     immCtx->PSSetShaderResources(0, 1, &mTextureRV);
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
     immCtx->DrawIndexed((UINT)sIndices.size(), 0, 0);
@@ -350,7 +350,7 @@ void Scene::Render(IRenderingContext &ctx)
         XMMATRIX lightMtrx = lightScaleMtrx * lightTrnslMtrx;
         cbEachFrame.World = XMMatrixTranspose(lightMtrx);
         cbEachFrame.MeshColor = sLights[i].color;
-        immCtx->UpdateSubresource(mCbChangesEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
+        immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
 
         immCtx->PSSetShader(mPixelShaderSolid, nullptr, 0);
         immCtx->DrawIndexed((UINT)sIndices.size(), 0, 0);

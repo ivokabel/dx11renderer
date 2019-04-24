@@ -35,9 +35,9 @@ private:
     ID3D11Buffer*               mVertexBuffer = nullptr;
     ID3D11Buffer*               mIndexBuffer = nullptr;
 
-    ID3D11Buffer*               mCbNeverChanges = nullptr;
-    ID3D11Buffer*               mCbChangesOnResize = nullptr;
-    ID3D11Buffer*               mCbChangesEachFrame = nullptr;
+    ID3D11Buffer*               mCbNeverChanged = nullptr;
+    ID3D11Buffer*               mCbChangedOnResize = nullptr;
+    ID3D11Buffer*               mCbChangedEachFrame = nullptr;
 
     ID3D11ShaderResourceView*   mTextureRV = nullptr;
     ID3D11SamplerState*         mSamplerLinear = nullptr;
