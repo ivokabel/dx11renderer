@@ -3,6 +3,7 @@
 #include "utils.hpp"
 
 #include <array>
+#include <vector>
 
 Scene::~Scene() {}
 
@@ -24,71 +25,8 @@ struct SimpleVertex
 };
 
 
-const std::array<SimpleVertex, 6 * 4> sVertices =
-{
-    // Up
-    SimpleVertex{ XMFLOAT3( -1.0f, 1.0f, -1.0f ),  XMFLOAT3( 0.0f, 1.0f, 0.0f ),  XMFLOAT2( 0.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3(  1.0f, 1.0f, -1.0f ),  XMFLOAT3( 0.0f, 1.0f, 0.0f ),  XMFLOAT2( 1.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3(  1.0f, 1.0f,  1.0f ),  XMFLOAT3( 0.0f, 1.0f, 0.0f ),  XMFLOAT2( 1.0f, 1.0f ) },
-    SimpleVertex{ XMFLOAT3( -1.0f, 1.0f,  1.0f ),  XMFLOAT3( 0.0f, 1.0f, 0.0f ),  XMFLOAT2( 0.0f, 1.0f ) },
-
-    // Down
-    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, -1.0f ), XMFLOAT3( 0.0f, -1.0f, 0.0f ), XMFLOAT2( 0.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3(  1.0f, -1.0f, -1.0f ), XMFLOAT3( 0.0f, -1.0f, 0.0f ), XMFLOAT2( 1.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3(  1.0f, -1.0f,  1.0f ), XMFLOAT3( 0.0f, -1.0f, 0.0f ), XMFLOAT2( 1.0f, 1.0f ) },
-    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f,  1.0f ), XMFLOAT3( 0.0f, -1.0f, 0.0f ), XMFLOAT2( 0.0f, 1.0f ) },
-
-    // Side 1
-    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f,  1.0f ), XMFLOAT3( -1.0f, 0.0f, 0.0f ), XMFLOAT2( 0.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, -1.0f ), XMFLOAT3( -1.0f, 0.0f, 0.0f ), XMFLOAT2( 1.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3( -1.0f,  1.0f, -1.0f ), XMFLOAT3( -1.0f, 0.0f, 0.0f ), XMFLOAT2( 1.0f, 1.0f ) },
-    SimpleVertex{ XMFLOAT3( -1.0f,  1.0f,  1.0f ), XMFLOAT3( -1.0f, 0.0f, 0.0f ), XMFLOAT2( 0.0f, 1.0f ) },
-
-    // Side 3
-    SimpleVertex{ XMFLOAT3(  1.0f, -1.0f,  1.0f ), XMFLOAT3( 1.0f, 0.0f, 0.0f ),  XMFLOAT2( 0.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3(  1.0f, -1.0f, -1.0f ), XMFLOAT3( 1.0f, 0.0f, 0.0f ),  XMFLOAT2( 1.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3(  1.0f,  1.0f, -1.0f ), XMFLOAT3( 1.0f, 0.0f, 0.0f ),  XMFLOAT2( 1.0f, 1.0f ) },
-    SimpleVertex{ XMFLOAT3(  1.0f,  1.0f,  1.0f ), XMFLOAT3( 1.0f, 0.0f, 0.0f ),  XMFLOAT2( 0.0f, 1.0f ) },
-
-    // Side 2
-    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, -1.0f ), XMFLOAT3( 0.0f, 0.0f, -1.0f ), XMFLOAT2( 0.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3(  1.0f, -1.0f, -1.0f ), XMFLOAT3( 0.0f, 0.0f, -1.0f ), XMFLOAT2( 1.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3(  1.0f,  1.0f, -1.0f ), XMFLOAT3( 0.0f, 0.0f, -1.0f ), XMFLOAT2( 1.0f, 1.0f ) },
-    SimpleVertex{ XMFLOAT3( -1.0f,  1.0f, -1.0f ), XMFLOAT3( 0.0f, 0.0f, -1.0f ), XMFLOAT2( 0.0f, 1.0f ) },
-
-    // Side 4
-    SimpleVertex{ XMFLOAT3( -1.0f, -1.0f, 1.0f ),  XMFLOAT3( 0.0f, 0.0f, 1.0f ),  XMFLOAT2( 0.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3(  1.0f, -1.0f, 1.0f ),  XMFLOAT3( 0.0f, 0.0f, 1.0f ),  XMFLOAT2( 1.0f, 0.0f ) },
-    SimpleVertex{ XMFLOAT3(  1.0f,  1.0f, 1.0f ),  XMFLOAT3( 0.0f, 0.0f, 1.0f ),  XMFLOAT2( 1.0f, 1.0f ) },
-    SimpleVertex{ XMFLOAT3( -1.0f,  1.0f, 1.0f ),  XMFLOAT3( 0.0f, 0.0f, 1.0f ),  XMFLOAT2( 0.0f, 1.0f ) },
-};
-
-
-const std::array<WORD, 6 * 6> sIndices = {
-    // Up
-    3, 1, 0,
-    2, 1, 3,
-
-    // Down
-    6, 4, 5,
-    7, 4, 6,
-
-    // Side 1
-    11, 9, 8,
-    10, 9, 11,
-
-    // Side 3
-    14, 12, 13,
-    15, 12, 14,
-
-    // Side 2
-    19, 17, 16,
-    18, 17, 19,
-
-    // Side 4
-    22, 20, 21,
-    23, 20, 22
-};
+std::vector<SimpleVertex>   sVertices;
+std::vector<WORD>           sIndices;
 
 
 struct {
@@ -177,6 +115,9 @@ bool Scene::Init(IRenderingContext &ctx)
     if (!ctx.CreatePixelShader(L"../shaders.fx", "PsEmissiveSurf", "ps_4_0", mPixelShaderSolid))
         return false;
 
+    if (!GenerateGometry())
+        return false;
+
     // Create vertex buffer
     D3D11_BUFFER_DESC bd;
     ZeroMemory(&bd, sizeof(bd));
@@ -262,6 +203,78 @@ bool Scene::Init(IRenderingContext &ctx)
     CbChangedOnResize cbChangedOnResize;
     cbChangedOnResize.Projection = XMMatrixTranspose(mProjectionMtrx);
     immCtx->UpdateSubresource(mCbChangedOnResize, 0, NULL, &cbChangedOnResize, 0, 0);
+
+    return true;
+}
+
+
+bool Scene::GenerateGometry()
+{
+    sVertices =
+    {
+        // Up
+        SimpleVertex{ XMFLOAT3(-1.0f, 1.0f, -1.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(0.0f, 0.0f) },
+        SimpleVertex{ XMFLOAT3(1.0f, 1.0f, -1.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(1.0f, 0.0f) },
+        SimpleVertex{ XMFLOAT3(1.0f, 1.0f,  1.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(1.0f, 1.0f) },
+        SimpleVertex{ XMFLOAT3(-1.0f, 1.0f,  1.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(0.0f, 1.0f) },
+
+        // Down
+        SimpleVertex{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+        SimpleVertex{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
+        SimpleVertex{ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
+        SimpleVertex{ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+
+        // Side 1
+        SimpleVertex{ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+        SimpleVertex{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
+        SimpleVertex{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
+        SimpleVertex{ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+
+        // Side 3
+        SimpleVertex{ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT2(0.0f, 0.0f) },
+        SimpleVertex{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT2(1.0f, 0.0f) },
+        SimpleVertex{ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT2(1.0f, 1.0f) },
+        SimpleVertex{ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT2(0.0f, 1.0f) },
+
+        // Side 2
+        SimpleVertex{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 0.0f) },
+        SimpleVertex{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(1.0f, 0.0f) },
+        SimpleVertex{ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(1.0f, 1.0f) },
+        SimpleVertex{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 1.0f) },
+
+        // Side 4
+        SimpleVertex{ XMFLOAT3(-1.0f, -1.0f, 1.0f),  XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT2(0.0f, 0.0f) },
+        SimpleVertex{ XMFLOAT3(1.0f, -1.0f, 1.0f),  XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT2(1.0f, 0.0f) },
+        SimpleVertex{ XMFLOAT3(1.0f,  1.0f, 1.0f),  XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT2(1.0f, 1.0f) },
+        SimpleVertex{ XMFLOAT3(-1.0f,  1.0f, 1.0f),  XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT2(0.0f, 1.0f) },
+    };
+
+    sIndices =
+    {
+        // Up
+        3, 1, 0,
+        2, 1, 3,
+
+        // Down
+        6, 4, 5,
+        7, 4, 6,
+
+        // Side 1
+        11, 9, 8,
+        10, 9, 11,
+
+        // Side 3
+        14, 12, 13,
+        15, 12, 14,
+
+        // Side 2
+        19, 17, 16,
+        18, 17, 19,
+
+        // Side 4
+        22, 20, 21,
+        23, 20, 22
+    };
 
     return true;
 }

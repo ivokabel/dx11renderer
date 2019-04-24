@@ -28,6 +28,10 @@ public:
 
 private:
 
+    bool GenerateGometry();
+
+private:
+
     ID3D11VertexShader*         mVertexShader = nullptr;
     ID3D11PixelShader*          mPixelShaderIllum = nullptr;
     ID3D11PixelShader*          mPixelShaderSolid = nullptr;
