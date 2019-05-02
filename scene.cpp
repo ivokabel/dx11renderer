@@ -25,11 +25,11 @@ struct SimpleVertex
 };
 
 
-class Geometry
+class SceneGeometry
 {
 public:
 
-    ~Geometry();
+    ~SceneGeometry();
 
     bool GenerateCubeData();
     bool CreateDeviceBuffers(IRenderingContext &ctx);
@@ -43,12 +43,12 @@ private:
 
 public:
 
-    // CPU
+    // Local data
     std::vector<SimpleVertex>   sVertices;
     std::vector<WORD>           sIndices;
     D3D11_PRIMITIVE_TOPOLOGY    sPrimTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 
-    // GPU
+    // Device data
     ID3D11Buffer*               mVertexBuffer = nullptr;
     ID3D11Buffer*               mIndexBuffer = nullptr;
 } sGeometry;
@@ -300,12 +300,12 @@ void Scene::Render(IRenderingContext &ctx)
     }
 }
 
-Geometry::~Geometry()
+SceneGeometry::~SceneGeometry()
 {
     Destroy();
 }
 
-bool Geometry::GenerateCubeData()
+bool SceneGeometry::GenerateCubeData()
 {
     sVertices =
     {
@@ -379,7 +379,7 @@ bool Geometry::GenerateCubeData()
 }
 
 
-bool Geometry::CreateDeviceBuffers(IRenderingContext & ctx)
+bool SceneGeometry::CreateDeviceBuffers(IRenderingContext & ctx)
 {
     DestroyDeviceBuffers();
 
@@ -423,20 +423,20 @@ bool Geometry::CreateDeviceBuffers(IRenderingContext & ctx)
 }
 
 
-void Geometry::Destroy()
+void SceneGeometry::Destroy()
 {
     DestroyGeomData();
     DestroyDeviceBuffers();
 }
 
-void Geometry::DestroyGeomData()
+void SceneGeometry::DestroyGeomData()
 {
     sVertices.clear();
     sIndices.clear();
     sPrimTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 }
 
-void Geometry::DestroyDeviceBuffers()
+void SceneGeometry::DestroyDeviceBuffers()
 {
     Utils::ReleaseAndMakeNull(mVertexBuffer);
     Utils::ReleaseAndMakeNull(mIndexBuffer);
