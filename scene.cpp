@@ -25,8 +25,33 @@ struct SimpleVertex
 };
 
 
-std::vector<SimpleVertex>   sVertices;
-std::vector<WORD>           sIndices;
+class Geometry
+{
+public:
+
+    ~Geometry();
+
+    bool GenerateCubeData();
+    bool CreateDeviceBuffers(IRenderingContext &ctx);
+
+    void Destroy();
+
+private:
+
+    void DestroyGeomData();
+    void DestroyDeviceBuffers();
+
+public:
+
+    // CPU
+    std::vector<SimpleVertex>   sVertices;
+    std::vector<WORD>           sIndices;
+    D3D11_PRIMITIVE_TOPOLOGY    sPrimTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+
+    // GPU
+    ID3D11Buffer*               mVertexBuffer = nullptr;
+    ID3D11Buffer*               mIndexBuffer = nullptr;
+} sGeometry;
 
 
 struct {
@@ -115,43 +140,21 @@ bool Scene::Init(IRenderingContext &ctx)
     if (!ctx.CreatePixelShader(L"../shaders.fx", "PsEmissiveSurf", "ps_4_0", mPixelShaderSolid))
         return false;
 
-    if (!GenerateGometry())
+    if (!sGeometry.GenerateCubeData())
+        return false;
+    if (!sGeometry.CreateDeviceBuffers(ctx))
         return false;
 
-    // Create vertex buffer
-    D3D11_BUFFER_DESC bd;
-    ZeroMemory(&bd, sizeof(bd));
-    bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = (UINT)(sizeof(SimpleVertex) * sVertices.size());
-    bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    bd.CPUAccessFlags = 0;
-    D3D11_SUBRESOURCE_DATA initData;
-    ZeroMemory(&initData, sizeof(initData));
-    initData.pSysMem = sVertices.data();
-    hr = device->CreateBuffer(&bd, &initData, &mVertexBuffer);
-    if (FAILED(hr))
-        return false;
-
-    // Set vertex buffer
+    // Set geometry buffers
     UINT stride = sizeof(SimpleVertex);
     UINT offset = 0;
-    immCtx->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offset);
-
-    // Create index buffer
-    bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(WORD) * (UINT)sIndices.size();
-    bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-    bd.CPUAccessFlags = 0;
-    initData.pSysMem = sIndices.data();
-    hr = device->CreateBuffer(&bd, &initData, &mIndexBuffer);
-    if (FAILED(hr))
-        return false;
-
-    // Set index buffer w. topology
-    immCtx->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-    immCtx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    immCtx->IASetVertexBuffers(0, 1, &sGeometry.mVertexBuffer, &stride, &offset);
+    immCtx->IASetIndexBuffer(sGeometry.mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+    immCtx->IASetPrimitiveTopology(sGeometry.sPrimTopology);
 
     // Create constant buffers
+    D3D11_BUFFER_DESC bd;
+    ZeroMemory(&bd, sizeof(bd));
     bd.Usage = D3D11_USAGE_DEFAULT;
     bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     bd.CPUAccessFlags = 0;
@@ -208,7 +211,101 @@ bool Scene::Init(IRenderingContext &ctx)
 }
 
 
-bool Scene::GenerateGometry()
+void Scene::Destroy()
+{
+    Utils::ReleaseAndMakeNull(mVertexShader);
+    Utils::ReleaseAndMakeNull(mPixelShaderIllum);
+    Utils::ReleaseAndMakeNull(mPixelShaderSolid);
+    Utils::ReleaseAndMakeNull(mVertexLayout);
+    Utils::ReleaseAndMakeNull(mCbNeverChanged);
+    Utils::ReleaseAndMakeNull(mCbChangedOnResize);
+    Utils::ReleaseAndMakeNull(mCbChangedEachFrame);
+    Utils::ReleaseAndMakeNull(mTextureRV);
+    Utils::ReleaseAndMakeNull(mSamplerLinear);
+    sGeometry.Destroy();
+}
+
+
+void Scene::Animate(IRenderingContext &ctx)
+{
+    if (!ctx.IsValid())
+        return;
+
+    const float time = ctx.GetCurrentAnimationTime();
+    const float period = 20.f; //seconds
+    const float totalAnimPos = time / period;
+    const float angle = totalAnimPos * XM_2PI;
+
+    // Rotate main cube
+    mWorldMtrx = XMMatrixRotationY(angle);
+
+    // Update mesh color
+    mMeshColor.x = ( sinf( totalAnimPos * 1.0f ) + 1.0f ) * 0.5f;
+    mMeshColor.y = ( cosf( totalAnimPos * 3.0f ) + 1.0f ) * 0.5f;
+    mMeshColor.z = ( sinf( totalAnimPos * 5.0f ) + 1.0f ) * 0.5f;
+
+    // First light is without rotation
+    sLights[0].dirTransf = sLights[0].dir;
+
+    // Second light is rotated
+    XMMATRIX rotationMtrx = XMMatrixRotationY(-2.f * angle);
+    XMVECTOR lightDirVec = XMLoadFloat4(&sLights[1].dir);
+    lightDirVec = XMVector3Transform(lightDirVec, rotationMtrx);
+    XMStoreFloat4(&sLights[1].dirTransf, lightDirVec);
+}
+
+
+void Scene::Render(IRenderingContext &ctx)
+{
+    if (!ctx.IsValid())
+        return;
+
+    auto immCtx = ctx.GetImmediateContext();
+
+    // Constant buffer - main cube
+    CbChangedEachFrame cbEachFrame;
+    XMMATRIX mainCubeScaleMtrx = XMMatrixScaling(1.8f, 1.8f, 1.8f);
+    XMMATRIX mainCubeMtrx = mainCubeScaleMtrx * mWorldMtrx;
+    cbEachFrame.World = XMMatrixTranspose(mainCubeMtrx);
+    cbEachFrame.MeshColor = mMeshColor;
+    cbEachFrame.LightDirs[0] = sLights[0].dirTransf;
+    cbEachFrame.LightDirs[1] = sLights[1].dirTransf;
+    cbEachFrame.LightColors[0] = sLights[0].color;
+    cbEachFrame.LightColors[1] = sLights[1].color;
+    immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
+
+    // Render main cube
+    immCtx->VSSetShader(mVertexShader, nullptr, 0);
+    immCtx->VSSetConstantBuffers(0, 1, &mCbNeverChanged);
+    immCtx->VSSetConstantBuffers(1, 1, &mCbChangedOnResize);
+    immCtx->VSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
+    immCtx->PSSetShader(mPixelShaderIllum, nullptr, 0);
+    immCtx->PSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
+    immCtx->PSSetShaderResources(0, 1, &mTextureRV);
+    immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
+    immCtx->DrawIndexed((UINT)sGeometry.sIndices.size(), 0, 0);
+
+    // Render each light proxy geometry
+    for (int i = 0; i < sLights.size(); i++)
+    {
+        XMMATRIX lightScaleMtrx = XMMatrixScaling(0.2f, 0.2f, 0.2f);
+        XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(4.0f * XMLoadFloat4(&sLights[i].dirTransf));
+        XMMATRIX lightMtrx = lightScaleMtrx * lightTrnslMtrx;
+        cbEachFrame.World = XMMatrixTranspose(lightMtrx);
+        cbEachFrame.MeshColor = sLights[i].color;
+        immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
+
+        immCtx->PSSetShader(mPixelShaderSolid, nullptr, 0);
+        immCtx->DrawIndexed((UINT)sGeometry.sIndices.size(), 0, 0);
+    }
+}
+
+Geometry::~Geometry()
+{
+    Destroy();
+}
+
+bool Geometry::GenerateCubeData()
 {
     sVertices =
     {
@@ -276,96 +373,71 @@ bool Scene::GenerateGometry()
         23, 20, 22
     };
 
+    sPrimTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
     return true;
 }
 
 
-void Scene::Destroy()
+bool Geometry::CreateDeviceBuffers(IRenderingContext & ctx)
 {
-    Utils::ReleaseAndMakeNull(mVertexShader);
-    Utils::ReleaseAndMakeNull(mPixelShaderIllum);
-    Utils::ReleaseAndMakeNull(mPixelShaderSolid);
-    Utils::ReleaseAndMakeNull(mVertexLayout);
+    DestroyDeviceBuffers();
+
+    auto device = ctx.GetDevice();
+    if (!device)
+        return false;
+
+    HRESULT hr = S_OK;
+
+    // Vertex buffer
+    D3D11_BUFFER_DESC bd;
+    ZeroMemory(&bd, sizeof(bd));
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = (UINT)(sizeof(SimpleVertex) * sGeometry.sVertices.size());
+    bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    bd.CPUAccessFlags = 0;
+    D3D11_SUBRESOURCE_DATA initData;
+    ZeroMemory(&initData, sizeof(initData));
+    initData.pSysMem = sGeometry.sVertices.data();
+    hr = device->CreateBuffer(&bd, &initData, &sGeometry.mVertexBuffer);
+    if (FAILED(hr))
+    {
+        DestroyDeviceBuffers();
+        return false;
+    }
+
+    // Index buffer
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = sizeof(WORD) * (UINT)sGeometry.sIndices.size();
+    bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+    bd.CPUAccessFlags = 0;
+    initData.pSysMem = sGeometry.sIndices.data();
+    hr = device->CreateBuffer(&bd, &initData, &sGeometry.mIndexBuffer);
+    if (FAILED(hr))
+    {
+        DestroyDeviceBuffers();
+        return false;
+    }
+
+    return true;
+}
+
+
+void Geometry::Destroy()
+{
+    DestroyGeomData();
+    DestroyDeviceBuffers();
+}
+
+void Geometry::DestroyGeomData()
+{
+    sVertices.clear();
+    sIndices.clear();
+    sPrimTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+}
+
+void Geometry::DestroyDeviceBuffers()
+{
     Utils::ReleaseAndMakeNull(mVertexBuffer);
     Utils::ReleaseAndMakeNull(mIndexBuffer);
-    Utils::ReleaseAndMakeNull(mCbNeverChanged);
-    Utils::ReleaseAndMakeNull(mCbChangedOnResize);
-    Utils::ReleaseAndMakeNull(mCbChangedEachFrame);
-    Utils::ReleaseAndMakeNull(mTextureRV);
-    Utils::ReleaseAndMakeNull(mSamplerLinear);
-}
-
-
-void Scene::Animate(IRenderingContext &ctx)
-{
-    if (!ctx.IsValid())
-        return;
-
-    const float time = ctx.GetCurrentAnimationTime();
-    const float period = 20.f; //seconds
-    const float totalAnimPos = time / period;
-    const float angle = totalAnimPos * XM_2PI;
-
-    // Rotate main cube
-    mWorldMtrx = XMMatrixRotationY(angle);
-
-    // Update mesh color
-    mMeshColor.x = ( sinf( totalAnimPos * 1.0f ) + 1.0f ) * 0.5f;
-    mMeshColor.y = ( cosf( totalAnimPos * 3.0f ) + 1.0f ) * 0.5f;
-    mMeshColor.z = ( sinf( totalAnimPos * 5.0f ) + 1.0f ) * 0.5f;
-
-    // First light is without rotation
-    sLights[0].dirTransf = sLights[0].dir;
-
-    // Second light is rotated
-    XMMATRIX rotationMtrx = XMMatrixRotationY(-2.f * angle);
-    XMVECTOR lightDirVec = XMLoadFloat4(&sLights[1].dir);
-    lightDirVec = XMVector3Transform(lightDirVec, rotationMtrx);
-    XMStoreFloat4(&sLights[1].dirTransf, lightDirVec);
-}
-
-
-void Scene::Render(IRenderingContext &ctx)
-{
-    if (!ctx.IsValid())
-        return;
-
-    auto immCtx = ctx.GetImmediateContext();
-
-    // Constant buffer - main cube
-    CbChangedEachFrame cbEachFrame;
-    XMMATRIX mainCubeScaleMtrx = XMMatrixScaling(1.8f, 1.8f, 1.8f);
-    XMMATRIX mainCubeMtrx = mainCubeScaleMtrx * mWorldMtrx;
-    cbEachFrame.World = XMMatrixTranspose(mainCubeMtrx);
-    cbEachFrame.MeshColor = mMeshColor;
-    cbEachFrame.LightDirs[0] = sLights[0].dirTransf;
-    cbEachFrame.LightDirs[1] = sLights[1].dirTransf;
-    cbEachFrame.LightColors[0] = sLights[0].color;
-    cbEachFrame.LightColors[1] = sLights[1].color;
-    immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
-
-    // Render main cube
-    immCtx->VSSetShader(mVertexShader, nullptr, 0);
-    immCtx->VSSetConstantBuffers(0, 1, &mCbNeverChanged);
-    immCtx->VSSetConstantBuffers(1, 1, &mCbChangedOnResize);
-    immCtx->VSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
-    immCtx->PSSetShader(mPixelShaderIllum, nullptr, 0);
-    immCtx->PSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
-    immCtx->PSSetShaderResources(0, 1, &mTextureRV);
-    immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
-    immCtx->DrawIndexed((UINT)sIndices.size(), 0, 0);
-
-    // Render each light proxy geometry
-    for (int i = 0; i < sLights.size(); i++)
-    {
-        XMMATRIX lightScaleMtrx = XMMatrixScaling(0.2f, 0.2f, 0.2f);
-        XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(4.0f * XMLoadFloat4(&sLights[i].dirTransf));
-        XMMATRIX lightMtrx = lightScaleMtrx * lightTrnslMtrx;
-        cbEachFrame.World = XMMatrixTranspose(lightMtrx);
-        cbEachFrame.MeshColor = sLights[i].color;
-        immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
-
-        immCtx->PSSetShader(mPixelShaderSolid, nullptr, 0);
-        immCtx->DrawIndexed((UINT)sIndices.size(), 0, 0);
-    }
 }
