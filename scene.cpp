@@ -29,7 +29,7 @@ public:
     ~SceneGeometry();
 
     bool GenerateCubeData();
-    bool GenerateSphereData();
+    bool GenerateOctahedronData();
     bool CreateDeviceBuffers(IRenderingContext &ctx);
 
     void Destroy();
@@ -146,7 +146,7 @@ bool Scene::Init(IRenderingContext &ctx)
 
     //if (!sGeometry.GenerateCubeData())
     //    return false;
-    if (!sGeometry.GenerateSphereData())
+    if (!sGeometry.GenerateOctahedronData())
         return false;
     if (!sGeometry.CreateDeviceBuffers(ctx))
         return false;
@@ -385,7 +385,7 @@ bool SceneGeometry::GenerateCubeData()
 }
 
 
-bool SceneGeometry::GenerateSphereData()
+bool SceneGeometry::GenerateOctahedronData()
 {
     sVertices =
     {
