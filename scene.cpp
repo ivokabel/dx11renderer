@@ -30,6 +30,8 @@ public:
 
     bool GenerateCubeData();
     bool GenerateOctahedronData();
+    bool GenerateSphericalStripeData();
+
     bool CreateDeviceBuffers(IRenderingContext &ctx);
 
     void Destroy();
@@ -144,9 +146,9 @@ bool Scene::Init(IRenderingContext &ctx)
     if (!ctx.CreatePixelShader(L"../shaders.fx", "PsEmissiveSurf", "ps_4_0", mPixelShaderSolid))
         return false;
 
-    //if (!sGeometry.GenerateCubeData())
-    //    return false;
-    if (!sGeometry.GenerateOctahedronData())
+  //if (!sGeometry.GenerateCubeData())
+  //if (!sGeometry.GenerateOctahedronData())
+    if (!sGeometry.GenerateSphericalStripeData())
         return false;
     if (!sGeometry.CreateDeviceBuffers(ctx))
         return false;
@@ -422,6 +424,53 @@ bool SceneGeometry::GenerateOctahedronData()
     };
 
     sPrimTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+    return true;
+}
+
+
+bool SceneGeometry::GenerateSphericalStripeData()
+{
+    static const size_t vertSegmCount = 20;
+    static_assert(vertSegmCount >= 2, "spherical stripe must have at least two vertical segments");
+
+    const size_t horzLinesCount = vertSegmCount - 1;
+    const size_t vertexCount = 2 /*poles*/ + horzLinesCount * 2;
+    const size_t indexCount  = 2 /*poles*/ + horzLinesCount * 2;
+
+    // Vertices
+    sVertices.reserve(vertexCount);
+    const float vertSegmSize = XM_PI / vertSegmCount;
+    const float baseX1 =  0.f;
+    const float baseZ1 = -1.f;
+    const float baseX2 =  1.f;
+    const float baseZ2 =  0.f;
+    for (WORD line = 0; line < horzLinesCount; line++)
+    {
+        const float theta = (line + 1) * vertSegmSize;
+        const float ringRadius = sin(theta);
+        const float y = cos(theta);
+        const auto pt1 = XMFLOAT3(baseX1 * ringRadius, y, baseZ1 * ringRadius);
+        const auto pt2 = XMFLOAT3(baseX2 * ringRadius, y, baseZ2 * ringRadius);
+        // TODO: UVs
+        sVertices.push_back(SceneVertex{ pt2, pt2,  XMFLOAT2(0.00f, 0.5f) }); // position = normal
+        sVertices.push_back(SceneVertex{ pt1, pt1,  XMFLOAT2(0.00f, 0.5f) }); // position = normal
+    }
+    sVertices.push_back(SceneVertex{ XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(0.0f, 0.0f) }); // north pole
+    sVertices.push_back(SceneVertex{ XMFLOAT3(0.0f,-1.0f, 0.0f),  XMFLOAT3(0.0f,-1.0f, 0.0f),  XMFLOAT2(1.0f, 1.0f) }); // south pole
+
+    // Indices
+    sIndices.reserve(indexCount);
+    sIndices.push_back(vertexCount - 2); // north pole
+    for (WORD line = 0; line < horzLinesCount; line++)
+    {
+        sIndices.push_back(line * 2);
+        sIndices.push_back(line * 2 + 1);
+    }
+    sIndices.push_back(vertexCount - 1); // south pole
+
+    sPrimTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+    //sPrimTopology = D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP;
 
     return true;
 }
