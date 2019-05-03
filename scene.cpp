@@ -5,9 +5,6 @@
 #include <array>
 #include <vector>
 
-Scene::~Scene() {}
-
-
 typedef D3D11_INPUT_ELEMENT_DESC InputElmDesc;
 const std::array<InputElmDesc, 3> sVertexLayout =
 {
@@ -32,6 +29,7 @@ public:
     ~SceneGeometry();
 
     bool GenerateCubeData();
+    bool GenerateSphereData();
     bool CreateDeviceBuffers(IRenderingContext &ctx);
 
     void Destroy();
@@ -102,6 +100,12 @@ struct CbChangedEachFrame
 };
 
 
+Scene::~Scene()
+{
+    Destroy();
+}
+
+
 bool Scene::Init(IRenderingContext &ctx)
 {
     if (!ctx.IsValid())
@@ -140,7 +144,9 @@ bool Scene::Init(IRenderingContext &ctx)
     if (!ctx.CreatePixelShader(L"../shaders.fx", "PsEmissiveSurf", "ps_4_0", mPixelShaderSolid))
         return false;
 
-    if (!sGeometry.GenerateCubeData())
+    //if (!sGeometry.GenerateCubeData())
+    //    return false;
+    if (!sGeometry.GenerateSphereData())
         return false;
     if (!sGeometry.CreateDeviceBuffers(ctx))
         return false;
@@ -289,7 +295,7 @@ void Scene::Render(IRenderingContext &ctx)
     for (int i = 0; i < sLights.size(); i++)
     {
         XMMATRIX lightScaleMtrx = XMMatrixScaling(0.2f, 0.2f, 0.2f);
-        XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(4.0f * XMLoadFloat4(&sLights[i].dirTransf));
+        XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(5.0f * XMLoadFloat4(&sLights[i].dirTransf));
         XMMATRIX lightMtrx = lightScaleMtrx * lightTrnslMtrx;
         cbEachFrame.World = XMMatrixTranspose(lightMtrx);
         cbEachFrame.MeshColor = sLights[i].color;
@@ -371,6 +377,48 @@ bool SceneGeometry::GenerateCubeData()
         // Side 4
         22, 20, 21,
         23, 20, 22
+    };
+
+    sPrimTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+    return true;
+}
+
+
+bool SceneGeometry::GenerateSphereData()
+{
+    sVertices =
+    {
+        // Noth pole
+        SceneVertex{ XMFLOAT3( 0.0f, 1.0f, 0.0f),  XMFLOAT3( 0.0f, 1.0f, 0.0f),  XMFLOAT2(0.0f, 0.0f) },
+
+        // Points on equator
+        SceneVertex{ XMFLOAT3( 1.0f, 0.0f, 0.0f),  XMFLOAT3( 1.0f, 0.0f, 0.0f),  XMFLOAT2(0.00f, 0.5f) },
+        SceneVertex{ XMFLOAT3( 0.0f, 0.0f, 1.0f),  XMFLOAT3( 0.0f, 0.0f, 1.0f),  XMFLOAT2(0.25f, 0.5f) },
+        SceneVertex{ XMFLOAT3(-1.0f, 0.0f, 0.0f),  XMFLOAT3(-1.0f, 0.0f, 0.0f),  XMFLOAT2(0.50f, 0.5f) },
+        SceneVertex{ XMFLOAT3( 0.0f, 0.0f,-1.0f),  XMFLOAT3( 0.0f, 0.0f,-1.0f),  XMFLOAT2(0.75f, 0.5f) },
+
+        // South pole
+        SceneVertex{ XMFLOAT3( 0.0f,-1.0f, 0.0f),  XMFLOAT3( 0.0f,-1.0f, 0.0f),  XMFLOAT2(1.0f, 1.0f) },
+    };
+
+    sIndices =
+    {
+        // Band ++
+        0, 2, 1,
+        1, 2, 5,
+
+        // Band -+
+        0, 3, 2,
+        2, 3, 5,
+
+        // Band --
+        0, 4, 3,
+        3, 4, 5,
+
+        // Band +-
+        0, 1, 4,
+        4, 1, 5,
     };
 
     sPrimTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
