@@ -29,9 +29,9 @@ public:
 
     ~SceneGeometry();
 
-    bool GenerateCubeData();
-    bool GenerateOctahedronData();
-    bool GenerateSphereData();
+    bool GenerateCube();
+    bool GenerateOctahedron();
+    bool GenerateSphere();
 
     bool CreateDeviceBuffers(IRenderingContext &ctx);
 
@@ -45,9 +45,9 @@ private:
 public:
 
     // Local data
-    std::vector<SceneVertex>    sVertices;
-    std::vector<WORD>           sIndices;
-    D3D11_PRIMITIVE_TOPOLOGY    sPrimTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    std::vector<SceneVertex>    vertices;
+    std::vector<WORD>           indices;
+    D3D11_PRIMITIVE_TOPOLOGY    topology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 
     // Device data
     ID3D11Buffer*               mVertexBuffer = nullptr;
@@ -147,9 +147,9 @@ bool Scene::Init(IRenderingContext &ctx)
     if (!ctx.CreatePixelShader(L"../shaders.fx", "PsEmissiveSurf", "ps_4_0", mPixelShaderSolid))
         return false;
 
-  //if (!sGeometry.GenerateCubeData())
-  //if (!sGeometry.GenerateOctahedronData())
-    if (!sGeometry.GenerateSphereData())
+  //if (!sGeometry.GenerateCube())
+  //if (!sGeometry.GenerateOctahedron())
+    if (!sGeometry.GenerateSphere())
         return false;
     if (!sGeometry.CreateDeviceBuffers(ctx))
         return false;
@@ -159,7 +159,7 @@ bool Scene::Init(IRenderingContext &ctx)
     UINT offset = 0;
     immCtx->IASetVertexBuffers(0, 1, &sGeometry.mVertexBuffer, &stride, &offset);
     immCtx->IASetIndexBuffer(sGeometry.mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-    immCtx->IASetPrimitiveTopology(sGeometry.sPrimTopology);
+    immCtx->IASetPrimitiveTopology(sGeometry.topology);
 
     // Create constant buffers
     D3D11_BUFFER_DESC bd;
@@ -292,7 +292,7 @@ void Scene::Render(IRenderingContext &ctx)
     immCtx->PSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
     immCtx->PSSetShaderResources(0, 1, &mTextureRV);
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
-    immCtx->DrawIndexed((UINT)sGeometry.sIndices.size(), 0, 0);
+    immCtx->DrawIndexed((UINT)sGeometry.indices.size(), 0, 0);
 
     // Render each light proxy geometry
     for (int i = 0; i < sLights.size(); i++)
@@ -305,7 +305,7 @@ void Scene::Render(IRenderingContext &ctx)
         immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
 
         immCtx->PSSetShader(mPixelShaderSolid, nullptr, 0);
-        immCtx->DrawIndexed((UINT)sGeometry.sIndices.size(), 0, 0);
+        immCtx->DrawIndexed((UINT)sGeometry.indices.size(), 0, 0);
     }
 }
 
@@ -314,9 +314,9 @@ SceneGeometry::~SceneGeometry()
     Destroy();
 }
 
-bool SceneGeometry::GenerateCubeData()
+bool SceneGeometry::GenerateCube()
 {
-    sVertices =
+    vertices =
     {
         // Up
         SceneVertex{ XMFLOAT3(-1.0f, 1.0f, -1.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(0.0f, 0.0f) },
@@ -355,7 +355,7 @@ bool SceneGeometry::GenerateCubeData()
         SceneVertex{ XMFLOAT3(-1.0f,  1.0f, 1.0f),  XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT2(0.0f, 1.0f) },
     };
 
-    sIndices =
+    indices =
     {
         // Up
         3, 1, 0,
@@ -382,15 +382,15 @@ bool SceneGeometry::GenerateCubeData()
         23, 20, 22
     };
 
-    sPrimTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
     return true;
 }
 
 
-bool SceneGeometry::GenerateOctahedronData()
+bool SceneGeometry::GenerateOctahedron()
 {
-    sVertices =
+    vertices =
     {
         // Noth pole
         SceneVertex{ XMFLOAT3( 0.0f, 1.0f, 0.0f),  XMFLOAT3( 0.0f, 1.0f, 0.0f),  XMFLOAT2(0.0f, 0.0f) },
@@ -405,7 +405,7 @@ bool SceneGeometry::GenerateOctahedronData()
         SceneVertex{ XMFLOAT3( 0.0f,-1.0f, 0.0f),  XMFLOAT3( 0.0f,-1.0f, 0.0f),  XMFLOAT2(1.0f, 1.0f) },
     };
 
-    sIndices =
+    indices =
     {
         // Band ++
         0, 2, 1,
@@ -424,13 +424,13 @@ bool SceneGeometry::GenerateOctahedronData()
         4, 1, 5,
     };
 
-    sPrimTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
     return true;
 }
 
 
-bool SceneGeometry::GenerateSphereData()
+bool SceneGeometry::GenerateSphere()
 {
     static const WORD vertSegmCount = 30;
     static const WORD stripCount = 60;
@@ -444,7 +444,7 @@ bool SceneGeometry::GenerateSphereData()
     const WORD indexCount  = stripCount * (2 /*poles*/ + 2 * horzLineCount + 1 /*strip restart*/);
 
     // Vertices
-    sVertices.reserve(vertexCount);
+    vertices.reserve(vertexCount);
     const float stripSize = XM_2PI / stripCount;
     const float vertSegmSize = XM_PI / vertSegmCount;
     for (WORD strip = 0; strip < stripCount; strip++)
@@ -460,34 +460,34 @@ bool SceneGeometry::GenerateSphereData()
             const float y = cos(theta);
             const auto pt = XMFLOAT3(xBase * ringRadius, y, zBase * ringRadius);
             const float v = (line + 1) * (1.f / vertSegmCount);
-            sVertices.push_back(SceneVertex{ pt, pt,  XMFLOAT2(u, v) }); // position==normal
+            vertices.push_back(SceneVertex{ pt, pt,  XMFLOAT2(u, v) }); // position==normal
         }
         const float uMid = 0.f; //debug, (u1 + u2) / 2;
-        sVertices.push_back(SceneVertex{ XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(uMid, 0.0f) }); // north pole
-        sVertices.push_back(SceneVertex{ XMFLOAT3(0.0f,-1.0f, 0.0f),  XMFLOAT3(0.0f,-1.0f, 0.0f),  XMFLOAT2(uMid, 1.0f) }); // south pole
+        vertices.push_back(SceneVertex{ XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(uMid, 0.0f) }); // north pole
+        vertices.push_back(SceneVertex{ XMFLOAT3(0.0f,-1.0f, 0.0f),  XMFLOAT3(0.0f,-1.0f, 0.0f),  XMFLOAT2(uMid, 1.0f) }); // south pole
     }
 
-    assert(sVertices.size() == vertexCount);
+    assert(vertices.size() == vertexCount);
 
     // Indices
-    sIndices.reserve(indexCount);
+    indices.reserve(indexCount);
     for (WORD strip = 0; strip < stripCount; strip++)
     {
         const WORD idxOffset = strip * vertexCountPerStrip;
-        sIndices.push_back(idxOffset + vertexCountPerStrip - 2); // north pole
+        indices.push_back(idxOffset + vertexCountPerStrip - 2); // north pole
         for (WORD line = 0; line < horzLineCount; line++)
         {
-            sIndices.push_back((idxOffset + line + vertexCountPerStrip) % vertexCount); // next strip, same line
-            sIndices.push_back( idxOffset + line);
+            indices.push_back((idxOffset + line + vertexCountPerStrip) % vertexCount); // next strip, same line
+            indices.push_back( idxOffset + line);
         }
-        sIndices.push_back(idxOffset + vertexCountPerStrip - 1); // south pole
-        sIndices.push_back(static_cast<WORD>(-1)); // strip restart
+        indices.push_back(idxOffset + vertexCountPerStrip - 1); // south pole
+        indices.push_back(static_cast<WORD>(-1)); // strip restart
     }
 
-    assert(sIndices.size() == indexCount);
+    assert(indices.size() == indexCount);
 
-    sPrimTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
-    //sPrimTopology = D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP;
+    topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+    //topology = D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP;
 
     return true;
 }
@@ -507,12 +507,12 @@ bool SceneGeometry::CreateDeviceBuffers(IRenderingContext & ctx)
     D3D11_BUFFER_DESC bd;
     ZeroMemory(&bd, sizeof(bd));
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = (UINT)(sizeof(SceneVertex) * sGeometry.sVertices.size());
+    bd.ByteWidth = (UINT)(sizeof(SceneVertex) * sGeometry.vertices.size());
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bd.CPUAccessFlags = 0;
     D3D11_SUBRESOURCE_DATA initData;
     ZeroMemory(&initData, sizeof(initData));
-    initData.pSysMem = sGeometry.sVertices.data();
+    initData.pSysMem = sGeometry.vertices.data();
     hr = device->CreateBuffer(&bd, &initData, &sGeometry.mVertexBuffer);
     if (FAILED(hr))
     {
@@ -522,10 +522,10 @@ bool SceneGeometry::CreateDeviceBuffers(IRenderingContext & ctx)
 
     // Index buffer
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(WORD) * (UINT)sGeometry.sIndices.size();
+    bd.ByteWidth = sizeof(WORD) * (UINT)sGeometry.indices.size();
     bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
     bd.CPUAccessFlags = 0;
-    initData.pSysMem = sGeometry.sIndices.data();
+    initData.pSysMem = sGeometry.indices.data();
     hr = device->CreateBuffer(&bd, &initData, &sGeometry.mIndexBuffer);
     if (FAILED(hr))
     {
@@ -545,9 +545,9 @@ void SceneGeometry::Destroy()
 
 void SceneGeometry::DestroyGeomData()
 {
-    sVertices.clear();
-    sIndices.clear();
-    sPrimTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    vertices.clear();
+    indices.clear();
+    topology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 }
 
 void SceneGeometry::DestroyDeviceBuffers()
