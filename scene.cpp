@@ -497,6 +497,12 @@ bool SceneGeometry::GenerateSphere()
     topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
     //topology = D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP; // debug
 
+    Log::Debug(L"SceneGeometry::GenerateSphere: "
+               L"%d segments, %d strips => %d triangles, %d vertices, %d indices",
+               vertSegmCount, stripCount,
+               stripCount * (2 * horzLineCount),
+               vertexCount, indexCount);
+
     return true;
 }
 
