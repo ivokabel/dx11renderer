@@ -2,6 +2,7 @@
 #include "log.hpp"
 #include "utils.hpp"
 
+#include <cassert>
 #include <array>
 #include <vector>
 
@@ -30,7 +31,7 @@ public:
 
     bool GenerateCubeData();
     bool GenerateOctahedronData();
-    bool GenerateSphericalStripeData();
+    bool GenerateSphereData();
 
     bool CreateDeviceBuffers(IRenderingContext &ctx);
 
@@ -148,7 +149,7 @@ bool Scene::Init(IRenderingContext &ctx)
 
   //if (!sGeometry.GenerateCubeData())
   //if (!sGeometry.GenerateOctahedronData())
-    if (!sGeometry.GenerateSphericalStripeData())
+    if (!sGeometry.GenerateSphereData())
         return false;
     if (!sGeometry.CreateDeviceBuffers(ctx))
         return false;
@@ -429,48 +430,61 @@ bool SceneGeometry::GenerateOctahedronData()
 }
 
 
-bool SceneGeometry::GenerateSphericalStripeData()
+bool SceneGeometry::GenerateSphereData()
 {
-    static const size_t vertSegmCount = 12;
-    static_assert(vertSegmCount >= 2, "spherical stripe must have at least two vertical segments");
+    static const WORD vertSegmCount = 30;
+    static const WORD stripCount = 60;
 
-    const size_t horzLineCount = vertSegmCount - 1;
-    const size_t vertexCount = 2 /*poles*/ + horzLineCount * 2;
-    const size_t indexCount  = 2 /*poles*/ + horzLineCount * 2;
+    static_assert(vertSegmCount >= 2, "Spherical stripe must have at least 2 vertical segments");
+    static_assert(stripCount >= 3, "Sphere must have at least 3 stripes");
+
+    const WORD horzLineCount = vertSegmCount - 1;
+    const WORD vertexCountPerStrip = 2 /*poles*/ + horzLineCount;
+    const WORD vertexCount = stripCount * vertexCountPerStrip;
+    const WORD indexCount  = stripCount * (2 /*poles*/ + 2 * horzLineCount + 1 /*strip restart*/);
 
     // Vertices
     sVertices.reserve(vertexCount);
+    const float stripSize = XM_2PI / stripCount;
     const float vertSegmSize = XM_PI / vertSegmCount;
-    const float x1Base =  0.f;
-    const float z1Base = -1.f;
-    const float x2Base =  1.f;
-    const float z2Base =  0.f;
-    const float u1 = 0.f;
-    const float u2 = 0.25f;
-    const float uMid = (u1 + u2) / 2;
-    for (WORD line = 0; line < horzLineCount; line++)
+    for (WORD strip = 0; strip < stripCount; strip++)
     {
-        const float theta = (line + 1) * vertSegmSize;
-        const float ringRadius = sin(theta);
-        const float y = cos(theta);
-        const auto pt1 = XMFLOAT3(x1Base * ringRadius, y, z1Base * ringRadius);
-        const auto pt2 = XMFLOAT3(x2Base * ringRadius, y, z2Base * ringRadius);
-        const float v = (line + 1) * (1.f / vertSegmCount);
-        sVertices.push_back(SceneVertex{ pt2, pt2,  XMFLOAT2(u1, v) }); // position==normal
-        sVertices.push_back(SceneVertex{ pt1, pt1,  XMFLOAT2(u2, v) }); // position==normal
+        const float phi = strip * stripSize;
+        const float xBase = cos(phi);
+        const float zBase = sin(phi);
+        const float u = 0.25f;
+        for (WORD line = 0; line < horzLineCount; line++)
+        {
+            const float theta = (line + 1) * vertSegmSize;
+            const float ringRadius = sin(theta);
+            const float y = cos(theta);
+            const auto pt = XMFLOAT3(xBase * ringRadius, y, zBase * ringRadius);
+            const float v = (line + 1) * (1.f / vertSegmCount);
+            sVertices.push_back(SceneVertex{ pt, pt,  XMFLOAT2(u, v) }); // position==normal
+        }
+        const float uMid = 0.f; //debug, (u1 + u2) / 2;
+        sVertices.push_back(SceneVertex{ XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(uMid, 0.0f) }); // north pole
+        sVertices.push_back(SceneVertex{ XMFLOAT3(0.0f,-1.0f, 0.0f),  XMFLOAT3(0.0f,-1.0f, 0.0f),  XMFLOAT2(uMid, 1.0f) }); // south pole
     }
-    sVertices.push_back(SceneVertex{ XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(uMid, 0.0f) }); // north pole
-    sVertices.push_back(SceneVertex{ XMFLOAT3(0.0f,-1.0f, 0.0f),  XMFLOAT3(0.0f,-1.0f, 0.0f),  XMFLOAT2(uMid, 1.0f) }); // south pole
+
+    assert(sVertices.size() == vertexCount);
 
     // Indices
     sIndices.reserve(indexCount);
-    sIndices.push_back(vertexCount - 2); // north pole
-    for (WORD line = 0; line < horzLineCount; line++)
+    for (WORD strip = 0; strip < stripCount; strip++)
     {
-        sIndices.push_back(line * 2);
-        sIndices.push_back(line * 2 + 1);
+        const WORD idxOffset = strip * vertexCountPerStrip;
+        sIndices.push_back(idxOffset + vertexCountPerStrip - 2); // north pole
+        for (WORD line = 0; line < horzLineCount; line++)
+        {
+            sIndices.push_back((idxOffset + line + vertexCountPerStrip) % vertexCount); // next strip, same line
+            sIndices.push_back( idxOffset + line);
+        }
+        sIndices.push_back(idxOffset + vertexCountPerStrip - 1); // south pole
+        sIndices.push_back(static_cast<WORD>(-1)); // strip restart
     }
-    sIndices.push_back(vertexCount - 1); // south pole
+
+    assert(sIndices.size() == indexCount);
 
     sPrimTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
     //sPrimTopology = D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP;
