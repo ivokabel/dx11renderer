@@ -200,7 +200,7 @@ bool Scene::Init(IRenderingContext &ctx)
         return hr;
 
     // Matrices
-    mWorldMtrx = XMMatrixIdentity();
+    mMainObjectWorldMtrx = XMMatrixIdentity();
     mViewMtrx = XMMatrixLookAtLH(sViewData.eye, sViewData.at, sViewData.up);
     mProjectionMtrx = XMMatrixPerspectiveFovLH(XM_PIDIV4,
                                                  (FLOAT)wndWidth / wndHeight,
@@ -245,8 +245,11 @@ void Scene::Animate(IRenderingContext &ctx)
     const float totalAnimPos = time / period;
     const float angle = totalAnimPos * XM_2PI;
 
-    // Rotate main cube
-    mWorldMtrx = XMMatrixRotationY(angle);
+    // Rotate main object
+    XMMATRIX mainObjectScaleMtrx = XMMatrixScaling(1.8f, 1.8f, 1.8f);
+    //XMMATRIX mainObjectTrnslMtrx = XMMatrixTranslation(0.f, cos(5 * totalAnimPos * XM_2PI) - 1.5f, 0.f);
+    XMMATRIX mainObjectRotMtrx = XMMatrixRotationY(angle);
+    mMainObjectWorldMtrx = mainObjectScaleMtrx * mainObjectRotMtrx /** mainObjectTrnslMtrx*/;
 
     // Update mesh color
     mMeshColor.x = ( sinf( totalAnimPos * 1.0f ) + 1.0f ) * 0.5f;
@@ -271,11 +274,9 @@ void Scene::Render(IRenderingContext &ctx)
 
     auto immCtx = ctx.GetImmediateContext();
 
-    // Constant buffer - main cube
+    // Constant buffer - main object
     CbChangedEachFrame cbEachFrame;
-    XMMATRIX mainCubeScaleMtrx = XMMatrixScaling(1.8f, 1.8f, 1.8f);
-    XMMATRIX mainCubeMtrx = mainCubeScaleMtrx * mWorldMtrx;
-    cbEachFrame.World = XMMatrixTranspose(mainCubeMtrx);
+    cbEachFrame.World = XMMatrixTranspose(mMainObjectWorldMtrx);
     cbEachFrame.MeshColor = mMeshColor;
     cbEachFrame.LightDirs[0] = sLights[0].dirTransf;
     cbEachFrame.LightDirs[1] = sLights[1].dirTransf;
@@ -283,7 +284,7 @@ void Scene::Render(IRenderingContext &ctx)
     cbEachFrame.LightColors[1] = sLights[1].color;
     immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
 
-    // Render main cube
+    // Render main object
     immCtx->VSSetShader(mVertexShader, nullptr, 0);
     immCtx->VSSetConstantBuffers(0, 1, &mCbNeverChanged);
     immCtx->VSSetConstantBuffers(1, 1, &mCbChangedOnResize);
@@ -432,8 +433,8 @@ bool SceneGeometry::GenerateOctahedron()
 
 bool SceneGeometry::GenerateSphere()
 {
-    static const WORD vertSegmCount = 30;
-    static const WORD stripCount = 60;
+    static const WORD vertSegmCount = 20;
+    static const WORD stripCount = 40;
 
     static_assert(vertSegmCount >= 2, "Spherical stripe must have at least 2 vertical segments");
     static_assert(stripCount >= 3, "Sphere must have at least 3 stripes");

@@ -40,7 +40,7 @@ private:
     ID3D11ShaderResourceView*   mTextureRV = nullptr;
     ID3D11SamplerState*         mSamplerLinear = nullptr;
 
-    XMMATRIX                    mWorldMtrx;
+    XMMATRIX                    mMainObjectWorldMtrx;
     XMMATRIX                    mViewMtrx;
     XMMATRIX                    mProjectionMtrx;
 
