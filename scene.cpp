@@ -246,7 +246,7 @@ void Scene::Animate(IRenderingContext &ctx)
     const float angle = totalAnimPos * XM_2PI;
 
     // Rotate main object
-    XMMATRIX mainObjectScaleMtrx = XMMatrixScaling(1.8f, 1.8f, 1.8f);
+    XMMATRIX mainObjectScaleMtrx = XMMatrixScaling(2.6f, 2.6f, 2.6f);
     //XMMATRIX mainObjectTrnslMtrx = XMMatrixTranslation(0.f, cos(5 * totalAnimPos * XM_2PI) - 1.5f, 0.f);
     XMMATRIX mainObjectRotMtrx = XMMatrixRotationY(angle);
     mMainObjectWorldMtrx = mainObjectScaleMtrx * mainObjectRotMtrx /** mainObjectTrnslMtrx*/;
@@ -298,8 +298,8 @@ void Scene::Render(IRenderingContext &ctx)
     // Render each light proxy geometry
     for (int i = 0; i < sLights.size(); i++)
     {
-        XMMATRIX lightScaleMtrx = XMMatrixScaling(0.2f, 0.2f, 0.2f);
-        XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(5.0f * XMLoadFloat4(&sLights[i].dirTransf));
+        XMMATRIX lightScaleMtrx = XMMatrixScaling(0.1f, 0.1f, 0.1f);
+        XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(4.8f * XMLoadFloat4(&sLights[i].dirTransf));
         XMMATRIX lightMtrx = lightScaleMtrx * lightTrnslMtrx;
         cbEachFrame.World = XMMatrixTranspose(lightMtrx);
         cbEachFrame.MeshColor = sLights[i].color;
@@ -433,39 +433,46 @@ bool SceneGeometry::GenerateOctahedron()
 
 bool SceneGeometry::GenerateSphere()
 {
-    static const WORD vertSegmCount = 20;
-    static const WORD stripCount = 40;
+    static const WORD vertSegmCount = 40;
+    static const WORD stripCount = 80;
 
     static_assert(vertSegmCount >= 2, "Spherical stripe must have at least 2 vertical segments");
     static_assert(stripCount >= 3, "Sphere must have at least 3 stripes");
 
     const WORD horzLineCount = vertSegmCount - 1;
     const WORD vertexCountPerStrip = 2 /*poles*/ + horzLineCount;
-    const WORD vertexCount = stripCount * vertexCountPerStrip;
+    const WORD vertexCount = (stripCount + 1) * vertexCountPerStrip;
     const WORD indexCount  = stripCount * (2 /*poles*/ + 2 * horzLineCount + 1 /*strip restart*/);
 
     // Vertices
     vertices.reserve(vertexCount);
-    const float stripSize = XM_2PI / stripCount;
-    const float vertSegmSize = XM_PI / vertSegmCount;
-    for (WORD strip = 0; strip < stripCount; strip++)
+    const float stripSizeAng = XM_2PI / stripCount;
+    const float stripSizeRel =    1.f / stripCount;
+    const float vertSegmSizeAng = XM_PI / vertSegmCount;
+    const float vertSegmSizeRel =   1.f / vertSegmCount;
+    for (WORD strip = 0; strip <= stripCount; strip++) // first and last vertices need to be replicated due to texture stitching
     {
-        const float phi = strip * stripSize;
+        // Inner segments
+        const float phi = strip * stripSizeAng;
         const float xBase = cos(phi);
         const float zBase = sin(phi);
-        const float u = 0.25f;
+        const float uLine = strip * stripSizeRel * 1.000001f;
         for (WORD line = 0; line < horzLineCount; line++)
         {
-            const float theta = (line + 1) * vertSegmSize;
+            const float theta = (line + 1) * vertSegmSizeAng;
             const float ringRadius = sin(theta);
             const float y = cos(theta);
-            const auto pt = XMFLOAT3(xBase * ringRadius, y, zBase * ringRadius);
-            const float v = (line + 1) * (1.f / vertSegmCount);
-            vertices.push_back(SceneVertex{ pt, pt,  XMFLOAT2(u, v) }); // position==normal
+            const XMFLOAT3 pt(xBase * ringRadius, y, zBase * ringRadius);
+            const float v = (line + 1) * vertSegmSizeRel;
+            vertices.push_back(SceneVertex{ pt, pt,  XMFLOAT2(uLine, v) }); // position==normal
         }
-        const float uMid = 0.f; //debug, (u1 + u2) / 2;
-        vertices.push_back(SceneVertex{ XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(uMid, 0.0f) }); // north pole
-        vertices.push_back(SceneVertex{ XMFLOAT3(0.0f,-1.0f, 0.0f),  XMFLOAT3(0.0f,-1.0f, 0.0f),  XMFLOAT2(uMid, 1.0f) }); // south pole
+
+        // Poles
+        const XMFLOAT3 northPole(0.0f,  1.0f, 0.0f);
+        const XMFLOAT3 southPole(0.0f, -1.0f, 0.0f);
+        const float uPole = uLine + stripSizeRel / 2;
+        vertices.push_back(SceneVertex{ northPole,  northPole,  XMFLOAT2(uPole, 0.0f) }); // position==normal
+        vertices.push_back(SceneVertex{ southPole,  southPole,  XMFLOAT2(uPole, 1.0f) }); // position==normal
     }
 
     assert(vertices.size() == vertexCount);
@@ -488,7 +495,7 @@ bool SceneGeometry::GenerateSphere()
     assert(indices.size() == indexCount);
 
     topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
-    //topology = D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP;
+    //topology = D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP; // debug
 
     return true;
 }

@@ -57,7 +57,8 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
         color += saturate(dot((float3)LightDirs[i], input.Norm) * LightColors[i]);
     color.a = 1;
 
-    //color *= txDiffuse.Sample(samLinear, input.Tex);//*MeshColor;
+    //color *= MeshColor;
+    color *= txDiffuse.Sample(samLinear, input.Tex);
 
     return color;
 }
