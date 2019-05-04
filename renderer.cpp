@@ -235,7 +235,7 @@ bool SimpleDX11Renderer::CreateDevice()
     scd.BufferDesc.RefreshRate.Denominator = 1;
     scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     scd.OutputWindow = mWnd;
-    scd.SampleDesc.Count = 1;
+    scd.SampleDesc.Count = 4; //1;
     scd.SampleDesc.Quality = 0;
     scd.Windowed = TRUE;
 
@@ -277,7 +277,7 @@ bool SimpleDX11Renderer::CreateDevice()
     descDepth.MipLevels = 1;
     descDepth.ArraySize = 1;
     descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    descDepth.SampleDesc.Count = 1;
+    descDepth.SampleDesc.Count = 4; //1;
     descDepth.SampleDesc.Quality = 0;
     descDepth.Usage = D3D11_USAGE_DEFAULT;
     descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
@@ -291,7 +291,7 @@ bool SimpleDX11Renderer::CreateDevice()
     D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
     ZeroMemory(&descDSV, sizeof(descDSV));
     descDSV.Format = descDepth.Format;
-    descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+    descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS; //D3D11_DSV_DIMENSION_TEXTURE2D;
     descDSV.Texture2D.MipSlice = 0;
     hr = mDevice->CreateDepthStencilView(mDepthStencil, &descDSV, &mDepthStencilView);
     if (FAILED(hr))
