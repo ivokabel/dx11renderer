@@ -49,13 +49,16 @@ PS_INPUT VS(VS_INPUT input)
     return output;
 }
 
+float4 DiffuseBrdf(float3 normal, float3 lightDir, float4 lightColor)
+{
+    return saturate(dot(normal, lightDir) * lightColor);
+}
+
 float4 PsIllumSurf(PS_INPUT input) : SV_Target
 {
     float4 color = 0;
     for (int i = 0; i<2; i++)
-        // Naive Lambert illumination
-        // Simple Lambert BRDF
-        color += saturate(dot((float3)DirectionalLightDirs[i], input.Norm) * DirectionalLightColors[i]);
+        color += DiffuseBrdf(input.Norm, (float3)DirectionalLightDirs[i], DirectionalLightColors[i]);
     color.a = 1;
 
     //color *= MeshColor;
