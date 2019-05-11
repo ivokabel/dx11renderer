@@ -78,10 +78,30 @@ struct DirectLight
 };
 
 
-std::array<DirectLight, 2> sDirectLights =
+struct PointLight
 {
-    DirectLight{ XMFLOAT4(-0.577f, 0.577f, -0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.4f, 0.4f, 0.5f, 1.0f) },
-    DirectLight{ XMFLOAT4(0.0f, 0.0f, -1.0f, 1.0f),        XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.5f, 0.3f, 0.3f, 1.0f) },
+    const XMFLOAT4 pos;
+          XMFLOAT4 posTransf;
+    const XMFLOAT4 color;
+
+    PointLight() = delete;
+    PointLight& operator =(const PointLight &a) = delete;
+};
+
+
+#define DIRECT_LIGHTS_COUNT 1
+#define POINT_LIGHTS_COUNT  1
+
+
+std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights =
+{
+    DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.4f, 0.4f, 0.5f, 1.0f) },
+};
+
+
+std::array<PointLight, POINT_LIGHTS_COUNT> sPointLights =
+{
+    PointLight{ XMFLOAT4(0.0f, -1.44f, -4.8f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.2f, 0.1f, 0.1f, 1.0f) },
 };
 
 
@@ -99,8 +119,10 @@ struct CbChangedEachFrame
 {
     XMMATRIX World;
     XMFLOAT4 MeshColor;
-    XMFLOAT4 DirectLightDirs[2];
-    XMFLOAT4 DirectLightColors[2];
+    XMFLOAT4 DirectLightDirs[DIRECT_LIGHTS_COUNT];
+    XMFLOAT4 DirectLightColors[DIRECT_LIGHTS_COUNT];
+    XMFLOAT4 PointLightDirs[POINT_LIGHTS_COUNT];
+    XMFLOAT4 PointLightColors[POINT_LIGHTS_COUNT];
 };
 
 
@@ -257,14 +279,14 @@ void Scene::Animate(IRenderingContext &ctx)
     mMeshColor.y = ( cosf( totalAnimPos * 3.0f ) + 1.0f ) * 0.5f;
     mMeshColor.z = ( sinf( totalAnimPos * 5.0f ) + 1.0f ) * 0.5f;
 
-    // First light is without rotation
+    // Directional light is steady
     sDirectLights[0].dirTransf = sDirectLights[0].dir;
 
-    // Second light is rotated
+    // Point light is rotated
     XMMATRIX rotationMtrx = XMMatrixRotationY(-2.f * angle);
-    XMVECTOR lightDirVec = XMLoadFloat4(&sDirectLights[1].dir);
+    XMVECTOR lightDirVec = XMLoadFloat4(&sPointLights[0].pos);
     lightDirVec = XMVector3Transform(lightDirVec, rotationMtrx);
-    XMStoreFloat4(&sDirectLights[1].dirTransf, lightDirVec);
+    XMStoreFloat4(&sPointLights[0].posTransf, lightDirVec);
 }
 
 
@@ -279,10 +301,16 @@ void Scene::Render(IRenderingContext &ctx)
     CbChangedEachFrame cbEachFrame;
     cbEachFrame.World = XMMatrixTranspose(mMainObjectWorldMtrx);
     cbEachFrame.MeshColor = mMeshColor;
-    cbEachFrame.DirectLightDirs[0] = sDirectLights[0].dirTransf;
-    cbEachFrame.DirectLightDirs[1] = sDirectLights[1].dirTransf;
-    cbEachFrame.DirectLightColors[0] = sDirectLights[0].color;
-    cbEachFrame.DirectLightColors[1] = sDirectLights[1].color;
+    for (int i = 0; i < sDirectLights.size(); i++)
+    {
+        cbEachFrame.DirectLightDirs[i]   = sDirectLights[i].dirTransf;
+        cbEachFrame.DirectLightColors[i] = sDirectLights[i].color;
+    }
+    for (int i = 0; i < sPointLights.size(); i++)
+    {
+        cbEachFrame.PointLightDirs[i]   = sPointLights[i].posTransf;
+        cbEachFrame.PointLightColors[i] = sPointLights[i].color;
+    }
     immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
 
     // Render main object
@@ -296,7 +324,7 @@ void Scene::Render(IRenderingContext &ctx)
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
     immCtx->DrawIndexed((UINT)sGeometry.indices.size(), 0, 0);
 
-    // Render each symbolic light geometry
+    // Symbolic light geometry for directional lights
     for (int i = 0; i < sDirectLights.size(); i++)
     {
         XMMATRIX lightScaleMtrx = XMMatrixScaling(0.1f, 0.1f, 0.1f);
@@ -304,6 +332,20 @@ void Scene::Render(IRenderingContext &ctx)
         XMMATRIX lightMtrx = lightScaleMtrx * lightTrnslMtrx;
         cbEachFrame.World = XMMatrixTranspose(lightMtrx);
         cbEachFrame.MeshColor = sDirectLights[i].color;
+        immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
+
+        immCtx->PSSetShader(mPixelShaderSolid, nullptr, 0);
+        immCtx->DrawIndexed((UINT)sGeometry.indices.size(), 0, 0);
+    }
+
+    // Symbolic light geometry for point lights
+    for (int i = 0; i < sPointLights.size(); i++)
+    {
+        XMMATRIX lightScaleMtrx = XMMatrixScaling(0.1f, 0.1f, 0.1f);
+        XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(XMLoadFloat4(&sPointLights[i].posTransf));
+        XMMATRIX lightMtrx = lightScaleMtrx * lightTrnslMtrx;
+        cbEachFrame.World = XMMatrixTranspose(lightMtrx);
+        cbEachFrame.MeshColor = sPointLights[i].color;
         immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
 
         immCtx->PSSetShader(mPixelShaderSolid, nullptr, 0);

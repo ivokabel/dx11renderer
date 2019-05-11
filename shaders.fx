@@ -11,12 +11,17 @@ cbuffer cbChangeOnResize : register(b1)
     matrix Projection;
 };
 
+#define DIRECT_LIGHTS_COUNT 1
+#define POINT_LIGHTS_COUNT  1
+
 cbuffer cbChangesEachFrame : register(b2)
 {
     matrix World;
     float4 MeshColor;
-    float4 DirectLightDirs[2];
-    float4 DirectLightColors[2];
+    float4 DirectLightDirs[DIRECT_LIGHTS_COUNT];
+    float4 DirectLightColors[DIRECT_LIGHTS_COUNT];
+    float4 PointLightDirs[POINT_LIGHTS_COUNT];
+    float4 PointLightColors[POINT_LIGHTS_COUNT];
 };
 
 
@@ -57,8 +62,11 @@ float4 DiffuseBrdf(float3 normal, float3 lightDir, float4 lightColor)
 float4 PsIllumSurf(PS_INPUT input) : SV_Target
 {
     float4 color = 0;
-    for (int i = 0; i<2; i++)
+    for (int i = 0; i<DIRECT_LIGHTS_COUNT; i++)
         color += DiffuseBrdf(input.Norm, (float3)DirectLightDirs[i], DirectLightColors[i]);
+    for (int i = 0; i < POINT_LIGHTS_COUNT; i++)
+        // TODO: Proper point-light evaluation
+        color += DiffuseBrdf(input.Norm, (float3)PointLightDirs[i], PointLightColors[i]);
     color.a = 1;
 
     //color *= MeshColor;
