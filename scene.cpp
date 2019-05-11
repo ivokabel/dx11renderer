@@ -66,21 +66,22 @@ struct {
 };
 
 
-struct DirectionalLight
+// Directional light
+struct DirectLight
 {
     const XMFLOAT4 dir;
           XMFLOAT4 dirTransf;
     const XMFLOAT4 color;
 
-    DirectionalLight() = delete;
-    DirectionalLight& operator =(const DirectionalLight &a) = delete;
+    DirectLight() = delete;
+    DirectLight& operator =(const DirectLight &a) = delete;
 };
 
 
-std::array<DirectionalLight, 2> sDirectionalLights =
+std::array<DirectLight, 2> sDirectLights =
 {
-    DirectionalLight{ XMFLOAT4(-0.577f, 0.577f, -0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.4f, 0.4f, 0.5f, 1.0f) },
-    DirectionalLight{ XMFLOAT4(0.0f, 0.0f, -1.0f, 1.0f),        XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.5f, 0.3f, 0.3f, 1.0f) },
+    DirectLight{ XMFLOAT4(-0.577f, 0.577f, -0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.4f, 0.4f, 0.5f, 1.0f) },
+    DirectLight{ XMFLOAT4(0.0f, 0.0f, -1.0f, 1.0f),        XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.5f, 0.3f, 0.3f, 1.0f) },
 };
 
 
@@ -98,8 +99,8 @@ struct CbChangedEachFrame
 {
     XMMATRIX World;
     XMFLOAT4 MeshColor;
-    XMFLOAT4 DirectionalLightDirs[2];
-    XMFLOAT4 DirectionalLightColors[2];
+    XMFLOAT4 DirectLightDirs[2];
+    XMFLOAT4 DirectLightColors[2];
 };
 
 
@@ -257,13 +258,13 @@ void Scene::Animate(IRenderingContext &ctx)
     mMeshColor.z = ( sinf( totalAnimPos * 5.0f ) + 1.0f ) * 0.5f;
 
     // First light is without rotation
-    sDirectionalLights[0].dirTransf = sDirectionalLights[0].dir;
+    sDirectLights[0].dirTransf = sDirectLights[0].dir;
 
     // Second light is rotated
     XMMATRIX rotationMtrx = XMMatrixRotationY(-2.f * angle);
-    XMVECTOR lightDirVec = XMLoadFloat4(&sDirectionalLights[1].dir);
+    XMVECTOR lightDirVec = XMLoadFloat4(&sDirectLights[1].dir);
     lightDirVec = XMVector3Transform(lightDirVec, rotationMtrx);
-    XMStoreFloat4(&sDirectionalLights[1].dirTransf, lightDirVec);
+    XMStoreFloat4(&sDirectLights[1].dirTransf, lightDirVec);
 }
 
 
@@ -278,10 +279,10 @@ void Scene::Render(IRenderingContext &ctx)
     CbChangedEachFrame cbEachFrame;
     cbEachFrame.World = XMMatrixTranspose(mMainObjectWorldMtrx);
     cbEachFrame.MeshColor = mMeshColor;
-    cbEachFrame.DirectionalLightDirs[0] = sDirectionalLights[0].dirTransf;
-    cbEachFrame.DirectionalLightDirs[1] = sDirectionalLights[1].dirTransf;
-    cbEachFrame.DirectionalLightColors[0] = sDirectionalLights[0].color;
-    cbEachFrame.DirectionalLightColors[1] = sDirectionalLights[1].color;
+    cbEachFrame.DirectLightDirs[0] = sDirectLights[0].dirTransf;
+    cbEachFrame.DirectLightDirs[1] = sDirectLights[1].dirTransf;
+    cbEachFrame.DirectLightColors[0] = sDirectLights[0].color;
+    cbEachFrame.DirectLightColors[1] = sDirectLights[1].color;
     immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
 
     // Render main object
@@ -296,13 +297,13 @@ void Scene::Render(IRenderingContext &ctx)
     immCtx->DrawIndexed((UINT)sGeometry.indices.size(), 0, 0);
 
     // Render each symbolic light geometry
-    for (int i = 0; i < sDirectionalLights.size(); i++)
+    for (int i = 0; i < sDirectLights.size(); i++)
     {
         XMMATRIX lightScaleMtrx = XMMatrixScaling(0.1f, 0.1f, 0.1f);
-        XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(4.8f * XMLoadFloat4(&sDirectionalLights[i].dirTransf));
+        XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(4.8f * XMLoadFloat4(&sDirectLights[i].dirTransf));
         XMMATRIX lightMtrx = lightScaleMtrx * lightTrnslMtrx;
         cbEachFrame.World = XMMatrixTranspose(lightMtrx);
-        cbEachFrame.MeshColor = sDirectionalLights[i].color;
+        cbEachFrame.MeshColor = sDirectLights[i].color;
         immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
 
         immCtx->PSSetShader(mPixelShaderSolid, nullptr, 0);

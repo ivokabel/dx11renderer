@@ -15,8 +15,8 @@ cbuffer cbChangesEachFrame : register(b2)
 {
     matrix World;
     float4 MeshColor;
-    float4 DirectionalLightDirs[2];
-    float4 DirectionalLightColors[2];
+    float4 DirectLightDirs[2];
+    float4 DirectLightColors[2];
 };
 
 
@@ -58,7 +58,7 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
 {
     float4 color = 0;
     for (int i = 0; i<2; i++)
-        color += DiffuseBrdf(input.Norm, (float3)DirectionalLightDirs[i], DirectionalLightColors[i]);
+        color += DiffuseBrdf(input.Norm, (float3)DirectLightDirs[i], DirectLightColors[i]);
     color.a = 1;
 
     //color *= MeshColor;
