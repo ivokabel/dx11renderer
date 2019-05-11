@@ -15,8 +15,8 @@ cbuffer cbChangesEachFrame : register(b2)
 {
     matrix World;
     float4 MeshColor;
-    float4 LightDirs[2];
-    float4 LightColors[2];
+    float4 DirectionalLightDirs[2];
+    float4 DirectionalLightColors[2];
 };
 
 
@@ -54,7 +54,8 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
     float4 color = 0;
     for (int i = 0; i<2; i++)
         // Naive Lambert illumination
-        color += saturate(dot((float3)LightDirs[i], input.Norm) * LightColors[i]);
+        // Simple Lambert BRDF
+        color += saturate(dot((float3)DirectionalLightDirs[i], input.Norm) * DirectionalLightColors[i]);
     color.a = 1;
 
     //color *= MeshColor;
