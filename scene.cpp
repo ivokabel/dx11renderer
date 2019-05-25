@@ -80,7 +80,7 @@ struct DirectLight
 {
     const XMFLOAT4 dir;
           XMFLOAT4 dirTransf;
-    const XMFLOAT4 color;
+    const XMFLOAT4 luminance; // lm * sr-1 * m-2
 
     DirectLight() = delete;
     DirectLight& operator =(const DirectLight &a) = delete;
@@ -102,17 +102,16 @@ struct PointLight
 #define POINT_LIGHTS_COUNT  2
 
 AmbientLight sAmbientLight{ XMFLOAT4(0.04f, 0.08f, 0.14f, 1.0f) };
-//AmbientLight sAmbientLight{ XMFLOAT4(0.14f, 0.18f, 0.24f, 1.0f) };
 
 std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights =
 {
-    DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.30f, 0.30f, 0.30f, 1.0f) },
+    DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.25f, 0.25f, 0.25f, 1.0f) },
 };
 
 std::array<PointLight, POINT_LIGHTS_COUNT> sPointLights =
 {
-    PointLight{ XMFLOAT4(0.0f, -1.0f, -3.5f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.15f, 0.30f, 0.15f, 1.0f)/*cd = lm * sr-1]*/ },
-    PointLight{ XMFLOAT4(0.0f, -1.0f,  3.5f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.30f, 0.15f, 0.15f, 1.0f)/*cd = lm * sr-1]*/ },
+    PointLight{ XMFLOAT4(0.0f, -1.0f, -3.5f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.20f, 0.35f, 0.20f, 1.0f)/*cd = lm * sr-1]*/ },
+    PointLight{ XMFLOAT4(0.0f, -1.0f,  3.5f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.35f, 0.20f, 0.20f, 1.0f)/*cd = lm * sr-1]*/ },
 };
 
 
@@ -135,7 +134,7 @@ struct CbChangedEachFrame
     // Light sources
     XMFLOAT4 AmbientLight;
     XMFLOAT4 DirectLightDirs[DIRECT_LIGHTS_COUNT];
-    XMFLOAT4 DirectLightColors[DIRECT_LIGHTS_COUNT];
+    XMFLOAT4 DirectLightLuminances[DIRECT_LIGHTS_COUNT];
     XMFLOAT4 PointLightDirs[POINT_LIGHTS_COUNT];
     XMFLOAT4 PointLightIntensities[POINT_LIGHTS_COUNT];
 };
@@ -322,8 +321,8 @@ void Scene::Render(IRenderingContext &ctx)
     cbEachFrame.AmbientLight = sAmbientLight.color;
     for (int i = 0; i < sDirectLights.size(); i++)
     {
-        cbEachFrame.DirectLightDirs[i]   = sDirectLights[i].dirTransf;
-        cbEachFrame.DirectLightColors[i] = sDirectLights[i].color;
+        cbEachFrame.DirectLightDirs[i]       = sDirectLights[i].dirTransf;
+        cbEachFrame.DirectLightLuminances[i] = sDirectLights[i].luminance;
     }
     for (int i = 0; i < sPointLights.size(); i++)
     {
@@ -342,20 +341,6 @@ void Scene::Render(IRenderingContext &ctx)
     immCtx->PSSetShaderResources(0, 1, &mTextureRV);
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
     immCtx->DrawIndexed((UINT)sGeometry.indices.size(), 0, 0);
-
-    // Symbolic light geometry for directional lights
-    for (int i = 0; i < sDirectLights.size(); i++)
-    {
-        XMMATRIX lightScaleMtrx = XMMatrixScaling(0.1f, 0.1f, 0.1f);
-        XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(4.8f * XMLoadFloat4(&sDirectLights[i].dirTransf));
-        XMMATRIX lightMtrx = lightScaleMtrx * lightTrnslMtrx;
-        cbEachFrame.World = XMMatrixTranspose(lightMtrx);
-        cbEachFrame.MeshColor = sDirectLights[i].color;
-        immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
-
-        immCtx->PSSetShader(mPixelShaderSolid, nullptr, 0);
-        immCtx->DrawIndexed((UINT)sGeometry.indices.size(), 0, 0);
-    }
 
     // Symbolic light geometry for point lights
     for (int i = 0; i < sPointLights.size(); i++)

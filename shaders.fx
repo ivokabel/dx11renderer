@@ -26,7 +26,7 @@ cbuffer cbChangesEachFrame : register(b2)
     // Light sources
     float4 AmbientLight;
     float4 DirectLightDirs[DIRECT_LIGHTS_COUNT];
-    float4 DirectLightColors[DIRECT_LIGHTS_COUNT];
+    float4 DirectLightLuminances[DIRECT_LIGHTS_COUNT];
     float4 PointLightDirs[POINT_LIGHTS_COUNT];
     float4 PointLightIntensities[POINT_LIGHTS_COUNT];
 };
@@ -84,7 +84,7 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
     color += AmbientLight;
 
     for (int i = 0; i<DIRECT_LIGHTS_COUNT; i++)
-        color += DiffuseBrdf(input.Normal, (float3)DirectLightDirs[i]) * DirectLightColors[i];
+        color += DiffuseBrdf(input.Normal, (float3)DirectLightDirs[i]) * DirectLightLuminances[i];
 
     for (int i = 0; i < POINT_LIGHTS_COUNT; i++)
         color += EvalPointLight((float3)input.PosWorld,
