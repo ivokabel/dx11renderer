@@ -21,10 +21,10 @@ public:
 
     virtual ~Scene();
 
-    virtual bool Init(IRenderingContext &ctx);
-    virtual void Destroy();
-    virtual void Animate(IRenderingContext &ctx);
-    virtual void Render(IRenderingContext &ctx);
+    virtual bool Init(IRenderingContext &ctx) override;
+    virtual void Destroy() override;
+    virtual void Animate(IRenderingContext &ctx) override;
+    virtual void Render(IRenderingContext &ctx) override;
     virtual bool GetAmbientColor(float(&rgba)[4]) override;
 
 private:
