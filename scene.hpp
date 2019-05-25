@@ -25,6 +25,7 @@ public:
     virtual void Destroy();
     virtual void Animate(IRenderingContext &ctx);
     virtual void Render(IRenderingContext &ctx);
+    virtual bool GetAmbientColor(float(&rgba)[4]) override;
 
 private:
 

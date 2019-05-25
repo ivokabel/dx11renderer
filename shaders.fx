@@ -16,8 +16,12 @@ cbuffer cbChangeOnResize : register(b1)
 
 cbuffer cbChangesEachFrame : register(b2)
 {
+    // Transformations
     matrix World;
     float4 MeshColor;
+
+    // Light sources
+    float4 AmbientLight;
     float4 DirectLightDirs[DIRECT_LIGHTS_COUNT];
     float4 DirectLightColors[DIRECT_LIGHTS_COUNT];
     float4 PointLightDirs[POINT_LIGHTS_COUNT];
@@ -62,6 +66,8 @@ float4 DiffuseBrdf(float3 normal, float3 lightDir, float4 lightColor)
 float4 PsIllumSurf(PS_INPUT input) : SV_Target
 {
     float4 color = 0;
+
+    color += AmbientLight;
     for (int i = 0; i<DIRECT_LIGHTS_COUNT; i++)
         color += DiffuseBrdf(input.Norm, (float3)DirectLightDirs[i], DirectLightColors[i]);
     for (int i = 0; i < POINT_LIGHTS_COUNT; i++)

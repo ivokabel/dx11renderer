@@ -445,8 +445,10 @@ bool SimpleDX11Renderer::CreatePixelShader(WCHAR* szFileName,
 
 void SimpleDX11Renderer::Render()
 {
-    float clearColor[4] = { 0.04f, 0.09f, 0.15f, 1.0f }; // RGBA
-    mImmediateContext->ClearRenderTargetView(mRenderTargetView, clearColor);
+    float ambientColor[4] = {};
+    if (mScene)
+        mScene->GetAmbientColor(ambientColor);
+    mImmediateContext->ClearRenderTargetView(mRenderTargetView, ambientColor);
 
     mImmediateContext->ClearDepthStencilView(mDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 

@@ -66,6 +66,15 @@ struct {
 };
 
 
+struct AmbientLight
+{
+    const XMFLOAT4 color;
+
+    AmbientLight() = delete;
+    AmbientLight& operator =(const AmbientLight &a) = delete;
+};
+
+
 // Directional light
 struct DirectLight
 {
@@ -92,16 +101,16 @@ struct PointLight
 #define DIRECT_LIGHTS_COUNT 1
 #define POINT_LIGHTS_COUNT  1
 
+AmbientLight sAmbientLight{ XMFLOAT4(0.02f, 0.04f, 0.07f, 1.0f) };
 
 std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights =
 {
-    DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.4f, 0.4f, 0.5f, 1.0f) },
+    DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.4f, 0.4f, 0.4f, 1.0f) },
 };
-
 
 std::array<PointLight, POINT_LIGHTS_COUNT> sPointLights =
 {
-    PointLight{ XMFLOAT4(0.0f, -1.44f, -4.8f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.2f, 0.1f, 0.1f, 1.0f) },
+    PointLight{ XMFLOAT4(0.0f, -1.94f, -4.8f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.05f, 0.05f, 0.05f, 1.0f) },
 };
 
 
@@ -119,6 +128,7 @@ struct CbChangedEachFrame
 {
     XMMATRIX World;
     XMFLOAT4 MeshColor;
+    XMFLOAT4 AmbientLight;
     XMFLOAT4 DirectLightDirs[DIRECT_LIGHTS_COUNT];
     XMFLOAT4 DirectLightColors[DIRECT_LIGHTS_COUNT];
     XMFLOAT4 PointLightDirs[POINT_LIGHTS_COUNT];
@@ -301,6 +311,7 @@ void Scene::Render(IRenderingContext &ctx)
     CbChangedEachFrame cbEachFrame;
     cbEachFrame.World = XMMatrixTranspose(mMainObjectWorldMtrx);
     cbEachFrame.MeshColor = mMeshColor;
+    cbEachFrame.AmbientLight = sAmbientLight.color;
     for (int i = 0; i < sDirectLights.size(); i++)
     {
         cbEachFrame.DirectLightDirs[i]   = sDirectLights[i].dirTransf;
@@ -351,6 +362,15 @@ void Scene::Render(IRenderingContext &ctx)
         immCtx->PSSetShader(mPixelShaderSolid, nullptr, 0);
         immCtx->DrawIndexed((UINT)sGeometry.indices.size(), 0, 0);
     }
+}
+
+bool Scene::GetAmbientColor(float(&rgba)[4])
+{
+    rgba[0] = sAmbientLight.color.x;
+    rgba[1] = sAmbientLight.color.y;
+    rgba[2] = sAmbientLight.color.z;
+    rgba[3] = sAmbientLight.color.w;
+    return true;
 }
 
 SceneGeometry::~SceneGeometry()
