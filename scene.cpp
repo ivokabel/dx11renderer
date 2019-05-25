@@ -99,10 +99,10 @@ struct PointLight
 
 
 #define DIRECT_LIGHTS_COUNT 1
-#define POINT_LIGHTS_COUNT  1
+#define POINT_LIGHTS_COUNT  2
 
-//AmbientLight sAmbientLight{ XMFLOAT4(0.04f, 0.08f, 0.14f, 1.0f) };
-AmbientLight sAmbientLight{ XMFLOAT4(0.14f, 0.18f, 0.24f, 1.0f) };
+AmbientLight sAmbientLight{ XMFLOAT4(0.04f, 0.08f, 0.14f, 1.0f) };
+//AmbientLight sAmbientLight{ XMFLOAT4(0.14f, 0.18f, 0.24f, 1.0f) };
 
 std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights =
 {
@@ -112,6 +112,7 @@ std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights =
 std::array<PointLight, POINT_LIGHTS_COUNT> sPointLights =
 {
     PointLight{ XMFLOAT4(0.0f, -1.0f, -3.5f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.15f, 0.30f, 0.15f, 1.0f)/*cd = lm * sr-1]*/ },
+    PointLight{ XMFLOAT4(0.0f, -1.0f,  3.5f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.30f, 0.15f, 0.15f, 1.0f)/*cd = lm * sr-1]*/ },
 };
 
 
@@ -296,11 +297,14 @@ void Scene::Animate(IRenderingContext &ctx)
     // Directional light is steady
     sDirectLights[0].dirTransf = sDirectLights[0].dir;
 
-    // Point light is rotated
-    XMMATRIX rotationMtrx = XMMatrixRotationY(-2.f * angle);
-    XMVECTOR lightDirVec = XMLoadFloat4(&sPointLights[0].pos);
-    lightDirVec = XMVector3Transform(lightDirVec, rotationMtrx);
-    XMStoreFloat4(&sPointLights[0].posTransf, lightDirVec);
+    // Point lights are rotated
+    for (int i = 0; i < sPointLights.size(); i++)
+    {
+        XMMATRIX rotationMtrx = XMMatrixRotationY(-2.f * angle);
+        XMVECTOR lightDirVec = XMLoadFloat4(&sPointLights[i].pos);
+        lightDirVec = XMVector3Transform(lightDirVec, rotationMtrx);
+        XMStoreFloat4(&sPointLights[i].posTransf, lightDirVec);
+    }
 }
 
 
