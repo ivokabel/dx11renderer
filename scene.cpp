@@ -101,7 +101,7 @@ struct PointLight
 #define DIRECT_LIGHTS_COUNT 1
 #define POINT_LIGHTS_COUNT  2
 
-AmbientLight sAmbientLight{ XMFLOAT4(0.04f, 0.08f, 0.14f, 1.0f) };
+AmbientLight sAmbientLight{ XMFLOAT4(0.04f, 0.06f, 0.10f, 1.0f) };
 
 std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights =
 {
