@@ -60,7 +60,8 @@ PS_INPUT VS(VS_INPUT input)
 
 float4 DiffuseBrdf(float3 normal, float3 lightDir, float4 lightColor)
 {
-    return saturate(dot(normal, lightDir) * lightColor);
+    float cosine = max(dot(normal, lightDir), 0.);
+    return cosine * lightColor;
 }
 
 float4 PsIllumSurf(PS_INPUT input) : SV_Target
@@ -68,14 +69,16 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
     float4 color = 0;
 
     color += AmbientLight;
+
     for (int i = 0; i<DIRECT_LIGHTS_COUNT; i++)
         color += DiffuseBrdf(input.Norm, (float3)DirectLightDirs[i], DirectLightColors[i]);
+
     for (int i = 0; i < POINT_LIGHTS_COUNT; i++)
         // TODO: Proper point-light evaluation
         color += DiffuseBrdf(input.Norm, (float3)PointLightDirs[i], PointLightColors[i]);
+
     color.a = 1;
 
-    //color *= MeshColor;
     color *= txDiffuse.Sample(samLinear, input.Tex);
 
     return color;

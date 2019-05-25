@@ -126,8 +126,11 @@ struct CbChangedOnResize
 
 struct CbChangedEachFrame
 {
+    // Transformations
     XMMATRIX World;
     XMFLOAT4 MeshColor;
+
+    // Light sources
     XMFLOAT4 AmbientLight;
     XMFLOAT4 DirectLightDirs[DIRECT_LIGHTS_COUNT];
     XMFLOAT4 DirectLightColors[DIRECT_LIGHTS_COUNT];
