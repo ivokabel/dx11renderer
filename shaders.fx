@@ -28,7 +28,7 @@ cbuffer cbChangesEachFrame : register(b2)
     float4 DirectLightDirs[DIRECT_LIGHTS_COUNT];
     float4 DirectLightColors[DIRECT_LIGHTS_COUNT];
     float4 PointLightDirs[POINT_LIGHTS_COUNT];
-    float4 PointLightFluxes[POINT_LIGHTS_COUNT];
+    float4 PointLightIntensities[POINT_LIGHTS_COUNT];
 };
 
 
@@ -68,15 +68,11 @@ float4 DiffuseBrdf(float3 normal, float3 lightDir)
     return max(dot(normal, lightDir), 0.);
 }
 
-float4 EvalPointLight(float3 surfPos, float3 normal, float3 lightPos, float4 flux)
+float4 EvalPointLight(float3 surfPos, float3 normal, float3 lightPos, float4 intensity)
 {
     float3 dir = lightPos - surfPos;
     float len = sqrt(dot(dir, dir));
     float3 dirNorm = dir / len;
-
-    // Convert luminuous flux to luminous intensity [cd = lm * sr-1]
-    // TODO: Pre-compute this, please, will you?
-    float4 intensity = flux /*/ (4 * PI)*/;
 
     return DiffuseBrdf(normal, dirNorm) * intensity / (len * len);
 }
@@ -91,18 +87,12 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
         color += DiffuseBrdf(input.Normal, (float3)DirectLightDirs[i]) * DirectLightColors[i];
 
     for (int i = 0; i < POINT_LIGHTS_COUNT; i++)
-    //{
-    //    float3 dir = (float3)PointLightDirs[i] - (float3)input.PosWorld;
-    //    float len = sqrt(dot(dir, dir));
-    //    float3 dirNorm = dir / len;
-    //    color += DiffuseBrdf(input.Normal, dirNorm) * PointLightFluxes[i] / (len * len);
-    //}
         color += EvalPointLight((float3)input.PosWorld,
                                 input.Normal,
                                 (float3)PointLightDirs[i],
-                                PointLightFluxes[i]);
+                                PointLightIntensities[i]);
 
-    //color *= txDiffuse.Sample(samLinear, input.Tex);
+    color *= txDiffuse.Sample(samLinear, input.Tex);
 
     color.a = 1;
 

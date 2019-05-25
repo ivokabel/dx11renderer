@@ -91,7 +91,7 @@ struct PointLight
 {
     const XMFLOAT4 pos;
           XMFLOAT4 posTransf;
-    const XMFLOAT4 flux; // luminuous flux [lm]
+    const XMFLOAT4 intensity; // luminuous intensity [cd = lm * sr-1] = luminuous flux / 4Pi
 
     PointLight() = delete;
     PointLight& operator =(const PointLight &a) = delete;
@@ -106,13 +106,12 @@ AmbientLight sAmbientLight{ XMFLOAT4(0.14f, 0.18f, 0.24f, 1.0f) };
 
 std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights =
 {
-    //DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.4f, 0.4f, 0.4f, 1.0f) },
-    DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) },
+    DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.30f, 0.30f, 0.30f, 1.0f) },
 };
 
 std::array<PointLight, POINT_LIGHTS_COUNT> sPointLights =
 {
-    PointLight{ XMFLOAT4(0.0f, -2.0f, -2.5f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.15f, 0.30f, 0.15f, 1.0f)/*lm*/ },
+    PointLight{ XMFLOAT4(0.0f, -1.0f, -3.5f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.15f, 0.30f, 0.15f, 1.0f)/*cd = lm * sr-1]*/ },
 };
 
 
@@ -137,7 +136,7 @@ struct CbChangedEachFrame
     XMFLOAT4 DirectLightDirs[DIRECT_LIGHTS_COUNT];
     XMFLOAT4 DirectLightColors[DIRECT_LIGHTS_COUNT];
     XMFLOAT4 PointLightDirs[POINT_LIGHTS_COUNT];
-    XMFLOAT4 PointLightFluxes[POINT_LIGHTS_COUNT];
+    XMFLOAT4 PointLightIntensities[POINT_LIGHTS_COUNT];
 };
 
 
@@ -325,7 +324,7 @@ void Scene::Render(IRenderingContext &ctx)
     for (int i = 0; i < sPointLights.size(); i++)
     {
         cbEachFrame.PointLightDirs[i]   = sPointLights[i].posTransf;
-        cbEachFrame.PointLightFluxes[i] = sPointLights[i].flux;
+        cbEachFrame.PointLightIntensities[i] = sPointLights[i].intensity;
     }
     immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
 
@@ -362,12 +361,12 @@ void Scene::Render(IRenderingContext &ctx)
         XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(XMLoadFloat4(&sPointLights[i].posTransf));
         XMMATRIX lightMtrx = lightScaleMtrx * lightTrnslMtrx;
         cbEachFrame.World = XMMatrixTranspose(lightMtrx);
-        const float area = 4 * XM_PI * radius * radius;
+        const float radius2 = radius * radius;
         cbEachFrame.MeshColor = {
-            sPointLights[i].flux.x / area,
-            sPointLights[i].flux.y / area,
-            sPointLights[i].flux.z / area,
-            sPointLights[i].flux.w / area,
+            sPointLights[i].intensity.x / radius2,
+            sPointLights[i].intensity.y / radius2,
+            sPointLights[i].intensity.z / radius2,
+            sPointLights[i].intensity.w / radius2,
         };
         immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
 
