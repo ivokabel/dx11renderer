@@ -103,14 +103,14 @@ AmbientLight sAmbientLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) };
 
 std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights =
 {
-    DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.10f, 0.10f, 0.10f, 1.0f) },
+    DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.05f, 0.05f, 0.05f, 1.0f) },
 };
 
 std::array<PointLight, POINT_LIGHTS_COUNT> sPointLights =
 {
-    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.40f, 0.40f, 0.60f, 1.0f)/*cd = lm * sr-1]*/ },
-    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.40f, 0.60f, 0.40f, 1.0f)/*cd = lm * sr-1]*/ },
-    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.60f, 0.40f, 0.40f, 1.0f)/*cd = lm * sr-1]*/ },
+    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.40f, 0.40f, 0.80f, 1.0f)/*cd = lm * sr-1]*/ },
+    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.40f, 0.80f, 0.40f, 1.0f)/*cd = lm * sr-1]*/ },
+    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.80f, 0.40f, 0.40f, 1.0f)/*cd = lm * sr-1]*/ },
 };
 
 
@@ -277,7 +277,7 @@ void Scene::Animate(IRenderingContext &ctx)
         return;
 
     const float time = ctx.GetCurrentAnimationTime();
-    const float period = 20.f; //seconds
+    const float period = 10.f; //seconds
     const float totalAnimPos = time / period;
     const float mainObjAngle = totalAnimPos * XM_2PI;
 
@@ -295,18 +295,20 @@ void Scene::Animate(IRenderingContext &ctx)
     // Directional light is steady
     sDirectLights[0].dirTransf = sDirectLights[0].dir;
 
-    // Point lights are rotated
+    // Point lights are animated
     const auto pointCount = sPointLights.size();
     for (int i = 0; i < pointCount; i++)
     {
-        const float circularOffset = ((float)i / pointCount) * XM_2PI;
-        const float rotationAngle = -2.f * mainObjAngle - circularOffset;
-        const float verticalOffset = cosf(5 * rotationAngle) * 2.f;
-        const XMVECTOR translationVec = XMVectorSet(3.9f, verticalOffset, 0.f, 0.f);
+        const float lightRelOffset = (float)i / pointCount;
 
-        const XMMATRIX translationMtrx = XMMatrixTranslationFromVector(translationVec);
-        const XMMATRIX rotationMtrx = XMMatrixRotationY(rotationAngle );
-        const XMMATRIX transfMtrx = translationMtrx * rotationMtrx;
+        const float orbitRadius = 4.2f;
+        const float rotationAngle = -2.f * mainObjAngle - lightRelOffset * XM_2PI;
+        const float orbitInclination = lightRelOffset * XM_PI;
+
+        const XMMATRIX translationMtrx  = XMMatrixTranslation(orbitRadius, 0.f, 0.f);
+        const XMMATRIX rotationMtrx     = XMMatrixRotationY(rotationAngle);
+        const XMMATRIX inclinationMtrx  = XMMatrixRotationZ(orbitInclination);
+        const XMMATRIX transfMtrx = translationMtrx * rotationMtrx * inclinationMtrx;
 
         const XMVECTOR lightVec = XMLoadFloat4(&sPointLights[i].pos);
         const XMVECTOR lightVecTransf = XMVector3Transform(lightVec, transfMtrx);
