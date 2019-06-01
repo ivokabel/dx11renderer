@@ -99,19 +99,20 @@ struct PointLight
 
 
 #define DIRECT_LIGHTS_COUNT 1
-#define POINT_LIGHTS_COUNT  2
+#define POINT_LIGHTS_COUNT  3
 
-AmbientLight sAmbientLight{ XMFLOAT4(0.04f, 0.06f, 0.10f, 1.0f) };
+AmbientLight sAmbientLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) };
 
 std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights =
 {
-    DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.25f, 0.25f, 0.25f, 1.0f) },
+    DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.10f, 0.10f, 0.10f, 1.0f) },
 };
 
 std::array<PointLight, POINT_LIGHTS_COUNT> sPointLights =
 {
-    PointLight{ XMFLOAT4(0.0f, -1.0f, -3.5f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.20f, 0.35f, 0.20f, 1.0f)/*cd = lm * sr-1]*/ },
-    PointLight{ XMFLOAT4(0.0f, -1.0f,  3.5f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.35f, 0.20f, 0.20f, 1.0f)/*cd = lm * sr-1]*/ },
+    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.40f, 0.40f, 0.60f, 1.0f)/*cd = lm * sr-1]*/ },
+    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.40f, 0.60f, 0.40f, 1.0f)/*cd = lm * sr-1]*/ },
+    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.60f, 0.40f, 0.40f, 1.0f)/*cd = lm * sr-1]*/ },
 };
 
 
@@ -280,12 +281,12 @@ void Scene::Animate(IRenderingContext &ctx)
     const float time = ctx.GetCurrentAnimationTime();
     const float period = 20.f; //seconds
     const float totalAnimPos = time / period;
-    const float angle = totalAnimPos * XM_2PI;
+    const float mainObjAngle = totalAnimPos * XM_2PI;
 
     // Rotate main object
     XMMATRIX mainObjectScaleMtrx = XMMatrixScaling(2.6f, 2.6f, 2.6f);
     //XMMATRIX mainObjectTrnslMtrx = XMMatrixTranslation(0.f, cos(5 * totalAnimPos * XM_2PI) - 1.5f, 0.f);
-    XMMATRIX mainObjectRotMtrx = XMMatrixRotationY(angle);
+    XMMATRIX mainObjectRotMtrx = XMMatrixRotationY(mainObjAngle);
     mMainObjectWorldMtrx = mainObjectScaleMtrx * mainObjectRotMtrx /** mainObjectTrnslMtrx*/;
 
     // Update mesh color
@@ -297,12 +298,21 @@ void Scene::Animate(IRenderingContext &ctx)
     sDirectLights[0].dirTransf = sDirectLights[0].dir;
 
     // Point lights are rotated
-    for (int i = 0; i < sPointLights.size(); i++)
+    const auto pointCount = sPointLights.size();
+    for (int i = 0; i < pointCount; i++)
     {
-        XMMATRIX rotationMtrx = XMMatrixRotationY(-2.f * angle);
-        XMVECTOR lightDirVec = XMLoadFloat4(&sPointLights[i].pos);
-        lightDirVec = XMVector3Transform(lightDirVec, rotationMtrx);
-        XMStoreFloat4(&sPointLights[i].posTransf, lightDirVec);
+        const float circularOffset = ((float)i / pointCount) * XM_2PI;
+        const float rotationAngle = -2.f * mainObjAngle - circularOffset;
+        const float verticalOffset = cosf(5 * rotationAngle) * 2.f;
+        const XMVECTOR translationVec = XMVectorSet(3.9f, verticalOffset, 0.f, 0.f);
+
+        const XMMATRIX translationMtrx = XMMatrixTranslationFromVector(translationVec);
+        const XMMATRIX rotationMtrx = XMMatrixRotationY(rotationAngle );
+        const XMMATRIX transfMtrx = translationMtrx * rotationMtrx;
+
+        const XMVECTOR lightVec = XMLoadFloat4(&sPointLights[i].pos);
+        const XMVECTOR lightVecTransf = XMVector3Transform(lightVec, transfMtrx);
+        XMStoreFloat4(&sPointLights[i].posTransf, lightVecTransf);
     }
 }
 
@@ -345,7 +355,7 @@ void Scene::Render(IRenderingContext &ctx)
     // Symbolic light geometry for point lights
     for (int i = 0; i < sPointLights.size(); i++)
     {
-        const float radius = 0.05f;
+        const float radius = 0.04f;
         XMMATRIX lightScaleMtrx = XMMatrixScaling(radius, radius, radius);
         XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(XMLoadFloat4(&sPointLights[i].posTransf));
         XMMATRIX lightMtrx = lightScaleMtrx * lightTrnslMtrx;

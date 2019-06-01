@@ -15,7 +15,7 @@ cbuffer cbChangeOnResize : register(b1)
 };
 
 #define DIRECT_LIGHTS_COUNT 1
-#define POINT_LIGHTS_COUNT  2
+#define POINT_LIGHTS_COUNT  3
 
 cbuffer cbChangesEachFrame : register(b2)
 {
