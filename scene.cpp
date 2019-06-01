@@ -1,6 +1,7 @@
 #include "scene.hpp"
 #include "log.hpp"
 #include "utils.hpp"
+#include "constants.hpp"
 
 #include <cassert>
 #include <array>
@@ -97,9 +98,6 @@ struct PointLight
     PointLight& operator =(const PointLight &a) = delete;
 };
 
-
-#define DIRECT_LIGHTS_COUNT 1
-#define POINT_LIGHTS_COUNT  3
 
 AmbientLight sAmbientLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) };
 

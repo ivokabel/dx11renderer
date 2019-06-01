@@ -8,6 +8,7 @@ project(dx11renderer LANGUAGES CXX)
 
 set(RENDERER_SOURCES
     WIN32
+    constants.hpp
     main.cpp
     irenderingcontext.hpp
     renderer.hpp

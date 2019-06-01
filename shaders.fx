@@ -1,3 +1,5 @@
+#include "constants.hpp"
+
 static const float PI = 3.14159265f;
 
 
@@ -13,9 +15,6 @@ cbuffer cbChangeOnResize : register(b1)
 {
     matrix Projection;
 };
-
-#define DIRECT_LIGHTS_COUNT 1
-#define POINT_LIGHTS_COUNT  3
 
 cbuffer cbChangesEachFrame : register(b2)
 {
