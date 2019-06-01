@@ -67,35 +67,69 @@ float4 DiffuseBrdf(float3 normal, float3 lightDir)
     return max(dot(normal, lightDir), 0.);
 }
 
-float4 EvalPointLight(float3 surfPos, float3 normal, float3 lightPos, float4 intensity)
+struct LightContribution
+{
+    float4 Diffuse;
+    float4 Specular;
+};
+
+LightContribution EvalDirLight(float3 normal, float3 lightDir, float4 luminance)
+{
+    LightContribution result;
+
+    result.Diffuse  = DiffuseBrdf(normal, lightDir) * luminance;
+    result.Specular = float4(0, 0, 0, 0);
+
+    return result;
+}
+
+LightContribution EvalPointLight(float3 surfPos, float3 normal, float3 lightPos, float4 intensity)
 {
     float3 dir = lightPos - surfPos;
     float len = sqrt(dot(dir, dir));
     float3 dirNorm = dir / len;
 
-    return DiffuseBrdf(normal, dirNorm) * intensity / (len * len);
+    LightContribution result;
+
+    result.Diffuse  = DiffuseBrdf(normal, dirNorm) * intensity / (len * len);
+    result.Specular = float4(0, 0, 0, 0);
+
+    return result;
 }
 
 float4 PsIllumSurf(PS_INPUT input) : SV_Target
 {
-    float4 color = 0;
+    LightContribution lightContribs = { {0, 0, 0, 0}, {0, 0, 0, 0} };
 
-    color += AmbientLight;
-
-    for (int i = 0; i<DIRECT_LIGHTS_COUNT; i++)
-        color += DiffuseBrdf(input.Normal, (float3)DirectLightDirs[i]) * DirectLightLuminances[i];
+    for (int i = 0; i < DIRECT_LIGHTS_COUNT; i++)
+    {
+        LightContribution contrib = EvalDirLight(input.Normal,
+                                                 (float3)DirectLightDirs[i],
+                                                 DirectLightLuminances[i]);
+        lightContribs.Diffuse  += contrib.Diffuse;
+        lightContribs.Specular += contrib.Specular;
+    }
 
     for (int i = 0; i < POINT_LIGHTS_COUNT; i++)
-        color += EvalPointLight((float3)input.PosWorld,
-                                input.Normal,
-                                (float3)PointLightPositions[i],
-                                PointLightIntensities[i]);
+    {
+        LightContribution contrib = EvalPointLight((float3)input.PosWorld,
+                                                   input.Normal,
+                                                   (float3)PointLightPositions[i],
+                                                   PointLightIntensities[i]);
+        lightContribs.Diffuse  += contrib.Diffuse;
+        lightContribs.Specular += contrib.Specular;
+    }
 
-    color *= txDiffuse.Sample(samLinear, input.Tex);
+    float4 diffuseTexture = { 1, 1, 1, 1 };
+    diffuseTexture = txDiffuse.Sample(samLinear, input.Tex);
 
-    color.a = 1;
+    float4 output =
+          (AmbientLight + lightContribs.Diffuse) * diffuseTexture
+        + lightContribs.Specular;
 
-    return color;
+    output.a = 1;
+
+    return output;
 }
 
 float4 PsEmissiveSurf(PS_INPUT input) : SV_Target
