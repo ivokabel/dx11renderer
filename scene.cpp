@@ -135,7 +135,7 @@ struct CbChangedEachFrame
     XMFLOAT4 AmbientLight;
     XMFLOAT4 DirectLightDirs[DIRECT_LIGHTS_COUNT];
     XMFLOAT4 DirectLightLuminances[DIRECT_LIGHTS_COUNT];
-    XMFLOAT4 PointLightDirs[POINT_LIGHTS_COUNT];
+    XMFLOAT4 PointLightPositions[POINT_LIGHTS_COUNT];
     XMFLOAT4 PointLightIntensities[POINT_LIGHTS_COUNT];
 };
 
@@ -326,7 +326,7 @@ void Scene::Render(IRenderingContext &ctx)
     }
     for (int i = 0; i < sPointLights.size(); i++)
     {
-        cbEachFrame.PointLightDirs[i]   = sPointLights[i].posTransf;
+        cbEachFrame.PointLightPositions[i]   = sPointLights[i].posTransf;
         cbEachFrame.PointLightIntensities[i] = sPointLights[i].intensity;
     }
     immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
