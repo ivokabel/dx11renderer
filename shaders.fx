@@ -46,6 +46,7 @@ struct PS_INPUT
     float2 Tex      : TEXCOORD2;
 };
 
+
 PS_INPUT VS(VS_INPUT input)
 {
     PS_INPUT output = (PS_INPUT)0;
@@ -62,60 +63,65 @@ PS_INPUT VS(VS_INPUT input)
     return output;
 }
 
+
 float4 DiffuseBrdf(float3 normal, float3 lightDir)
 {
     return max(dot(normal, lightDir), 0.);
 }
 
-struct LightContribution
+
+struct LightContrib
 {
     float4 Diffuse;
     float4 Specular;
 };
 
-LightContribution EvalDirLight(float3 normal, float3 lightDir, float4 luminance)
+
+LightContrib DirLightContrib(float3 normal, float3 lightDir, float4 luminance)
 {
-    LightContribution result;
+    LightContrib contrib;
 
-    result.Diffuse  = DiffuseBrdf(normal, lightDir) * luminance;
-    result.Specular = float4(0, 0, 0, 0);
+    contrib.Diffuse  = DiffuseBrdf(normal, lightDir) * luminance;
+    contrib.Specular = float4(0, 0, 0, 0);
 
-    return result;
+    return contrib;
 }
 
-LightContribution EvalPointLight(float3 surfPos, float3 normal, float3 lightPos, float4 intensity)
+
+LightContrib PointLightContrib(float3 surfPos, float3 normal, float3 lightPos, float4 intensity)
 {
     float3 dir = lightPos - surfPos;
     float len = sqrt(dot(dir, dir));
     float3 dirNorm = dir / len;
 
-    LightContribution result;
+    LightContrib contrib;
 
-    result.Diffuse  = DiffuseBrdf(normal, dirNorm) * intensity / (len * len);
-    result.Specular = float4(0, 0, 0, 0);
+    contrib.Diffuse  = DiffuseBrdf(normal, dirNorm) * intensity / (len * len);
+    contrib.Specular = float4(0, 0, 0, 0);
 
-    return result;
+    return contrib;
 }
+
 
 float4 PsIllumSurf(PS_INPUT input) : SV_Target
 {
-    LightContribution lightContribs = { {0, 0, 0, 0}, {0, 0, 0, 0} };
+    LightContrib lightContribs = { {0, 0, 0, 0}, {0, 0, 0, 0} };
 
     for (int i = 0; i < DIRECT_LIGHTS_COUNT; i++)
     {
-        LightContribution contrib = EvalDirLight(input.Normal,
-                                                 (float3)DirectLightDirs[i],
-                                                 DirectLightLuminances[i]);
+        LightContrib contrib = DirLightContrib(input.Normal,
+                                               (float3)DirectLightDirs[i],
+                                               DirectLightLuminances[i]);
         lightContribs.Diffuse  += contrib.Diffuse;
         lightContribs.Specular += contrib.Specular;
     }
 
     for (int i = 0; i < POINT_LIGHTS_COUNT; i++)
     {
-        LightContribution contrib = EvalPointLight((float3)input.PosWorld,
-                                                   input.Normal,
-                                                   (float3)PointLightPositions[i],
-                                                   PointLightIntensities[i]);
+        LightContrib contrib = PointLightContrib((float3)input.PosWorld,
+                                                 input.Normal,
+                                                 (float3)PointLightPositions[i],
+                                                 PointLightIntensities[i]);
         lightContribs.Diffuse  += contrib.Diffuse;
         lightContribs.Specular += contrib.Specular;
     }
@@ -131,6 +137,7 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
 
     return output;
 }
+
 
 float4 PsEmissiveSurf(PS_INPUT input) : SV_Target
 {
