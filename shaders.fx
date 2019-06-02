@@ -118,13 +118,7 @@ LightContrib PointLightContrib(float3 surfPos, float3 normal, float3 lightPos, f
 
 float4 PsIllumSurf(PS_INPUT input) : SV_Target
 {
-    input.Normal = normalize(input.Normal); // normal is interpolated - renormalize 
-
-    // Debug: CameraPos has length of zero!!!
-    //return max(0, dot(input.Normal, (float3)DirectLightDirs[0])) * float4(0, 0.8, 0, 1); // debug: eye light
-    //return max(0, dot(input.Normal, viewDir)) * float4(0, 0.8, 0, 1); // debug: eye light
-    return max(0, dot((float3)CameraPos, (float3)CameraPos)) * float4(0, 0.8, 0, 1); // debug: eye light
-
+    const float3 normal  = normalize(input.Normal); // normal is interpolated - renormalize 
     const float3 viewDir = normalize((float3)CameraPos - (float3)input.PosWorld);
 
     LightContrib lightContribs = { {0, 0, 0, 0}, {0, 0, 0, 0} };
@@ -132,7 +126,7 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
     for (int i = 0; i < DIRECT_LIGHTS_COUNT; i++)
     {
         LightContrib contrib = DirLightContrib((float3)DirectLightDirs[i],
-                                               input.Normal,
+                                               normal,
                                                viewDir,
                                                DirectLightLuminances[i]);
         lightContribs.Diffuse  += contrib.Diffuse;
@@ -142,7 +136,7 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
     for (int i = 0; i < POINT_LIGHTS_COUNT; i++)
     {
         LightContrib contrib = PointLightContrib((float3)input.PosWorld,
-                                                 input.Normal,
+                                                 normal,
                                                  (float3)PointLightPositions[i],
                                                  PointLightIntensities[i]);
         lightContribs.Diffuse  += contrib.Diffuse;

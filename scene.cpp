@@ -351,6 +351,7 @@ void Scene::Render(IRenderingContext &ctx)
     immCtx->VSSetConstantBuffers(1, 1, &mCbChangedOnResize);
     immCtx->VSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
     immCtx->PSSetShader(mPixelShaderIllum, nullptr, 0);
+    immCtx->PSSetConstantBuffers(0, 1, &mCbNeverChanged);
     immCtx->PSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
     immCtx->PSSetShaderResources(0, 1, &mTextureRV);
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
