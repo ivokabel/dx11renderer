@@ -61,9 +61,9 @@ struct {
     XMVECTOR at;
     XMVECTOR up;
 } sViewData = {
-    XMVectorSet(0.0f, 4.0f, -10.0f, 0.0f),
-    XMVectorSet(0.0f, -0.2f, 0.0f, 0.0f),
-    XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
+    XMVectorSet(0.0f, 4.0f, -10.0f, 1.0f),
+    XMVectorSet(0.0f, -0.2f, 0.0f, 1.0f),
+    XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f),
 };
 
 
@@ -103,20 +103,23 @@ AmbientLight sAmbientLight{ XMFLOAT4(0.01f, 0.06f, 0.13f, 1.0f) };
 
 std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights =
 {
-    DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f) },
+    //DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f) },
+    DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f) },
 };
 
 std::array<PointLight, POINT_LIGHTS_COUNT> sPointLights =
 {
-    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.80f, 0.40f, 0.40f, 1.0f)/*cd = lm * sr-1]*/ }, // red
-    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.40f, 0.75f, 0.40f, 1.0f)/*cd = lm * sr-1]*/ }, // green
-    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.40f, 0.40f, 0.85f, 1.0f)/*cd = lm * sr-1]*/ }, // blue
+    //PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.80f, 0.40f, 0.40f, 1.0f)/*cd = lm * sr-1]*/ }, // red
+    //PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.40f, 0.75f, 0.40f, 1.0f)/*cd = lm * sr-1]*/ }, // green
+    //PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.40f, 0.40f, 0.85f, 1.0f)/*cd = lm * sr-1]*/ }, // blue
+    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f)/*cd = lm * sr-1]*/ }, // black
 };
 
 
 struct CbNeverChanged
 {
     XMMATRIX View;
+    XMFLOAT4 CameraPos;
 };
 
 struct CbChangedOnResize
@@ -246,6 +249,7 @@ bool Scene::Init(IRenderingContext &ctx)
 
     CbNeverChanged cbNeverChanged;
     cbNeverChanged.View = XMMatrixTranspose(mViewMtrx);
+    XMStoreFloat4(&cbNeverChanged.CameraPos, sViewData.eye);
     immCtx->UpdateSubresource(mCbNeverChanged, 0, NULL, &cbNeverChanged, 0, 0);
 
     CbChangedOnResize cbChangedOnResize;

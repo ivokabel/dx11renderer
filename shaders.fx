@@ -9,6 +9,7 @@ SamplerState samLinear : register(s0);
 cbuffer cbNeverChanges : register(b0)
 {
     matrix View;
+    float4 CameraPos;
 };
 
 cbuffer cbChangeOnResize : register(b1)
@@ -56,7 +57,7 @@ PS_INPUT VS(VS_INPUT input)
     output.PosProj = mul(output.PosWorld, View);
     output.PosProj = mul(output.PosProj, Projection);
 
-    output.Normal = mul(input.Normal, World);
+    output.Normal = (float3)mul(input.Normal, World);
 
     output.Tex = input.Tex;
 
@@ -64,7 +65,7 @@ PS_INPUT VS(VS_INPUT input)
 }
 
 
-float4 DiffuseBrdf(float3 normal, float3 lightDir)
+float4 ThetaCos(float3 normal, float3 lightDir)
 {
     return max(dot(normal, lightDir), 0.);
 }
@@ -77,12 +78,23 @@ struct LightContrib
 };
 
 
-LightContrib DirLightContrib(float3 normal, float3 lightDir, float4 luminance)
+float4 PhongSpecular(float3 lightDir, float3 normal, float3 viewDir)
+{
+    const float3 reflDir = normalize(reflect(-lightDir, normal));
+    const float viewDotRefl = max(dot(viewDir, reflDir), 0);
+    //return pow(viewDotRefl, 100.0);
+
+    // debug
+    return viewDotRefl;
+}
+
+
+LightContrib DirLightContrib(float3 lightDir, float3 normal, float3 viewDir, float4 luminance)
 {
     LightContrib contrib;
 
-    contrib.Diffuse  = DiffuseBrdf(normal, lightDir) * luminance;
-    contrib.Specular = float4(0, 0, 0, 0);
+    contrib.Diffuse  = ThetaCos(normal, lightDir) * luminance;
+    contrib.Specular = PhongSpecular(lightDir, normal, viewDir) * luminance;
 
     return contrib;
 }
@@ -92,11 +104,12 @@ LightContrib PointLightContrib(float3 surfPos, float3 normal, float3 lightPos, f
 {
     float3 dir = lightPos - surfPos;
     float len = sqrt(dot(dir, dir));
-    float3 dirNorm = dir / len;
+    float3 lightDir = dir / len;
+    float lenSqr = len * len;
 
     LightContrib contrib;
 
-    contrib.Diffuse  = DiffuseBrdf(normal, dirNorm) * intensity / (len * len);
+    contrib.Diffuse  = ThetaCos(normal, lightDir) * intensity / lenSqr;
     contrib.Specular = float4(0, 0, 0, 0);
 
     return contrib;
@@ -105,12 +118,22 @@ LightContrib PointLightContrib(float3 surfPos, float3 normal, float3 lightPos, f
 
 float4 PsIllumSurf(PS_INPUT input) : SV_Target
 {
+    input.Normal = normalize(input.Normal); // normal is interpolated - renormalize 
+
+    // Debug: CameraPos has length of zero!!!
+    //return max(0, dot(input.Normal, (float3)DirectLightDirs[0])) * float4(0, 0.8, 0, 1); // debug: eye light
+    //return max(0, dot(input.Normal, viewDir)) * float4(0, 0.8, 0, 1); // debug: eye light
+    return max(0, dot((float3)CameraPos, (float3)CameraPos)) * float4(0, 0.8, 0, 1); // debug: eye light
+
+    const float3 viewDir = normalize((float3)CameraPos - (float3)input.PosWorld);
+
     LightContrib lightContribs = { {0, 0, 0, 0}, {0, 0, 0, 0} };
 
     for (int i = 0; i < DIRECT_LIGHTS_COUNT; i++)
     {
-        LightContrib contrib = DirLightContrib(input.Normal,
-                                               (float3)DirectLightDirs[i],
+        LightContrib contrib = DirLightContrib((float3)DirectLightDirs[i],
+                                               input.Normal,
+                                               viewDir,
                                                DirectLightLuminances[i]);
         lightContribs.Diffuse  += contrib.Diffuse;
         lightContribs.Specular += contrib.Specular;
@@ -130,8 +153,9 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
     diffuseTexture = txDiffuse.Sample(samLinear, input.Tex);
 
     float4 output =
-          (AmbientLight + lightContribs.Diffuse) * diffuseTexture
-        + lightContribs.Specular;
+        //(AmbientLight + lightContribs.Diffuse) * diffuseTexture
+        lightContribs.Specular
+        ;
 
     output.a = 1;
 
