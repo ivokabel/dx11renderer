@@ -62,7 +62,7 @@ struct {
     XMVECTOR up;
 } sViewData = {
     XMVectorSet(0.0f, 4.0f, -10.0f, 0.0f),
-    XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f),
+    XMVectorSet(0.0f, -0.2f, 0.0f, 0.0f),
     XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
 };
 
@@ -99,18 +99,18 @@ struct PointLight
 };
 
 
-AmbientLight sAmbientLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) };
+AmbientLight sAmbientLight{ XMFLOAT4(0.01f, 0.06f, 0.13f, 1.0f) };
 
 std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights =
 {
-    DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.05f, 0.05f, 0.05f, 1.0f) },
+    DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f) },
 };
 
 std::array<PointLight, POINT_LIGHTS_COUNT> sPointLights =
 {
-    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.40f, 0.40f, 0.80f, 1.0f)/*cd = lm * sr-1]*/ },
-    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.40f, 0.80f, 0.40f, 1.0f)/*cd = lm * sr-1]*/ },
-    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.80f, 0.40f, 0.40f, 1.0f)/*cd = lm * sr-1]*/ },
+    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.80f, 0.40f, 0.40f, 1.0f)/*cd = lm * sr-1]*/ }, // red
+    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.40f, 0.75f, 0.40f, 1.0f)/*cd = lm * sr-1]*/ }, // green
+    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.40f, 0.40f, 0.85f, 1.0f)/*cd = lm * sr-1]*/ }, // blue
 };
 
 
@@ -355,7 +355,7 @@ void Scene::Render(IRenderingContext &ctx)
     // Symbolic light geometry for point lights
     for (int i = 0; i < sPointLights.size(); i++)
     {
-        const float radius = 0.04f;
+        const float radius = 0.07f;
         XMMATRIX lightScaleMtrx = XMMatrixScaling(radius, radius, radius);
         XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(XMLoadFloat4(&sPointLights[i].posTransf));
         XMMATRIX lightMtrx = lightScaleMtrx * lightTrnslMtrx;
