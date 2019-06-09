@@ -99,12 +99,12 @@ struct PointLight
 };
 
 
-AmbientLight sAmbientLight{ XMFLOAT4(0.01f, 0.06f, 0.13f, 1.0f) };
-//AmbientLight sAmbientLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) };
+//AmbientLight sAmbientLight{ XMFLOAT4(0.01f, 0.06f, 0.13f, 1.0f) };
+AmbientLight sAmbientLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) };
 
 std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights =
 {
-    DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.05f, 0.05f, 0.05f, 1.0f) },
+    DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f) },
     //DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1.f, 1.f, 1.f, 1.0f) },
 };
 

@@ -78,51 +78,54 @@ struct LightContrib
 };
 
 
-float4 Specular(float3 lightDir, float3 normal, float3 viewDir)
+float4 Specular(float3 lightDir, float3 normal, float3 viewDir, float specPower)
 {
-    // Phong
-    //const float3 reflDir = normalize(reflect(-lightDir, normal));
-    //const float viewDotRefl = max(dot(viewDir, reflDir), 0);
-    //return pow(viewDotRefl, 500.0);
-
     // Blinn-Phong
     if (dot(lightDir, normal) < 0)
-        // Light is below surface - no contribution
-        return float4(0, 0, 0, 1);
+        return float4(0, 0, 0, 1); // Light is below surface - no contribution
     else
     {
         const float3 halfwayRaw = lightDir + viewDir;
         const float  halfwayLen = length(halfwayRaw);
         const float3 halfway = (halfwayLen > 0.001f) ? (halfwayRaw / halfwayLen) : normal;
         const float  halfwayCos = max(dot(halfway, normal), 0);
-        return pow(halfwayCos, 800.0);
+        return pow(halfwayCos, specPower);
     }
 }
 
 
-LightContrib DirLightContrib(float3 lightDir, float3 normal, float3 viewDir, float4 luminance)
+LightContrib DirLightContrib(float3 lightDir,
+                             float3 normal,
+                             float3 viewDir,
+                             float4 luminance,
+                             float specPower)
 {
     const float thetaCos = ThetaCos(normal, lightDir);
 
     LightContrib contrib;
     contrib.Diffuse  = thetaCos * luminance;
-    contrib.Specular = Specular(lightDir, normal, viewDir) * luminance;
+    contrib.Specular = Specular(lightDir, normal, viewDir, specPower) /** thetaCos*/ * luminance;
     return contrib;
 }
 
 
-LightContrib PointLightContrib(float3 surfPos, float3 lightPos, float3 normal, float3 viewDir, float4 intensity)
+LightContrib PointLightContrib(float3 surfPos,
+                               float3 lightPos,
+                               float3 normal,
+                               float3 viewDir,
+                               float4 intensity,
+                               float specPower)
 {
     const float3 dirRaw = lightPos - surfPos;
     const float  len = length(dirRaw);
     const float3 lightDir = dirRaw / len;
-    const float  lenSqr = len * len;
+    const float  distSqr = len * len;
 
     const float thetaCos = ThetaCos(normal, lightDir);
 
     LightContrib contrib;
-    contrib.Diffuse  = thetaCos * intensity / lenSqr;
-    contrib.Specular = Specular(lightDir, normal, viewDir) * intensity / lenSqr;
+    contrib.Diffuse  = thetaCos * intensity / distSqr;
+    contrib.Specular = Specular(lightDir, normal, viewDir, specPower) /** thetaCos*/ * intensity / distSqr;
     return contrib;
 }
 
@@ -134,12 +137,15 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
 
     LightContrib lightContribs = { {0, 0, 0, 0}, {0, 0, 0, 0} };
 
+    const float specPower = 500.f;
+
     for (int i = 0; i < DIRECT_LIGHTS_COUNT; i++)
     {
         LightContrib contrib = DirLightContrib((float3)DirectLightDirs[i],
                                                normal,
                                                viewDir,
-                                               DirectLightLuminances[i]);
+                                               DirectLightLuminances[i],
+                                               specPower);
         lightContribs.Diffuse  += contrib.Diffuse;
         lightContribs.Specular += contrib.Specular;
     }
@@ -150,7 +156,8 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
                                                  (float3)PointLightPositions[i],
                                                  normal,
                                                  viewDir,
-                                                 PointLightIntensities[i]);
+                                                 PointLightIntensities[i],
+                                                 specPower);
         lightContribs.Diffuse  += contrib.Diffuse;
         lightContribs.Specular += contrib.Specular;
     }
