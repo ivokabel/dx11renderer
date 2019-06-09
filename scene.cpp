@@ -69,7 +69,7 @@ struct {
 
 struct AmbientLight
 {
-    const XMFLOAT4 color;
+    const XMFLOAT4 luminance; // omnidirectional luminance: lm * sr-1 * m-2
 
     AmbientLight() = delete;
     AmbientLight& operator =(const AmbientLight &a) = delete;
@@ -99,20 +99,21 @@ struct PointLight
 };
 
 
-//AmbientLight sAmbientLight{ XMFLOAT4(0.01f, 0.06f, 0.13f, 1.0f) };
-AmbientLight sAmbientLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) };
+AmbientLight sAmbientLight{ XMFLOAT4(0.01f, 0.03f, 0.07f, 1.0f) };
+//AmbientLight sAmbientLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) };
 
 std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights =
 {
-    DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f) },
-    //DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1.f, 1.f, 1.f, 1.0f) },
+    DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.4f, 0.4f, 0.4f, 1.0f) },
+    //DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.f, 0.f, 0.f, 1.0f) },
+    //DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(3.141f, 3.141f, 3.141f, 1.0f) },
 };
 
 std::array<PointLight, POINT_LIGHTS_COUNT> sPointLights =
 {
-    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.80f, 0.40f, 0.40f, 1.0f)/*cd = lm * sr-1]*/ }, // red
-    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.40f, 0.75f, 0.40f, 1.0f)/*cd = lm * sr-1]*/ }, // green
-    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.40f, 0.40f, 0.85f, 1.0f)/*cd = lm * sr-1]*/ }, // blue
+    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(3.90f, 0.80f, 0.80f, 1.0f)/*cd = lm * sr-1]*/ }, // red
+    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.80f, 3.00f, 0.80f, 1.0f)/*cd = lm * sr-1]*/ }, // green
+    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.80f, 0.80f, 4.00f, 1.0f)/*cd = lm * sr-1]*/ }, // blue
     //PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f)/*cd = lm * sr-1]*/ }, // black
 };
 
@@ -135,7 +136,7 @@ struct CbChangedEachFrame
     XMFLOAT4 MeshColor;
 
     // Light sources
-    XMFLOAT4 AmbientLight;
+    XMFLOAT4 AmbientLightLuminance;
     XMFLOAT4 DirectLightDirs[DIRECT_LIGHTS_COUNT];
     XMFLOAT4 DirectLightLuminances[DIRECT_LIGHTS_COUNT];
     XMFLOAT4 PointLightPositions[POINT_LIGHTS_COUNT];
@@ -333,7 +334,7 @@ void Scene::Render(IRenderingContext &ctx)
     CbChangedEachFrame cbEachFrame;
     cbEachFrame.World = XMMatrixTranspose(mMainObjectWorldMtrx);
     cbEachFrame.MeshColor = mMeshColor;
-    cbEachFrame.AmbientLight = sAmbientLight.color;
+    cbEachFrame.AmbientLightLuminance = sAmbientLight.luminance;
     for (int i = 0; i < sDirectLights.size(); i++)
     {
         cbEachFrame.DirectLightDirs[i]       = sDirectLights[i].dirTransf;
@@ -382,10 +383,10 @@ void Scene::Render(IRenderingContext &ctx)
 
 bool Scene::GetAmbientColor(float(&rgba)[4])
 {
-    rgba[0] = sAmbientLight.color.x;
-    rgba[1] = sAmbientLight.color.y;
-    rgba[2] = sAmbientLight.color.z;
-    rgba[3] = sAmbientLight.color.w;
+    rgba[0] = sAmbientLight.luminance.x;
+    rgba[1] = sAmbientLight.luminance.y;
+    rgba[2] = sAmbientLight.luminance.z;
+    rgba[3] = sAmbientLight.luminance.w;
     return true;
 }
 

@@ -24,7 +24,7 @@ cbuffer cbChangesEachFrame : register(b2)
     float4 MeshColor;
 
     // Light sources
-    float4 AmbientLight;
+    float4 AmbientLightLuminance;
     float4 DirectLightDirs[DIRECT_LIGHTS_COUNT];
     float4 DirectLightLuminances[DIRECT_LIGHTS_COUNT];
     float4 PointLightPositions[POINT_LIGHTS_COUNT];
@@ -78,6 +78,12 @@ struct LightContrib
 };
 
 
+float4 Diffuse()
+{
+    return 1 / PI;
+};
+
+
 float4 Specular(float3 lightDir, float3 normal, float3 viewDir, float specPower)
 {
     // Blinn-Phong
@@ -89,8 +95,18 @@ float4 Specular(float3 lightDir, float3 normal, float3 viewDir, float specPower)
         const float  halfwayLen = length(halfwayRaw);
         const float3 halfway = (halfwayLen > 0.001f) ? (halfwayRaw / halfwayLen) : normal;
         const float  halfwayCos = max(dot(halfway, normal), 0);
-        return pow(halfwayCos, specPower);
+        const float  energyConserv = (2 + specPower) / (8 * PI);
+        return pow(halfwayCos, specPower) * energyConserv;
     }
+}
+
+
+LightContrib AmbLightContrib(float4 luminance)
+{
+    LightContrib contrib;
+    contrib.Diffuse  = luminance;
+    contrib.Specular = luminance; // estimate
+    return contrib;
 }
 
 
@@ -103,8 +119,8 @@ LightContrib DirLightContrib(float3 lightDir,
     const float thetaCos = ThetaCos(normal, lightDir);
 
     LightContrib contrib;
-    contrib.Diffuse  = thetaCos * luminance;
-    contrib.Specular = Specular(lightDir, normal, viewDir, specPower) /** thetaCos*/ * luminance;
+    contrib.Diffuse  = Diffuse() * thetaCos * luminance;
+    contrib.Specular = Specular(lightDir, normal, viewDir, specPower) * luminance;
     return contrib;
 }
 
@@ -124,8 +140,8 @@ LightContrib PointLightContrib(float3 surfPos,
     const float thetaCos = ThetaCos(normal, lightDir);
 
     LightContrib contrib;
-    contrib.Diffuse  = thetaCos * intensity / distSqr;
-    contrib.Specular = Specular(lightDir, normal, viewDir, specPower) /** thetaCos*/ * intensity / distSqr;
+    contrib.Diffuse  = Diffuse() * thetaCos * intensity / distSqr;
+    contrib.Specular = Specular(lightDir, normal, viewDir, specPower) * intensity / distSqr;
     return contrib;
 }
 
@@ -137,7 +153,9 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
 
     LightContrib lightContribs = { {0, 0, 0, 0}, {0, 0, 0, 0} };
 
-    const float specPower = 500.f;
+    const float specPower = 100.f;
+
+    lightContribs = AmbLightContrib(AmbientLightLuminance);
 
     for (int i = 0; i < DIRECT_LIGHTS_COUNT; i++)
     {
@@ -162,12 +180,15 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
         lightContribs.Specular += contrib.Specular;
     }
 
-    float4 diffuseTexture = { 1, 1, 1, 1 };
+    float4 diffuseTexture  = { 1.0, 1.0, 1.0, 1 };
+    float4 specularTexture = { 1.0, 1.0, 1.0, 1 };
+    //float4 diffuseTexture  = { 0.0, 0.0, 0.0, 1 }; //{ 1.0, 1.0, 1.0, 1 };
+    //float4 specularTexture = { 1.0, 1.0, 1.0, 1 }; //{ 0.0, 0.0, 0.0, 1 };
     diffuseTexture = txDiffuse.Sample(samLinear, input.Tex);
 
     float4 output =
-          (AmbientLight + lightContribs.Diffuse) * diffuseTexture
-        + lightContribs.Specular
+          lightContribs.Diffuse  * diffuseTexture  * 0.9
+        + lightContribs.Specular * specularTexture * 0.1
         ;
 
     output.a = 1;
