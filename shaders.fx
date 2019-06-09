@@ -105,7 +105,7 @@ LightContrib AmbLightContrib(float4 luminance)
 {
     LightContrib contrib;
     contrib.Diffuse  = luminance;
-    contrib.Specular = luminance; // estimate
+    contrib.Specular = luminance; // estimate based on assumption that full specular lobe integrates to 1
     return contrib;
 }
 
@@ -153,7 +153,7 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
 
     LightContrib lightContribs = { {0, 0, 0, 0}, {0, 0, 0, 0} };
 
-    const float specPower = 100.f;
+    const float specPower = 300.f;
 
     lightContribs = AmbLightContrib(AmbientLightLuminance);
 
