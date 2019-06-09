@@ -283,7 +283,7 @@ void Scene::Animate(IRenderingContext &ctx)
         return;
 
     const float time = ctx.GetCurrentAnimationTime();
-    const float period = 10.f; //seconds
+    const float period = 20.f; //seconds
     const float totalAnimPos = time / period;
     const float mainObjAngle = totalAnimPos * XM_2PI;
 
