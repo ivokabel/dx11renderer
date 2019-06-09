@@ -78,40 +78,51 @@ struct LightContrib
 };
 
 
-float4 PhongSpecular(float3 lightDir, float3 normal, float3 viewDir)
+float4 Specular(float3 lightDir, float3 normal, float3 viewDir)
 {
-    const float3 reflDir = normalize(reflect(-lightDir, normal));
-    const float viewDotRefl = max(dot(viewDir, reflDir), 0);
-    //return pow(viewDotRefl, 100.0);
+    // Phong
+    //const float3 reflDir = normalize(reflect(-lightDir, normal));
+    //const float viewDotRefl = max(dot(viewDir, reflDir), 0);
+    //return pow(viewDotRefl, 500.0);
 
-    // debug
-    return viewDotRefl;
+    // Blinn-Phong
+    if (dot(lightDir, normal) < 0)
+        // Light is below surface - no contribution
+        return float4(0, 0, 0, 1);
+    else
+    {
+        const float3 halfwayRaw = lightDir + viewDir;
+        const float  halfwayLen = length(halfwayRaw);
+        const float3 halfway = (halfwayLen > 0.001f) ? (halfwayRaw / halfwayLen) : normal;
+        const float  halfwayCos = max(dot(halfway, normal), 0);
+        return pow(halfwayCos, 800.0);
+    }
 }
 
 
 LightContrib DirLightContrib(float3 lightDir, float3 normal, float3 viewDir, float4 luminance)
 {
+    const float thetaCos = ThetaCos(normal, lightDir);
+
     LightContrib contrib;
-
-    contrib.Diffuse  = ThetaCos(normal, lightDir) * luminance;
-    contrib.Specular = PhongSpecular(lightDir, normal, viewDir) * luminance;
-
+    contrib.Diffuse  = thetaCos * luminance;
+    contrib.Specular = Specular(lightDir, normal, viewDir) * luminance;
     return contrib;
 }
 
 
-LightContrib PointLightContrib(float3 surfPos, float3 normal, float3 lightPos, float4 intensity)
+LightContrib PointLightContrib(float3 surfPos, float3 lightPos, float3 normal, float3 viewDir, float4 intensity)
 {
-    float3 dir = lightPos - surfPos;
-    float len = sqrt(dot(dir, dir));
-    float3 lightDir = dir / len;
-    float lenSqr = len * len;
+    const float3 dirRaw = lightPos - surfPos;
+    const float  len = length(dirRaw);
+    const float3 lightDir = dirRaw / len;
+    const float  lenSqr = len * len;
+
+    const float thetaCos = ThetaCos(normal, lightDir);
 
     LightContrib contrib;
-
-    contrib.Diffuse  = ThetaCos(normal, lightDir) * intensity / lenSqr;
-    contrib.Specular = float4(0, 0, 0, 0);
-
+    contrib.Diffuse  = thetaCos * intensity / lenSqr;
+    contrib.Specular = Specular(lightDir, normal, viewDir) * intensity / lenSqr;
     return contrib;
 }
 
@@ -136,8 +147,9 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
     for (int i = 0; i < POINT_LIGHTS_COUNT; i++)
     {
         LightContrib contrib = PointLightContrib((float3)input.PosWorld,
-                                                 normal,
                                                  (float3)PointLightPositions[i],
+                                                 normal,
+                                                 viewDir,
                                                  PointLightIntensities[i]);
         lightContribs.Diffuse  += contrib.Diffuse;
         lightContribs.Specular += contrib.Specular;
@@ -147,8 +159,8 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
     diffuseTexture = txDiffuse.Sample(samLinear, input.Tex);
 
     float4 output =
-        //(AmbientLight + lightContribs.Diffuse) * diffuseTexture
-        lightContribs.Specular
+          (AmbientLight + lightContribs.Diffuse) * diffuseTexture
+        + lightContribs.Specular
         ;
 
     output.a = 1;
