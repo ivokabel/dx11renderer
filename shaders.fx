@@ -8,19 +8,19 @@ SamplerState samLinear : register(s0);
 
 cbuffer cbNeverChanges : register(b0)
 {
-    matrix View;
+    matrix ViewMtrx;
     float4 CameraPos;
 };
 
 cbuffer cbChangeOnResize : register(b1)
 {
-    matrix Projection;
+    matrix ProjectionMtrx;
 };
 
 cbuffer cbChangesEachFrame : register(b2)
 {
     // Transformations
-    matrix World;
+    matrix WorldMtrx;
     float4 MeshColor;
 
     // Light sources
@@ -52,12 +52,12 @@ PS_INPUT VS(VS_INPUT input)
 {
     PS_INPUT output = (PS_INPUT)0;
 
-    output.PosWorld = mul(input.Pos, World);
+    output.PosWorld = mul(input.Pos, WorldMtrx);
 
-    output.PosProj = mul(output.PosWorld, View);
-    output.PosProj = mul(output.PosProj, Projection);
+    output.PosProj = mul(output.PosWorld, ViewMtrx);
+    output.PosProj = mul(output.PosProj, ProjectionMtrx);
 
-    output.Normal = (float3)mul(input.Normal, World);
+    output.Normal = (float3)mul(input.Normal, WorldMtrx);
 
     output.Tex = input.Tex;
 

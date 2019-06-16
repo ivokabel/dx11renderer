@@ -120,19 +120,19 @@ std::array<PointLight, POINT_LIGHTS_COUNT> sPointLights =
 
 struct CbNeverChanged
 {
-    XMMATRIX View;
+    XMMATRIX ViewMtrx;
     XMFLOAT4 CameraPos;
 };
 
 struct CbChangedOnResize
 {
-    XMMATRIX Projection;
+    XMMATRIX ProjectionMtrx;
 };
 
 struct CbChangedEachFrame
 {
     // Transformations
-    XMMATRIX World;
+    XMMATRIX WorldMtrx;
     XMFLOAT4 MeshColor;
 
     // Light sources
@@ -250,12 +250,12 @@ bool Scene::Init(IRenderingContext &ctx)
     // Update constant buffers which can be updated now
 
     CbNeverChanged cbNeverChanged;
-    cbNeverChanged.View = XMMatrixTranspose(mViewMtrx);
+    cbNeverChanged.ViewMtrx = XMMatrixTranspose(mViewMtrx);
     XMStoreFloat4(&cbNeverChanged.CameraPos, sViewData.eye);
     immCtx->UpdateSubresource(mCbNeverChanged, 0, NULL, &cbNeverChanged, 0, 0);
 
     CbChangedOnResize cbChangedOnResize;
-    cbChangedOnResize.Projection = XMMatrixTranspose(mProjectionMtrx);
+    cbChangedOnResize.ProjectionMtrx = XMMatrixTranspose(mProjectionMtrx);
     immCtx->UpdateSubresource(mCbChangedOnResize, 0, NULL, &cbChangedOnResize, 0, 0);
 
     return true;
@@ -332,7 +332,7 @@ void Scene::Render(IRenderingContext &ctx)
 
     // Constant buffer - main object
     CbChangedEachFrame cbEachFrame;
-    cbEachFrame.World = XMMatrixTranspose(mMainObjectWorldMtrx);
+    cbEachFrame.WorldMtrx = XMMatrixTranspose(mMainObjectWorldMtrx);
     cbEachFrame.MeshColor = mMeshColor;
     cbEachFrame.AmbientLightLuminance = sAmbientLight.luminance;
     for (int i = 0; i < sDirectLights.size(); i++)
@@ -366,7 +366,7 @@ void Scene::Render(IRenderingContext &ctx)
         XMMATRIX lightScaleMtrx = XMMatrixScaling(radius, radius, radius);
         XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(XMLoadFloat4(&sPointLights[i].posTransf));
         XMMATRIX lightMtrx = lightScaleMtrx * lightTrnslMtrx;
-        cbEachFrame.World = XMMatrixTranspose(lightMtrx);
+        cbEachFrame.WorldMtrx = XMMatrixTranspose(lightMtrx);
         const float radius2 = radius * radius;
         cbEachFrame.MeshColor = {
             sPointLights[i].intensity.x / radius2,
