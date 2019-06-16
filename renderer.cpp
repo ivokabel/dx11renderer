@@ -259,13 +259,13 @@ bool SimpleDX11Renderer::CreateDevice()
                FeatureLevelToString(mFeatureLevel));
 
     // Create a render target view
-    ID3D11Texture2D* backBuffer = nullptr;
-    hr = mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&backBuffer);
+    ID3D11Texture2D* backBufferTex = nullptr;
+    hr = mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&backBufferTex);
     if (FAILED(hr))
         return false;
 
-    hr = mDevice->CreateRenderTargetView(backBuffer, nullptr, &mRenderTargetView);
-    backBuffer->Release();
+    hr = mDevice->CreateRenderTargetView(backBufferTex, nullptr, &mRenderTargetView);
+    backBufferTex->Release();
     if (FAILED(hr))
         return false;
 
@@ -283,7 +283,7 @@ bool SimpleDX11Renderer::CreateDevice()
     descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
     descDepth.CPUAccessFlags = 0;
     descDepth.MiscFlags = 0;
-    hr = mDevice->CreateTexture2D(&descDepth, nullptr, &mDepthStencil);
+    hr = mDevice->CreateTexture2D(&descDepth, nullptr, &mDepthStencilTex);
     if (FAILED(hr))
         return false;
 
@@ -293,7 +293,7 @@ bool SimpleDX11Renderer::CreateDevice()
     descDSV.Format = descDepth.Format;
     descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS; //D3D11_DSV_DIMENSION_TEXTURE2D;
     descDSV.Texture2D.MipSlice = 0;
-    hr = mDevice->CreateDepthStencilView(mDepthStencil, &descDSV, &mDepthStencilView);
+    hr = mDevice->CreateDepthStencilView(mDepthStencilTex, &descDSV, &mDepthStencilView);
     if (FAILED(hr))
         return false;
 
@@ -320,7 +320,7 @@ void SimpleDX11Renderer::DestroyDevice()
     if (mImmediateContext)
         mImmediateContext->ClearState();
 
-    Utils::ReleaseAndMakeNull(mDepthStencil);
+    Utils::ReleaseAndMakeNull(mDepthStencilTex);
     Utils::ReleaseAndMakeNull(mDepthStencilView);
     Utils::ReleaseAndMakeNull(mRenderTargetView);
     Utils::ReleaseAndMakeNull(mSwapChain);

@@ -96,7 +96,7 @@ private:
     ID3D11DeviceContext*        mImmediateContext = nullptr;
     IDXGISwapChain*             mSwapChain = nullptr;
     ID3D11RenderTargetView*     mRenderTargetView = nullptr;
-    ID3D11Texture2D*            mDepthStencil = nullptr;
+    ID3D11Texture2D*            mDepthStencilTex = nullptr;
     ID3D11DepthStencilView*     mDepthStencilView = nullptr;
 
     std::shared_ptr<IScene>     mScene;
