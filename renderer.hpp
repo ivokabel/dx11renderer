@@ -104,4 +104,6 @@ private:
     ID3D11DepthStencilView*     mDepthStencilView = nullptr;
 
     std::shared_ptr<IScene>     mScene;
+
+    bool                        mPostProcessOn = true;
 };

@@ -141,6 +141,18 @@ LRESULT CALLBACK SimpleDX11Renderer::WndProc(HWND wnd,
         PostQuitMessage(0);
         break;
 
+    case WM_KEYDOWN:
+    {
+        switch (wParam)
+        {
+        case 'P':
+            mPostProcessOn = !mPostProcessOn;
+            Log::Debug(L"WM_KEYDOWN: Post-processing %s", mPostProcessOn ? L"ON" : L"OFF");
+            break;
+        }
+        break;
+    }
+
     default:
         return DefWindowProc(wnd, message, wParam, lParam);
     }
