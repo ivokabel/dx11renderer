@@ -101,14 +101,14 @@ private:
 
     // Swap chain
     IDXGISwapChain*             mSwapChain = nullptr;
-    ID3D11RenderTargetView*     mRenderTargetView = nullptr;
-    ID3D11Texture2D*            mDepthStencilTex = nullptr;
-    ID3D11DepthStencilView*     mDepthStencilView = nullptr;
+    ID3D11RenderTargetView*     mSwapChainRTV = nullptr;
+    ID3D11Texture2D*            mSwapChainDSTex = nullptr;
+    ID3D11DepthStencilView*     mSwapChainDSV = nullptr;
 
     // Postprocessing resources
     ID3D11Texture2D*            mPass1Tex = nullptr;
-    ID3D11RenderTargetView*     mPass1TargetView = nullptr;
-    ID3D11ShaderResourceView*   mPass1ShaderResView = nullptr;
+    ID3D11RenderTargetView*     mPass1RTV = nullptr;
+    ID3D11ShaderResourceView*   mPass1SRV = nullptr;
     ID3D11PixelShader*          mPass1PS = nullptr;
     ID3D11SamplerState*         mSamplerStatePoint = nullptr;
     ID3D11SamplerState*         mSamplerStateLinear = nullptr;

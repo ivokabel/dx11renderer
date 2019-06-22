@@ -294,13 +294,13 @@ bool SimpleDX11Renderer::CreateDevice()
                FeatureLevelToString(mFeatureLevel));
 
     // Create a render target view
-    ID3D11Texture2D* backBufferTex = nullptr;
-    hr = mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&backBufferTex);
+    ID3D11Texture2D* swapChainBuffer = nullptr;
+    hr = mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&swapChainBuffer);
     if (FAILED(hr))
         return false;
 
-    hr = mDevice->CreateRenderTargetView(backBufferTex, nullptr, &mRenderTargetView);
-    backBufferTex->Release();
+    hr = mDevice->CreateRenderTargetView(swapChainBuffer, nullptr, &mSwapChainRTV);
+    swapChainBuffer->Release();
     if (FAILED(hr))
         return false;
 
@@ -316,7 +316,7 @@ bool SimpleDX11Renderer::CreateDevice()
     descDepth.SampleDesc.Quality = 0;
     descDepth.Usage = D3D11_USAGE_DEFAULT;
     descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-    hr = mDevice->CreateTexture2D(&descDepth, nullptr, &mDepthStencilTex);
+    hr = mDevice->CreateTexture2D(&descDepth, nullptr, &mSwapChainDSTex);
     if (FAILED(hr))
         return false;
 
@@ -326,11 +326,11 @@ bool SimpleDX11Renderer::CreateDevice()
     descDSV.Format = descDepth.Format;
     descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS; //D3D11_DSV_DIMENSION_TEXTURE2D;
     descDSV.Texture2D.MipSlice = 0;
-    hr = mDevice->CreateDepthStencilView(mDepthStencilTex, &descDSV, &mDepthStencilView);
+    hr = mDevice->CreateDepthStencilView(mSwapChainDSTex, &descDSV, &mSwapChainDSV);
     if (FAILED(hr))
         return false;
 
-    mImmediateContext->OMSetRenderTargets(1, &mRenderTargetView, mDepthStencilView);
+    mImmediateContext->OMSetRenderTargets(1, &mSwapChainRTV, mSwapChainDSV);
 
     // Postprocessing resources
     {
@@ -354,7 +354,7 @@ bool SimpleDX11Renderer::CreateDevice()
         descRTV.Format = descTex.Format;
         descRTV.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
         descRTV.Texture2D.MipSlice = 0;
-        hr = mDevice->CreateRenderTargetView(mPass1Tex, &descRTV, &mPass1TargetView);
+        hr = mDevice->CreateRenderTargetView(mPass1Tex, &descRTV, &mPass1RTV);
         if (FAILED(hr))
             return false;
 
@@ -364,7 +364,7 @@ bool SimpleDX11Renderer::CreateDevice()
         descSRV.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
         descSRV.Texture2D.MipLevels = 1;
         descSRV.Texture2D.MostDetailedMip = 0;
-        hr = mDevice->CreateShaderResourceView(mPass1Tex, &descSRV, &mPass1ShaderResView);
+        hr = mDevice->CreateShaderResourceView(mPass1Tex, &descSRV, &mPass1SRV);
         if (FAILED(hr))
             return false;
 
@@ -410,17 +410,17 @@ void SimpleDX11Renderer::DestroyDevice()
         mImmediateContext->ClearState();
 
     // Postprocessing resources
-    Utils::ReleaseAndMakeNull(mPass1TargetView);
-    Utils::ReleaseAndMakeNull(mPass1ShaderResView);
+    Utils::ReleaseAndMakeNull(mPass1RTV);
+    Utils::ReleaseAndMakeNull(mPass1SRV);
     Utils::ReleaseAndMakeNull(mPass1Tex);
     Utils::ReleaseAndMakeNull(mPass1PS);
     Utils::ReleaseAndMakeNull(mSamplerStatePoint);
     Utils::ReleaseAndMakeNull(mSamplerStateLinear);
 
     // Swap chain
-    Utils::ReleaseAndMakeNull(mDepthStencilView);
-    Utils::ReleaseAndMakeNull(mDepthStencilTex);
-    Utils::ReleaseAndMakeNull(mRenderTargetView);
+    Utils::ReleaseAndMakeNull(mSwapChainDSV);
+    Utils::ReleaseAndMakeNull(mSwapChainDSTex);
+    Utils::ReleaseAndMakeNull(mSwapChainRTV);
 
     Utils::ReleaseAndMakeNull(mSwapChain);
     Utils::ReleaseAndMakeNull(mImmediateContext);
@@ -557,9 +557,9 @@ void SimpleDX11Renderer::Render()
     // Pass 1: Replace current render target view with our first render pass buffer
     if (mIsPostProcessingActive)
     {
-        ID3D11RenderTargetView* aRTViews[1] = { mPass1TargetView };
+        ID3D11RenderTargetView* aRTViews[1] = { mPass1RTV };
         mImmediateContext->OMSetRenderTargets(1, aRTViews, swapChainDSV);
-        mImmediateContext->ClearRenderTargetView(mPass1TargetView, ambientColor);
+        mImmediateContext->ClearRenderTargetView(mPass1RTV, ambientColor);
     }
 
     // Scene
@@ -578,7 +578,7 @@ void SimpleDX11Renderer::Render()
 
         // Run pass 2
 
-        ID3D11ShaderResourceView* aRViews[1] = { mPass1ShaderResView };
+        ID3D11ShaderResourceView* aRViews[1] = { mPass1SRV };
         mImmediateContext->PSSetShaderResources(0, 1, aRViews);
 
         ID3D11SamplerState* aSamplers[] = { mSamplerStatePoint, mSamplerStateLinear };

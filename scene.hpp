@@ -38,7 +38,7 @@ private:
     ID3D11Buffer*               mCbChangedOnResize = nullptr;
     ID3D11Buffer*               mCbChangedEachFrame = nullptr;
 
-    ID3D11ShaderResourceView*   mTextureRV = nullptr;
+    ID3D11ShaderResourceView*   mTextureSRV = nullptr;
     ID3D11SamplerState*         mSamplerLinear = nullptr;
 
     XMMATRIX                    mMainObjectWorldMtrx;

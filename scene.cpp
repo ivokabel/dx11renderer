@@ -222,7 +222,7 @@ bool Scene::Init(IRenderingContext &ctx)
         return hr;
 
     // Load texture
-    hr = D3DX11CreateShaderResourceViewFromFile(device, L"../uv_grid_ash.dds", nullptr, nullptr, &mTextureRV, nullptr);
+    hr = D3DX11CreateShaderResourceViewFromFile(device, L"../uv_grid_ash.dds", nullptr, nullptr, &mTextureSRV, nullptr);
     if (FAILED(hr))
         return hr;
 
@@ -271,7 +271,7 @@ void Scene::Destroy()
     Utils::ReleaseAndMakeNull(mCbNeverChanged);
     Utils::ReleaseAndMakeNull(mCbChangedOnResize);
     Utils::ReleaseAndMakeNull(mCbChangedEachFrame);
-    Utils::ReleaseAndMakeNull(mTextureRV);
+    Utils::ReleaseAndMakeNull(mTextureSRV);
     Utils::ReleaseAndMakeNull(mSamplerLinear);
     sGeometry.Destroy();
 }
@@ -355,7 +355,7 @@ void Scene::Render(IRenderingContext &ctx)
     immCtx->PSSetShader(mPixelShaderIllum, nullptr, 0);
     immCtx->PSSetConstantBuffers(0, 1, &mCbNeverChanged);
     immCtx->PSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
-    immCtx->PSSetShaderResources(0, 1, &mTextureRV);
+    immCtx->PSSetShaderResources(0, 1, &mTextureSRV);
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
     immCtx->DrawIndexed((UINT)sGeometry.indices.size(), 0, 0);
 
