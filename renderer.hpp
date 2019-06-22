@@ -106,9 +106,9 @@ private:
     ID3D11DepthStencilView*     mSwapChainDSV = nullptr;
 
     // Postprocessing resources
-    ID3D11Texture2D*            mPass1Tex = nullptr;
-    ID3D11RenderTargetView*     mPass1RTV = nullptr;
-    ID3D11ShaderResourceView*   mPass1SRV = nullptr;
+    ID3D11Texture2D*            mPass0Tex = nullptr;
+    ID3D11RenderTargetView*     mPass0RTV = nullptr;
+    ID3D11ShaderResourceView*   mPass0SRV = nullptr;
     ID3D11PixelShader*          mPass1PS = nullptr;
     ID3D11SamplerState*         mSamplerStatePoint = nullptr;
     ID3D11SamplerState*         mSamplerStateLinear = nullptr;

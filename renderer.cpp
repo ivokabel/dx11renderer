@@ -345,7 +345,7 @@ bool SimpleDX11Renderer::CreateDevice()
         descTex.Height = mWndHeight;
         descTex.MipLevels = 1;
         descTex.SampleDesc.Count = 1;
-        hr = mDevice->CreateTexture2D(&descTex, nullptr, &mPass1Tex);
+        hr = mDevice->CreateTexture2D(&descTex, nullptr, &mPass0Tex);
         if (FAILED(hr))
             return false;
 
@@ -354,7 +354,7 @@ bool SimpleDX11Renderer::CreateDevice()
         descRTV.Format = descTex.Format;
         descRTV.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
         descRTV.Texture2D.MipSlice = 0;
-        hr = mDevice->CreateRenderTargetView(mPass1Tex, &descRTV, &mPass1RTV);
+        hr = mDevice->CreateRenderTargetView(mPass0Tex, &descRTV, &mPass0RTV);
         if (FAILED(hr))
             return false;
 
@@ -364,7 +364,7 @@ bool SimpleDX11Renderer::CreateDevice()
         descSRV.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
         descSRV.Texture2D.MipLevels = 1;
         descSRV.Texture2D.MostDetailedMip = 0;
-        hr = mDevice->CreateShaderResourceView(mPass1Tex, &descSRV, &mPass1SRV);
+        hr = mDevice->CreateShaderResourceView(mPass0Tex, &descSRV, &mPass0SRV);
         if (FAILED(hr))
             return false;
 
@@ -410,9 +410,9 @@ void SimpleDX11Renderer::DestroyDevice()
         mImmediateContext->ClearState();
 
     // Postprocessing resources
-    Utils::ReleaseAndMakeNull(mPass1RTV);
-    Utils::ReleaseAndMakeNull(mPass1SRV);
-    Utils::ReleaseAndMakeNull(mPass1Tex);
+    Utils::ReleaseAndMakeNull(mPass0RTV);
+    Utils::ReleaseAndMakeNull(mPass0SRV);
+    Utils::ReleaseAndMakeNull(mPass0Tex);
     Utils::ReleaseAndMakeNull(mPass1PS);
     Utils::ReleaseAndMakeNull(mSamplerStatePoint);
     Utils::ReleaseAndMakeNull(mSamplerStateLinear);
@@ -554,12 +554,12 @@ void SimpleDX11Renderer::Render()
     mImmediateContext->ClearRenderTargetView(swapChainRTV, ambientColor);
     mImmediateContext->ClearDepthStencilView(swapChainDSV, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-    // Pass 1: Replace current render target view with our first render pass buffer
+    // Pass 0: Replace current render target view with our first render pass buffer
     if (mIsPostProcessingActive)
     {
-        ID3D11RenderTargetView* aRTViews[1] = { mPass1RTV };
+        ID3D11RenderTargetView* aRTViews[1] = { mPass0RTV };
         mImmediateContext->OMSetRenderTargets(1, aRTViews, swapChainDSV);
-        mImmediateContext->ClearRenderTargetView(mPass1RTV, ambientColor);
+        mImmediateContext->ClearRenderTargetView(mPass0RTV, ambientColor);
     }
 
     // Scene
@@ -569,21 +569,19 @@ void SimpleDX11Renderer::Render()
         mScene->Render(*this);
     }
 
-    // Pass 2: postprocessing...
+    // Pass 1: postprocessing...
     if (mIsPostProcessingActive)
     {
-        // Restore the swap chain render target for the last pass
-        ID3D11RenderTargetView* aRTViews[1] = { swapChainRTV };
-        mImmediateContext->OMSetRenderTargets(1, aRTViews, swapChainDSV);
-
-        // Run pass 2
-
-        ID3D11ShaderResourceView* aRViews[1] = { mPass1SRV };
+        ID3D11ShaderResourceView* aRViews[1] = { mPass0SRV };
         mImmediateContext->PSSetShaderResources(0, 1, aRViews);
 
         ID3D11SamplerState* aSamplers[] = { mSamplerStatePoint, mSamplerStateLinear };
         mImmediateContext->PSSetSamplers(0, 2, aSamplers);
         
+        // Restore the swap chain render target for the last pass
+        ID3D11RenderTargetView* aRTViews[1] = { swapChainRTV };
+        mImmediateContext->OMSetRenderTargets(1, aRTViews, swapChainDSV);
+
         //DrawFullScreenQuad11(mImmediateContext, mPass1PS, mWndWidth, mWndHeight);
     }
 
