@@ -178,7 +178,6 @@ bool Scene::Init(IRenderingContext &ctx)
     pVsBlob->Release();
     if (FAILED(hr))
         return false;
-    immCtx->IASetInputLayout(mVertexLayout);
 
     // Pixel shader - illuminated surface
     if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsIllumSurf", "ps_4_0", mPixelShaderIllum))
@@ -194,13 +193,6 @@ bool Scene::Init(IRenderingContext &ctx)
         return false;
     if (!sGeometry.CreateDeviceBuffers(ctx))
         return false;
-
-    // Set geometry buffers
-    UINT stride = sizeof(SceneVertex);
-    UINT offset = 0;
-    immCtx->IASetVertexBuffers(0, 1, &sGeometry.mVertexBuffer, &stride, &offset);
-    immCtx->IASetIndexBuffer(sGeometry.mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-    immCtx->IASetPrimitiveTopology(sGeometry.topology);
 
     // Create constant buffers
     D3D11_BUFFER_DESC bd;
@@ -329,6 +321,14 @@ void Scene::Render(IRenderingContext &ctx)
         return;
 
     auto immCtx = ctx.GetImmediateContext();
+
+    // Geometry
+    immCtx->IASetInputLayout(mVertexLayout);
+    UINT stride = sizeof(SceneVertex);
+    UINT offset = 0;
+    immCtx->IASetVertexBuffers(0, 1, &sGeometry.mVertexBuffer, &stride, &offset);
+    immCtx->IASetIndexBuffer(sGeometry.mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+    immCtx->IASetPrimitiveTopology(sGeometry.topology);
 
     // Constant buffer - main object
     CbChangedEachFrame cbEachFrame;

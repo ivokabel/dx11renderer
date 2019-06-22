@@ -350,13 +350,13 @@ bool SimpleDX11Renderer::CreateDevice()
 
         // Full screen quad vertex buffer
         ScreenVertex svQuad[4];
-        svQuad[0].Pos = XMFLOAT3(-1.0f, 1.0f, 0.5f);
+        svQuad[0].Pos = XMFLOAT4(-1.0f, 1.0f, 0.5f, 1.0f);
         svQuad[0].Tex = XMFLOAT2(0.0f, 0.0f);
-        svQuad[1].Pos = XMFLOAT3(1.0f, 1.0f, 0.5f);
+        svQuad[1].Pos = XMFLOAT4(1.0f, 1.0f, 0.5f, 1.0f);
         svQuad[1].Tex = XMFLOAT2(1.0f, 0.0f);
-        svQuad[2].Pos = XMFLOAT3(-1.0f, -1.0f, 0.5f);
+        svQuad[2].Pos = XMFLOAT4(-1.0f, -1.0f, 0.5f, 1.0f);
         svQuad[2].Tex = XMFLOAT2(0.0f, 1.0f);
-        svQuad[3].Pos = XMFLOAT3(1.0f, -1.0f, 0.5f);
+        svQuad[3].Pos = XMFLOAT4(1.0f, -1.0f, 0.5f, 1.0f);
         svQuad[3].Tex = XMFLOAT2(1.0f, 1.0f);
         D3D11_BUFFER_DESC vbDesc =
         {
@@ -627,6 +627,9 @@ void SimpleDX11Renderer::Render()
         mImmediateContext->PSSetSamplers(0, 2, aSamplers);
         
         DrawFullScreenQuad(mPass1PS, mWndWidth, mWndHeight);
+
+        ID3D11ShaderResourceView* aRViewsNull[1] = { nullptr };
+        mImmediateContext->PSSetShaderResources(0, 1, aRViewsNull);
     }
 
     Utils::ReleaseAndMakeNull(swapChainRTV);

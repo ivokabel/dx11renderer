@@ -112,7 +112,7 @@ private:
     // Full screen quad resources
     struct ScreenVertex
     {
-        XMFLOAT3 Pos;
+        XMFLOAT4 Pos;
         XMFLOAT2 Tex;
     };
     ID3D11Buffer*               mScreenQuadVB = nullptr;

@@ -28,8 +28,10 @@ float4 Pass1PS(QUAD_VS_OUTPUT Input) : SV_TARGET
     float4 vColor = s0.Sample(PointSampler, Input.Tex);
 
     // debug
-    vColor.g = 1.0f;
-    vColor.a = 1.0f;
+    //vColor.r *= Input.Tex.x * 20.0f;
+    vColor.g *= Input.Tex.y * 6.0f;
+    //vColor.a = 1.0f;
+    //vColor *= 0.001f;
 
     return vColor;
 }
