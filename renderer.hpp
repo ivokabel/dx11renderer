@@ -98,12 +98,22 @@ private:
     D3D_FEATURE_LEVEL           mFeatureLevel = D3D_FEATURE_LEVEL_11_0;
     ID3D11Device*               mDevice = nullptr;
     ID3D11DeviceContext*        mImmediateContext = nullptr;
+
+    // Swap chain
     IDXGISwapChain*             mSwapChain = nullptr;
     ID3D11RenderTargetView*     mRenderTargetView = nullptr;
     ID3D11Texture2D*            mDepthStencilTex = nullptr;
     ID3D11DepthStencilView*     mDepthStencilView = nullptr;
 
+    // Postprocessing resources
+    ID3D11Texture2D*            mPass1Tex = nullptr;
+    ID3D11RenderTargetView*     mPass1TargetView = nullptr;
+    ID3D11ShaderResourceView*   mPass1ShaderResView = nullptr;
+    ID3D11PixelShader*          mPass1PS = nullptr;
+    ID3D11SamplerState*         mSamplerStatePoint = nullptr;
+    ID3D11SamplerState*         mSamplerStateLinear = nullptr;
+
     std::shared_ptr<IScene>     mScene;
 
-    bool                        mPostProcessOn = true;
+    bool                        mIsPostProcessingActive = false/*debug, was true*/;
 };

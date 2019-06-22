@@ -99,12 +99,12 @@ struct PointLight
 };
 
 
-AmbientLight sAmbientLight{ XMFLOAT4(0.01f, 0.03f, 0.07f, 1.0f) };
+AmbientLight sAmbientLight{ XMFLOAT4(0.01f, 0.07f, 0.10f, 1.0f) };
 //AmbientLight sAmbientLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) };
 
 std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights =
 {
-    DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.4f, 0.4f, 0.4f, 1.0f) },
+    DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f) },
     //DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.f, 0.f, 0.f, 1.0f) },
     //DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(3.141f, 3.141f, 3.141f, 1.0f) },
 };
@@ -166,7 +166,7 @@ bool Scene::Init(IRenderingContext &ctx)
 
     // Vertex shader
     ID3DBlob* pVSBlob = nullptr;
-    if (!ctx.CreateVertexShader(L"../shaders.fx", "VS", "vs_4_0", pVSBlob, mVertexShader))
+    if (!ctx.CreateVertexShader(L"../scene_shaders.fx", "VS", "vs_4_0", pVSBlob, mVertexShader))
         return false;
 
     // Input layout
@@ -181,11 +181,11 @@ bool Scene::Init(IRenderingContext &ctx)
     immCtx->IASetInputLayout(mVertexLayout);
 
     // Pixel shader - illuminated surface
-    if (!ctx.CreatePixelShader(L"../shaders.fx", "PsIllumSurf", "ps_4_0", mPixelShaderIllum))
+    if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsIllumSurf", "ps_4_0", mPixelShaderIllum))
         return false;
 
     // Pixel shader - light-emitting surface
-    if (!ctx.CreatePixelShader(L"../shaders.fx", "PsEmissiveSurf", "ps_4_0", mPixelShaderSolid))
+    if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsEmissiveSurf", "ps_4_0", mPixelShaderSolid))
         return false;
 
   //if (!sGeometry.GenerateCube())

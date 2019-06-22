@@ -13,10 +13,11 @@ set(RENDERER_SOURCES
     irenderingcontext.hpp
     renderer.hpp
     renderer.cpp
+    post_shaders.fx
     iscene.hpp
     scene.hpp
     scene.cpp
-    shaders.fx
+    scene_shaders.fx
     log.hpp
     log.cpp
     utils.hpp

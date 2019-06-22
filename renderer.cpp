@@ -146,8 +146,8 @@ LRESULT CALLBACK SimpleDX11Renderer::WndProc(HWND wnd,
         switch (wParam)
         {
         case 'P':
-            mPostProcessOn = !mPostProcessOn;
-            Log::Debug(L"WM_KEYDOWN: Post-processing %s", mPostProcessOn ? L"ON" : L"OFF");
+            mIsPostProcessingActive = !mIsPostProcessingActive;
+            Log::Debug(L"WM_KEYDOWN: Post-processing %s", mIsPostProcessingActive ? L"ON" : L"OFF");
             break;
         }
         break;
@@ -270,7 +270,7 @@ bool SimpleDX11Renderer::CreateDevice()
     scd.BufferDesc.RefreshRate.Denominator = 1;
     scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     scd.OutputWindow = mWnd;
-    scd.SampleDesc.Count = 4; //1;
+    scd.SampleDesc.Count = 1; //4; //
     scd.SampleDesc.Quality = 0;
     scd.Windowed = TRUE;
 
@@ -312,12 +312,10 @@ bool SimpleDX11Renderer::CreateDevice()
     descDepth.MipLevels = 1;
     descDepth.ArraySize = 1;
     descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    descDepth.SampleDesc.Count = 4; //1;
+    descDepth.SampleDesc.Count = 1; //4; //
     descDepth.SampleDesc.Quality = 0;
     descDepth.Usage = D3D11_USAGE_DEFAULT;
     descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-    descDepth.CPUAccessFlags = 0;
-    descDepth.MiscFlags = 0;
     hr = mDevice->CreateTexture2D(&descDepth, nullptr, &mDepthStencilTex);
     if (FAILED(hr))
         return false;
@@ -333,6 +331,62 @@ bool SimpleDX11Renderer::CreateDevice()
         return false;
 
     mImmediateContext->OMSetRenderTargets(1, &mRenderTargetView, mDepthStencilView);
+
+    // Postprocessing resources
+    {
+        // Texture
+        D3D11_TEXTURE2D_DESC descTex;
+        ZeroMemory(&descTex, sizeof(D3D11_TEXTURE2D_DESC));
+        descTex.ArraySize = 1;
+        descTex.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+        descTex.Usage = D3D11_USAGE_DEFAULT;
+        descTex.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+        descTex.Width  = mWndWidth;
+        descTex.Height = mWndHeight;
+        descTex.MipLevels = 1;
+        descTex.SampleDesc.Count = 1;
+        hr = mDevice->CreateTexture2D(&descTex, nullptr, &mPass1Tex);
+        if (FAILED(hr))
+            return false;
+
+        // Render target view
+        D3D11_RENDER_TARGET_VIEW_DESC descRTV;
+        descRTV.Format = descTex.Format;
+        descRTV.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+        descRTV.Texture2D.MipSlice = 0;
+        hr = mDevice->CreateRenderTargetView(mPass1Tex, &descRTV, &mPass1TargetView);
+        if (FAILED(hr))
+            return false;
+
+        // Shader resource view
+        D3D11_SHADER_RESOURCE_VIEW_DESC descSRV;
+        descSRV.Format = descTex.Format;
+        descSRV.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+        descSRV.Texture2D.MipLevels = 1;
+        descSRV.Texture2D.MostDetailedMip = 0;
+        hr = mDevice->CreateShaderResourceView(mPass1Tex, &descSRV, &mPass1ShaderResView);
+        if (FAILED(hr))
+            return false;
+
+        // Samplers
+        D3D11_SAMPLER_DESC descSampler;
+        ZeroMemory(&descSampler, sizeof(descSampler));
+        descSampler.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+        descSampler.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+        descSampler.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+        descSampler.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+        hr = mDevice->CreateSamplerState(&descSampler, &mSamplerStateLinear);
+        if (FAILED(hr))
+            return false;
+        descSampler.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+        hr = mDevice->CreateSamplerState(&descSampler, &mSamplerStatePoint);
+        if (FAILED(hr))
+            return false;
+
+        // Shader
+        if (!CreatePixelShader(L"../post_shaders.fx", "Pass1PS", "ps_4_0", mPass1PS))
+            return false;
+    }
 
     // Setup the viewport
     D3D11_VIEWPORT vp;
@@ -355,9 +409,19 @@ void SimpleDX11Renderer::DestroyDevice()
     if (mImmediateContext)
         mImmediateContext->ClearState();
 
-    Utils::ReleaseAndMakeNull(mDepthStencilTex);
+    // Postprocessing resources
+    Utils::ReleaseAndMakeNull(mPass1TargetView);
+    Utils::ReleaseAndMakeNull(mPass1ShaderResView);
+    Utils::ReleaseAndMakeNull(mPass1Tex);
+    Utils::ReleaseAndMakeNull(mPass1PS);
+    Utils::ReleaseAndMakeNull(mSamplerStatePoint);
+    Utils::ReleaseAndMakeNull(mSamplerStateLinear);
+
+    // Swap chain
     Utils::ReleaseAndMakeNull(mDepthStencilView);
+    Utils::ReleaseAndMakeNull(mDepthStencilTex);
     Utils::ReleaseAndMakeNull(mRenderTargetView);
+
     Utils::ReleaseAndMakeNull(mSwapChain);
     Utils::ReleaseAndMakeNull(mImmediateContext);
     Utils::ReleaseAndMakeNull(mDevice);
@@ -480,19 +544,51 @@ bool SimpleDX11Renderer::CreatePixelShader(WCHAR* szFileName,
 
 void SimpleDX11Renderer::Render()
 {
+    ID3D11RenderTargetView* swapChainRTV = nullptr;
+    ID3D11DepthStencilView* swapChainDSV = nullptr;
+    mImmediateContext->OMGetRenderTargets(1, &swapChainRTV, &swapChainDSV);
+
     float ambientColor[4] = {};
     if (mScene)
         mScene->GetAmbientColor(ambientColor);
-    mImmediateContext->ClearRenderTargetView(mRenderTargetView, ambientColor);
+    mImmediateContext->ClearRenderTargetView(swapChainRTV, ambientColor);
+    mImmediateContext->ClearDepthStencilView(swapChainDSV, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-    mImmediateContext->ClearDepthStencilView(mDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+    // Pass 1: Replace current render target view with our first render pass buffer
+    if (mIsPostProcessingActive)
+    {
+        ID3D11RenderTargetView* aRTViews[1] = { mPass1TargetView };
+        mImmediateContext->OMSetRenderTargets(1, aRTViews, swapChainDSV);
+        mImmediateContext->ClearRenderTargetView(mPass1TargetView, ambientColor);
+    }
 
-    // Update and render scene
+    // Scene
     if (mScene)
     {
         mScene->Animate(*this);
         mScene->Render(*this);
     }
+
+    // Pass 2: postprocessing...
+    if (mIsPostProcessingActive)
+    {
+        // Restore the swap chain render target for the last pass
+        ID3D11RenderTargetView* aRTViews[1] = { swapChainRTV };
+        mImmediateContext->OMSetRenderTargets(1, aRTViews, swapChainDSV);
+
+        // Run pass 2
+
+        ID3D11ShaderResourceView* aRViews[1] = { mPass1ShaderResView };
+        mImmediateContext->PSSetShaderResources(0, 1, aRViews);
+
+        ID3D11SamplerState* aSamplers[] = { mSamplerStatePoint, mSamplerStateLinear };
+        mImmediateContext->PSSetSamplers(0, 2, aSamplers);
+        
+        //DrawFullScreenQuad11(mImmediateContext, mPass1PS, mWndWidth, mWndHeight);
+    }
+
+    Utils::ReleaseAndMakeNull(swapChainRTV);
+    Utils::ReleaseAndMakeNull(swapChainDSV);
 
     mSwapChain->Present(0, 0);
 }
