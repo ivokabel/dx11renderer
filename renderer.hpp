@@ -64,10 +64,14 @@ private:
 
     bool InitWindow(HINSTANCE instance, int cmdShow);
     void DestroyWindow();
-    static LRESULT CALLBACK WndProc(HWND wnd,
-                                    UINT message,
-                                    WPARAM wParam,
-                                    LPARAM lParam);
+    static LRESULT CALLBACK WndProcStatic(HWND wnd,
+                                          UINT message,
+                                          WPARAM wParam,
+                                          LPARAM lParam);
+    LRESULT WndProc(HWND wnd,
+                    UINT message,
+                    WPARAM wParam,
+                    LPARAM lParam);
 
     bool CreateDevice();
     void DestroyDevice();

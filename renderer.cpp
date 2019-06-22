@@ -62,9 +62,9 @@ bool SimpleDX11Renderer::InitWindow(HINSTANCE instance, int cmdShow)
     WNDCLASSEX wcex;
     wcex.cbSize = sizeof(WNDCLASSEX);
     wcex.style = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc = WndProc;
+    wcex.lpfnWndProc = WndProcStatic;
     wcex.cbClsExtra = 0;
-    wcex.cbWndExtra = 0;
+    wcex.cbWndExtra = sizeof(SimpleDX11Renderer*); // We store this pointer in the extra window memory
     wcex.hInstance = instance;
     wcex.hIcon = nullptr; // TODO: LoadIcon(instance, (LPCTSTR)IDI_XXX);
     wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
@@ -82,7 +82,7 @@ bool SimpleDX11Renderer::InitWindow(HINSTANCE instance, int cmdShow)
     mWnd = CreateWindow(mWndClassName, mWndName,
                         WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
                         rc.right - rc.left, rc.bottom - rc.top,
-                        nullptr, nullptr, instance, nullptr);
+                        nullptr, nullptr, instance, this);
     if (!mWnd)
         return false;
 
@@ -100,7 +100,30 @@ void SimpleDX11Renderer::DestroyWindow()
 }
 
 
-LRESULT CALLBACK SimpleDX11Renderer::WndProc(HWND wnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK SimpleDX11Renderer::WndProcStatic(HWND wnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    SimpleDX11Renderer *pThis;
+
+    // We store this pointer in the extra window memory
+    if (message == WM_NCCREATE)
+    {
+        LPCREATESTRUCT lpcs = reinterpret_cast<LPCREATESTRUCT>(lParam);
+        pThis = static_cast<SimpleDX11Renderer*>(lpcs->lpCreateParams);
+        SetWindowLongPtr(wnd, 0, reinterpret_cast<LONG_PTR>(pThis));
+    }
+    else
+        pThis = reinterpret_cast<SimpleDX11Renderer*>(GetWindowLongPtr(wnd, 0));
+
+    if (pThis)
+        return pThis->WndProc(wnd, message, wParam, lParam);
+    else
+        return DefWindowProc(wnd, message, wParam, lParam);
+}
+
+LRESULT CALLBACK SimpleDX11Renderer::WndProc(HWND wnd,
+                                             UINT message,
+                                             WPARAM wParam,
+                                             LPARAM lParam)
 {
     switch (message)
     {
