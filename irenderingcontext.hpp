@@ -24,7 +24,7 @@ public:
     virtual bool                    CreateVertexShader(WCHAR* szFileName,
                                                        LPCSTR szEntryPoint,
                                                        LPCSTR szShaderModel,
-                                                       ID3DBlob *&pVSBlob,
+                                                       ID3DBlob *&pVsBlob,
                                                        ID3D11VertexShader *&pVertexShader) const = 0;
 
     virtual bool                    CreatePixelShader(WCHAR* szFileName,

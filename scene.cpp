@@ -165,17 +165,17 @@ bool Scene::Init(IRenderingContext &ctx)
     HRESULT hr = S_OK;
 
     // Vertex shader
-    ID3DBlob* pVSBlob = nullptr;
-    if (!ctx.CreateVertexShader(L"../scene_shaders.fx", "VS", "vs_4_0", pVSBlob, mVertexShader))
+    ID3DBlob* pVsBlob = nullptr;
+    if (!ctx.CreateVertexShader(L"../scene_shaders.fx", "VS", "vs_4_0", pVsBlob, mVertexShader))
         return false;
 
     // Input layout
     hr = device->CreateInputLayout(sVertexLayout.data(),
                                    (UINT)sVertexLayout.size(),
-                                   pVSBlob->GetBufferPointer(),
-                                   pVSBlob->GetBufferSize(),
+                                   pVsBlob->GetBufferPointer(),
+                                   pVsBlob->GetBufferSize(),
                                    &mVertexLayout);
-    pVSBlob->Release();
+    pVsBlob->Release();
     if (FAILED(hr))
         return false;
     immCtx->IASetInputLayout(mVertexLayout);

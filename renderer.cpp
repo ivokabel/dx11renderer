@@ -334,6 +334,45 @@ bool SimpleDX11Renderer::CreateDevice()
 
     // Postprocessing resources
     {
+        // Full screen quad vertex shader & input layout
+        ID3DBlob* pVsBlob = nullptr;
+        if (!CreateVertexShader(L"../post_shaders.fx", "QuadVS", "vs_4_0", pVsBlob, mScreenQuadVS))
+            return false;
+        const D3D11_INPUT_ELEMENT_DESC quadlayout[] =
+        {
+            { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,       0, 16, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        };
+        hr = mDevice->CreateInputLayout(quadlayout, 2, pVsBlob->GetBufferPointer(), pVsBlob->GetBufferSize(), &mScreenQuadLayout);
+        pVsBlob->Release();
+        if (FAILED(hr))
+            return false;
+
+        // Full screen quad vertex buffer
+        ScreenVertex svQuad[4];
+        svQuad[0].Pos = XMFLOAT3(-1.0f, 1.0f, 0.5f);
+        svQuad[0].Tex = XMFLOAT2(0.0f, 0.0f);
+        svQuad[1].Pos = XMFLOAT3(1.0f, 1.0f, 0.5f);
+        svQuad[1].Tex = XMFLOAT2(1.0f, 0.0f);
+        svQuad[2].Pos = XMFLOAT3(-1.0f, -1.0f, 0.5f);
+        svQuad[2].Tex = XMFLOAT2(0.0f, 1.0f);
+        svQuad[3].Pos = XMFLOAT3(1.0f, -1.0f, 0.5f);
+        svQuad[3].Tex = XMFLOAT2(1.0f, 1.0f);
+        D3D11_BUFFER_DESC vbDesc =
+        {
+            4 * sizeof(ScreenVertex),
+            D3D11_USAGE_DEFAULT,
+            D3D11_BIND_VERTEX_BUFFER,
+            0,
+            0
+        };
+        D3D11_SUBRESOURCE_DATA initData;
+        ZeroMemory(&initData, sizeof(initData));
+        initData.pSysMem = svQuad;
+        hr = mDevice->CreateBuffer(&vbDesc, &initData, &mScreenQuadVB);
+        if (FAILED(hr))
+            return false;
+
         // Texture
         D3D11_TEXTURE2D_DESC descTex;
         ZeroMemory(&descTex, sizeof(D3D11_TEXTURE2D_DESC));
@@ -408,6 +447,11 @@ void SimpleDX11Renderer::DestroyDevice()
 
     if (mImmediateContext)
         mImmediateContext->ClearState();
+
+    // Full screen quad resources
+    Utils::ReleaseAndMakeNull(mScreenQuadVB);
+    Utils::ReleaseAndMakeNull(mScreenQuadLayout);
+    Utils::ReleaseAndMakeNull(mScreenQuadVS);
 
     // Postprocessing resources
     Utils::ReleaseAndMakeNull(mPass0RTV);
@@ -487,25 +531,25 @@ bool SimpleDX11Renderer::CompileShader(WCHAR* szFileName,
 bool SimpleDX11Renderer::CreateVertexShader(WCHAR* szFileName,
                                             LPCSTR szEntryPoint,
                                             LPCSTR szShaderModel,
-                                            ID3DBlob *&pVSBlob,
+                                            ID3DBlob *&pVsBlob,
                                             ID3D11VertexShader *&pVertexShader) const
 {
     HRESULT hr = S_OK;
 
-    if (!CompileShader(szFileName, szEntryPoint, szShaderModel, &pVSBlob))
+    if (!CompileShader(szFileName, szEntryPoint, szShaderModel, &pVsBlob))
     {
         Log::Error(L"The FX file failed to compile.");
         return false;
     }
 
-    hr = mDevice->CreateVertexShader(pVSBlob->GetBufferPointer(),
-                                     pVSBlob->GetBufferSize(),
+    hr = mDevice->CreateVertexShader(pVsBlob->GetBufferPointer(),
+                                     pVsBlob->GetBufferSize(),
                                      nullptr,
                                      &pVertexShader);
     if (FAILED(hr))
     {
         Log::Error(L"mDevice->CreateVertexShader failed.");
-        pVSBlob->Release();
+        pVsBlob->Release();
         return false;
     }
 
@@ -572,17 +616,17 @@ void SimpleDX11Renderer::Render()
     // Pass 1: postprocessing...
     if (mIsPostProcessingActive)
     {
+        // Restore the swap chain render target for the last pass
+        ID3D11RenderTargetView* aRTViews[1] = { swapChainRTV };
+        mImmediateContext->OMSetRenderTargets(1, aRTViews, swapChainDSV);
+
         ID3D11ShaderResourceView* aRViews[1] = { mPass0SRV };
         mImmediateContext->PSSetShaderResources(0, 1, aRViews);
 
         ID3D11SamplerState* aSamplers[] = { mSamplerStatePoint, mSamplerStateLinear };
         mImmediateContext->PSSetSamplers(0, 2, aSamplers);
         
-        // Restore the swap chain render target for the last pass
-        ID3D11RenderTargetView* aRTViews[1] = { swapChainRTV };
-        mImmediateContext->OMSetRenderTargets(1, aRTViews, swapChainDSV);
-
-        //DrawFullScreenQuad11(mImmediateContext, mPass1PS, mWndWidth, mWndHeight);
+        DrawFullScreenQuad(mPass1PS, mWndWidth, mWndHeight);
     }
 
     Utils::ReleaseAndMakeNull(swapChainRTV);
@@ -591,6 +635,41 @@ void SimpleDX11Renderer::Render()
     mSwapChain->Present(0, 0);
 }
 
+
+void SimpleDX11Renderer::DrawFullScreenQuad(ID3D11PixelShader* PS,
+                                            UINT width,
+                                            UINT height)
+{
+    // Backup viewport
+    D3D11_VIEWPORT vpOrig[D3D11_VIEWPORT_AND_SCISSORRECT_MAX_INDEX];
+    UINT nViewPorts = 1;
+    mImmediateContext->RSGetViewports(&nViewPorts, vpOrig);
+
+    // Setup the viewport to match the backbuffer
+    D3D11_VIEWPORT vp;
+    vp.Width  = (float)width;
+    vp.Height = (float)height;
+    vp.MinDepth = 0.0f;
+    vp.MaxDepth = 1.0f;
+    vp.TopLeftX = 0;
+    vp.TopLeftY = 0;
+    mImmediateContext->RSSetViewports(1, &vp);
+
+    UINT strides = sizeof(ScreenVertex);
+    UINT offsets = 0;
+    ID3D11Buffer* pBuffers[1] = { mScreenQuadVB };
+
+    mImmediateContext->IASetInputLayout(mScreenQuadLayout);
+    mImmediateContext->IASetVertexBuffers(0, 1, pBuffers, &strides, &offsets);
+    mImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
+    mImmediateContext->VSSetShader(mScreenQuadVS, NULL, 0);
+    mImmediateContext->PSSetShader(PS, NULL, 0);
+    mImmediateContext->Draw(4, 0);
+
+    // Restore viewport
+    mImmediateContext->RSSetViewports(nViewPorts, vpOrig);
+}
 
 bool SimpleDX11Renderer::GetWindowSize(uint32_t &width,
                                        uint32_t &height) const
