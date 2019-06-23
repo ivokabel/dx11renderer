@@ -332,100 +332,8 @@ bool SimpleDX11Renderer::CreateDevice()
 
     mImmediateContext->OMSetRenderTargets(1, &mSwapChainRTV, mSwapChainDSV);
 
-    // Postprocessing resources
-    {
-        // Full screen quad vertex shader & input layout
-        ID3DBlob* pVsBlob = nullptr;
-        if (!CreateVertexShader(L"../post_shaders.fx", "QuadVS", "vs_4_0", pVsBlob, mScreenQuadVS))
-            return false;
-        const D3D11_INPUT_ELEMENT_DESC quadlayout[] =
-        {
-            { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,       0, 16, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        };
-        hr = mDevice->CreateInputLayout(quadlayout, 2, pVsBlob->GetBufferPointer(), pVsBlob->GetBufferSize(), &mScreenQuadLayout);
-        pVsBlob->Release();
-        if (FAILED(hr))
-            return false;
-
-        // Full screen quad vertex buffer
-        ScreenVertex svQuad[4];
-        svQuad[0].Pos = XMFLOAT4(-1.0f, 1.0f, 0.5f, 1.0f);
-        svQuad[0].Tex = XMFLOAT2(0.0f, 0.0f);
-        svQuad[1].Pos = XMFLOAT4(1.0f, 1.0f, 0.5f, 1.0f);
-        svQuad[1].Tex = XMFLOAT2(1.0f, 0.0f);
-        svQuad[2].Pos = XMFLOAT4(-1.0f, -1.0f, 0.5f, 1.0f);
-        svQuad[2].Tex = XMFLOAT2(0.0f, 1.0f);
-        svQuad[3].Pos = XMFLOAT4(1.0f, -1.0f, 0.5f, 1.0f);
-        svQuad[3].Tex = XMFLOAT2(1.0f, 1.0f);
-        D3D11_BUFFER_DESC vbDesc =
-        {
-            4 * sizeof(ScreenVertex),
-            D3D11_USAGE_DEFAULT,
-            D3D11_BIND_VERTEX_BUFFER,
-            0,
-            0
-        };
-        D3D11_SUBRESOURCE_DATA initData;
-        ZeroMemory(&initData, sizeof(initData));
-        initData.pSysMem = svQuad;
-        hr = mDevice->CreateBuffer(&vbDesc, &initData, &mScreenQuadVB);
-        if (FAILED(hr))
-            return false;
-
-        // Texture
-        D3D11_TEXTURE2D_DESC descTex;
-        ZeroMemory(&descTex, sizeof(D3D11_TEXTURE2D_DESC));
-        descTex.ArraySize = 1;
-        descTex.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-        descTex.Usage = D3D11_USAGE_DEFAULT;
-        descTex.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-        descTex.Width  = mWndWidth;
-        descTex.Height = mWndHeight;
-        descTex.MipLevels = 1;
-        descTex.SampleDesc.Count = 1;
-        hr = mDevice->CreateTexture2D(&descTex, nullptr, &mPass0Tex);
-        if (FAILED(hr))
-            return false;
-
-        // Render target view
-        D3D11_RENDER_TARGET_VIEW_DESC descRTV;
-        descRTV.Format = descTex.Format;
-        descRTV.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-        descRTV.Texture2D.MipSlice = 0;
-        hr = mDevice->CreateRenderTargetView(mPass0Tex, &descRTV, &mPass0RTV);
-        if (FAILED(hr))
-            return false;
-
-        // Shader resource view
-        D3D11_SHADER_RESOURCE_VIEW_DESC descSRV;
-        descSRV.Format = descTex.Format;
-        descSRV.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-        descSRV.Texture2D.MipLevels = 1;
-        descSRV.Texture2D.MostDetailedMip = 0;
-        hr = mDevice->CreateShaderResourceView(mPass0Tex, &descSRV, &mPass0SRV);
-        if (FAILED(hr))
-            return false;
-
-        // Samplers
-        D3D11_SAMPLER_DESC descSampler;
-        ZeroMemory(&descSampler, sizeof(descSampler));
-        descSampler.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-        descSampler.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-        descSampler.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-        descSampler.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-        hr = mDevice->CreateSamplerState(&descSampler, &mSamplerStateLinear);
-        if (FAILED(hr))
-            return false;
-        descSampler.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-        hr = mDevice->CreateSamplerState(&descSampler, &mSamplerStatePoint);
-        if (FAILED(hr))
-            return false;
-
-        // Shader
-        if (!CreatePixelShader(L"../post_shaders.fx", "Pass1PS", "ps_4_0", mPass1PS))
-            return false;
-    }
+    if (!CreatePostprocessingResources())
+        return false;
 
     // Setup the viewport
     D3D11_VIEWPORT vp;
@@ -441,6 +349,76 @@ bool SimpleDX11Renderer::CreateDevice()
 }
 
 
+bool SimpleDX11Renderer::CreatePostprocessingResources()
+{
+    HRESULT hr = S_OK;
+
+    // Full screen quad vertex shader & input layout
+    ID3DBlob* pVsBlob = nullptr;
+    if (!CreateVertexShader(L"../post_shaders.fx", "QuadVS", "vs_4_0", pVsBlob, mScreenQuadVS))
+        return false;
+    const D3D11_INPUT_ELEMENT_DESC quadlayout[] =
+    {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,       0, 16, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    };
+    hr = mDevice->CreateInputLayout(quadlayout, 2,
+                                    pVsBlob->GetBufferPointer(),
+                                    pVsBlob->GetBufferSize(),
+                                    &mScreenQuadLayout);
+    pVsBlob->Release();
+    if (FAILED(hr))
+        return false;
+
+    // Full screen quad vertex buffer
+    ScreenVertex svQuad[4];
+    svQuad[0].Pos = XMFLOAT4(-1.0f, 1.0f, 0.5f, 1.0f);
+    svQuad[0].Tex = XMFLOAT2(0.0f, 0.0f);
+    svQuad[1].Pos = XMFLOAT4(1.0f, 1.0f, 0.5f, 1.0f);
+    svQuad[1].Tex = XMFLOAT2(1.0f, 0.0f);
+    svQuad[2].Pos = XMFLOAT4(-1.0f, -1.0f, 0.5f, 1.0f);
+    svQuad[2].Tex = XMFLOAT2(0.0f, 1.0f);
+    svQuad[3].Pos = XMFLOAT4(1.0f, -1.0f, 0.5f, 1.0f);
+    svQuad[3].Tex = XMFLOAT2(1.0f, 1.0f);
+    D3D11_BUFFER_DESC vbDesc =
+    {
+        4 * sizeof(ScreenVertex),
+        D3D11_USAGE_DEFAULT,
+        D3D11_BIND_VERTEX_BUFFER,
+        0,
+        0
+    };
+    D3D11_SUBRESOURCE_DATA initData;
+    ZeroMemory(&initData, sizeof(initData));
+    initData.pSysMem = svQuad;
+    hr = mDevice->CreateBuffer(&vbDesc, &initData, &mScreenQuadVB);
+    if (FAILED(hr))
+        return false;
+
+    mPass0Buff.Create(*this);
+
+    // Samplers
+    D3D11_SAMPLER_DESC descSampler;
+    ZeroMemory(&descSampler, sizeof(descSampler));
+    descSampler.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+    descSampler.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+    descSampler.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+    descSampler.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    hr = mDevice->CreateSamplerState(&descSampler, &mSamplerStateLinear);
+    if (FAILED(hr))
+        return false;
+    descSampler.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+    hr = mDevice->CreateSamplerState(&descSampler, &mSamplerStatePoint);
+    if (FAILED(hr))
+        return false;
+
+    // Shader
+    if (!CreatePixelShader(L"../post_shaders.fx", "Pass1PS", "ps_4_0", mPass1PS))
+        return false;
+
+    return true;
+}
+
 void SimpleDX11Renderer::DestroyDevice()
 {
     Log::Debug(L"Destroying device");
@@ -454,9 +432,7 @@ void SimpleDX11Renderer::DestroyDevice()
     Utils::ReleaseAndMakeNull(mScreenQuadVS);
 
     // Postprocessing resources
-    Utils::ReleaseAndMakeNull(mPass0RTV);
-    Utils::ReleaseAndMakeNull(mPass0SRV);
-    Utils::ReleaseAndMakeNull(mPass0Tex);
+    mPass0Buff.Destroy();
     Utils::ReleaseAndMakeNull(mPass1PS);
     Utils::ReleaseAndMakeNull(mSamplerStatePoint);
     Utils::ReleaseAndMakeNull(mSamplerStateLinear);
@@ -469,6 +445,65 @@ void SimpleDX11Renderer::DestroyDevice()
     Utils::ReleaseAndMakeNull(mSwapChain);
     Utils::ReleaseAndMakeNull(mImmediateContext);
     Utils::ReleaseAndMakeNull(mDevice);
+}
+
+
+bool SimpleDX11Renderer::PassBuffer::Create(IRenderingContext &ctx)
+{
+    if (!ctx.IsValid())
+        return false;
+
+    uint32_t wndWidth, wndHeight;
+    if (!ctx.GetWindowSize(wndWidth, wndHeight))
+        return false;
+
+    auto device = ctx.GetDevice();
+
+    HRESULT hr = S_OK;
+
+    // Texture
+    D3D11_TEXTURE2D_DESC descTex;
+    ZeroMemory(&descTex, sizeof(D3D11_TEXTURE2D_DESC));
+    descTex.ArraySize = 1;
+    descTex.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    descTex.Usage = D3D11_USAGE_DEFAULT;
+    descTex.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    descTex.Width  = wndWidth;
+    descTex.Height = wndHeight;
+    descTex.MipLevels = 1;
+    descTex.SampleDesc.Count = 1;
+    hr = device->CreateTexture2D(&descTex, nullptr, &tex);
+    if (FAILED(hr))
+        return false;
+
+    // Render target view
+    D3D11_RENDER_TARGET_VIEW_DESC descRTV;
+    descRTV.Format = descTex.Format;
+    descRTV.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+    descRTV.Texture2D.MipSlice = 0;
+    hr = device->CreateRenderTargetView(tex, &descRTV, &rtv);
+    if (FAILED(hr))
+        return false;
+
+    // Shader resource view
+    D3D11_SHADER_RESOURCE_VIEW_DESC descSRV;
+    descSRV.Format = descTex.Format;
+    descSRV.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    descSRV.Texture2D.MipLevels = 1;
+    descSRV.Texture2D.MostDetailedMip = 0;
+    hr = device->CreateShaderResourceView(tex, &descSRV, &srv);
+    if (FAILED(hr))
+        return false;
+
+    return true;
+}
+
+
+void SimpleDX11Renderer::PassBuffer::Destroy()
+{
+    Utils::ReleaseAndMakeNull(rtv);
+    Utils::ReleaseAndMakeNull(srv);
+    Utils::ReleaseAndMakeNull(tex);
 }
 
 
@@ -601,9 +636,9 @@ void SimpleDX11Renderer::Render()
     // Pass 0: Replace current render target view with our first render pass buffer
     if (mIsPostProcessingActive)
     {
-        ID3D11RenderTargetView* aRTViews[1] = { mPass0RTV };
+        ID3D11RenderTargetView* aRTViews[1] = { mPass0Buff.GetRTV() };
         mImmediateContext->OMSetRenderTargets(1, aRTViews, swapChainDSV);
-        mImmediateContext->ClearRenderTargetView(mPass0RTV, ambientColor);
+        mImmediateContext->ClearRenderTargetView(mPass0Buff.GetRTV(), ambientColor);
     }
 
     // Scene
@@ -620,12 +655,12 @@ void SimpleDX11Renderer::Render()
         ID3D11RenderTargetView* aRTViews[1] = { swapChainRTV };
         mImmediateContext->OMSetRenderTargets(1, aRTViews, swapChainDSV);
 
-        ID3D11ShaderResourceView* aRViews[1] = { mPass0SRV };
+        ID3D11ShaderResourceView* aRViews[1] = { mPass0Buff.GetSRV() };
         mImmediateContext->PSSetShaderResources(0, 1, aRViews);
 
         ID3D11SamplerState* aSamplers[] = { mSamplerStatePoint, mSamplerStateLinear };
         mImmediateContext->PSSetSamplers(0, 2, aSamplers);
-        
+
         DrawFullScreenQuad(mPass1PS, mWndWidth, mWndHeight);
 
         ID3D11ShaderResourceView* aRViewsNull[1] = { nullptr };
@@ -705,4 +740,3 @@ float SimpleDX11Renderer::GetCurrentAnimationTime() const
 
     return time;
 }
-

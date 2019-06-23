@@ -74,19 +74,21 @@ private:
                     LPARAM lParam);
 
     bool CreateDevice();
+    bool CreatePostprocessingResources();
     void DestroyDevice();
     bool InitScene();
     void DestroyScene();
     void Render();
 
-    void                            DrawFullScreenQuad(ID3D11PixelShader* PS,
-                                                       UINT width,
-                                                       UINT height);
-
     bool                            CompileShader(WCHAR* szFileName,
                                                   LPCSTR szEntryPoint,
                                                   LPCSTR szShaderModel,
                                                   ID3DBlob** ppBlobOut) const;
+
+    void                            DrawFullScreenQuad(ID3D11PixelShader* PS,
+                                                       UINT width,
+                                                       UINT height);
+
 private:
 
     const wchar_t * const       mWndClassName    = L"SimpleDirectX11RendererWndClass";
@@ -109,7 +111,27 @@ private:
     ID3D11Texture2D*            mSwapChainDSTex = nullptr;
     ID3D11DepthStencilView*     mSwapChainDSV = nullptr;
 
-    // Full screen quad resources
+    class PassBuffer
+    {
+    public:
+
+        PassBuffer() {}
+        ~PassBuffer() { Destroy(); }
+
+        bool Create(IRenderingContext &ctx);
+        void Destroy();
+
+        ID3D11RenderTargetView*     GetRTV() { return rtv; }
+        ID3D11ShaderResourceView*   GetSRV() { return srv; }
+
+    private:
+
+        ID3D11Texture2D*            tex = nullptr;
+        ID3D11RenderTargetView*     rtv = nullptr;
+        ID3D11ShaderResourceView*   srv = nullptr;
+    };
+
+    // Postprocessing resources
     struct ScreenVertex
     {
         XMFLOAT4 Pos;
@@ -118,11 +140,7 @@ private:
     ID3D11Buffer*               mScreenQuadVB = nullptr;
     ID3D11InputLayout*          mScreenQuadLayout = nullptr;
     ID3D11VertexShader*         mScreenQuadVS = nullptr;
-
-    // Postprocessing resources
-    ID3D11Texture2D*            mPass0Tex = nullptr;
-    ID3D11RenderTargetView*     mPass0RTV = nullptr;
-    ID3D11ShaderResourceView*   mPass0SRV = nullptr;
+    PassBuffer                  mPass0Buff;
     ID3D11PixelShader*          mPass1PS = nullptr;
     ID3D11SamplerState*         mSamplerStatePoint = nullptr;
     ID3D11SamplerState*         mSamplerStateLinear = nullptr;
