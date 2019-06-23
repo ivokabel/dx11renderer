@@ -1,3 +1,6 @@
+
+static const float PI = 3.14159265f;
+
 SamplerState PointSampler  : register (s0);
 SamplerState LinearSampler : register (s1);
 
@@ -25,11 +28,15 @@ QUAD_VS_OUTPUT QuadVS(QUAD_VS_INPUT Input)
 
 float4 Pass1PS(QUAD_VS_OUTPUT Input) : SV_TARGET
 {
-    float4 vColor = s0.Sample(PointSampler, Input.Tex);
+    float2 coords = Input.Tex;
+
+    coords.x = coords.x + 0.1f * sin(coords.y * 2.f * PI);
+
+    float4 vColor = s0.Sample(LinearSampler, coords);
 
     // debug
-    //vColor.r *= Input.Tex.x * 20.0f;
-    vColor.g *= Input.Tex.y * 6.0f;
+    //vColor.r -= Input.Tex.x;
+    //vColor.g -= Input.Tex.y;
     //vColor.a = 1.0f;
     //vColor *= 0.001f;
 
