@@ -475,11 +475,12 @@ bool SimpleDX11Renderer::PassBuffer::Create(IRenderingContext &ctx,
     ZeroMemory(&descTex, sizeof(D3D11_TEXTURE2D_DESC));
     descTex.ArraySize = 1;
     descTex.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    descTex.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS; // debug
     descTex.Usage = D3D11_USAGE_DEFAULT;
     descTex.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
     descTex.Width  = width;
     descTex.Height = height;
-    descTex.MipLevels = 1;
+    descTex.MipLevels = 0; // debug; 1;
     descTex.SampleDesc.Count = 1;
     hr = device->CreateTexture2D(&descTex, nullptr, &tex);
     if (FAILED(hr))
@@ -496,9 +497,10 @@ bool SimpleDX11Renderer::PassBuffer::Create(IRenderingContext &ctx,
 
     // Shader resource view
     D3D11_SHADER_RESOURCE_VIEW_DESC descSRV;
+    ZeroMemory(&descSRV, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
     descSRV.Format = descTex.Format;
     descSRV.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-    descSRV.Texture2D.MipLevels = 1;
+    descSRV.Texture2D.MipLevels = (UINT)-1; // debug; 1;
     descSRV.Texture2D.MostDetailedMip = 0;
     hr = device->CreateShaderResourceView(tex, &descSRV, &srv);
     if (FAILED(hr))
@@ -663,6 +665,9 @@ void SimpleDX11Renderer::Render()
         ID3D11RenderTargetView* aRTViews[1] = { mPass1Buff.GetRTV() };
         mImmediateContext->OMSetRenderTargets(1, aRTViews, nullptr);
 
+        // debug
+        mImmediateContext->GenerateMips(mPass0Buff.GetSRV());
+
         ID3D11ShaderResourceView* aSRViews[1] = { mPass0Buff.GetSRV() };
         mImmediateContext->PSSetShaderResources(0, 1, aSRViews);
 
@@ -769,5 +774,5 @@ float SimpleDX11Renderer::GetCurrentAnimationTime() const
         time = (timeCur - timeStart) / 1000.0f;
     }
 
-    return time;
+    return time; // / 10.f/*debug*/;
 }

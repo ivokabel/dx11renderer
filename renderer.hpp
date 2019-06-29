@@ -142,7 +142,7 @@ private:
     ID3D11VertexShader*         mScreenQuadVS = nullptr;
     PassBuffer                  mPass0Buff;
     PassBuffer                  mPass1Buff;
-    uint32_t                    mPass1ScaleDownFactor = 1;
+    uint32_t                    mPass1ScaleDownFactor = 8;
     ID3D11PixelShader*          mPass1PS = nullptr;
     ID3D11PixelShader*          mPass2PS = nullptr;
     ID3D11SamplerState*         mSamplerStatePoint = nullptr;

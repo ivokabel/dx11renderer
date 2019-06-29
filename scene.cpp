@@ -363,7 +363,7 @@ void Scene::Render(IRenderingContext &ctx)
     // Symbolic light geometry for point lights
     for (int i = 0; i < sPointLights.size(); i++)
     {
-        const float radius = 0.07f;
+        const float radius = 0.04f; //0.07f;
         XMMATRIX lightScaleMtrx = XMMatrixScaling(radius, radius, radius);
         XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(XMLoadFloat4(&sPointLights[i].posTransf));
         XMMATRIX lightMtrx = lightScaleMtrx * lightTrnslMtrx;
