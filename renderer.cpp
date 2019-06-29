@@ -705,6 +705,24 @@ void SimpleDX11Renderer::Render()
 }
 
 
+//void SimpleDX11Renderer::ExecuteRenderPass(ID3D11RenderTargetView* (&rtvs)[1],
+//                                           ID3D11DepthStencilView* dsv,
+//                                           ID3D11ShaderResourceView* (&srvs)[1],
+//                                           ID3D11SamplerState* samplers[2],
+//                                           ID3D11PixelShader* ps,
+//                                           UINT width,
+//                                           UINT height)
+//{
+//    mImmediateContext->OMSetRenderTargets(1, rtvs, dsv);
+//    mImmediateContext->PSSetShaderResources(0, 1, srvs);
+//    mImmediateContext->PSSetSamplers(0, 2, samplers);
+//
+//    DrawFullScreenQuad(ps, width, height);
+//
+//    ID3D11ShaderResourceView* NullSRVs[1] = {};
+//    mImmediateContext->PSSetShaderResources(0, 1, NullSRVs);
+//}
+
 void SimpleDX11Renderer::DrawFullScreenQuad(ID3D11PixelShader* PS,
                                             UINT width,
                                             UINT height)
