@@ -30,7 +30,7 @@ float4 Pass1PS(QUAD_VS_OUTPUT Input) : SV_TARGET
 {
     float2 coords = Input.Tex;
 
-    coords.x = coords.x + 0.1f * sin(coords.y * 2.f * PI);
+    //coords.x = coords.x + 0.3f * sin(coords.y * 2.f * PI);
 
     float4 vColor = s0.Sample(LinearSampler, coords);
 
@@ -39,6 +39,24 @@ float4 Pass1PS(QUAD_VS_OUTPUT Input) : SV_TARGET
     //vColor.g -= Input.Tex.y;
     //vColor.a = 1.0f;
     //vColor *= 0.001f;
+
+    return vColor;
+}
+
+float4 Pass2PS(QUAD_VS_OUTPUT Input) : SV_TARGET
+{
+    float2 coords = Input.Tex;
+
+    //coords.x = coords.x + 0.3f * sin(coords.y * 2.f * PI);
+
+    float4 vColor = s0.Sample(PointSampler, coords);
+
+    //// debug
+    //float4 vColor;
+    //vColor.r = 0.f;
+    //vColor.g = 1.f;
+    //vColor.b = 0.f;
+    //vColor.a = 1.f;
 
     return vColor;
 }

@@ -395,7 +395,8 @@ bool SimpleDX11Renderer::CreatePostprocessingResources()
     if (FAILED(hr))
         return false;
 
-    mPass0Buff.Create(*this);
+    mPass0Buff.Create(*this, 1);
+    mPass1Buff.Create(*this, mPass1ScaleDownFactor);
 
     // Samplers
     D3D11_SAMPLER_DESC descSampler;
@@ -412,8 +413,10 @@ bool SimpleDX11Renderer::CreatePostprocessingResources()
     if (FAILED(hr))
         return false;
 
-    // Shader
+    // Shaders
     if (!CreatePixelShader(L"../post_shaders.fx", "Pass1PS", "ps_4_0", mPass1PS))
+        return false;
+    if (!CreatePixelShader(L"../post_shaders.fx", "Pass2PS", "ps_4_0", mPass2PS))
         return false;
 
     return true;
@@ -433,7 +436,9 @@ void SimpleDX11Renderer::DestroyDevice()
 
     // Postprocessing resources
     mPass0Buff.Destroy();
+    mPass1Buff.Destroy();
     Utils::ReleaseAndMakeNull(mPass1PS);
+    Utils::ReleaseAndMakeNull(mPass2PS);
     Utils::ReleaseAndMakeNull(mSamplerStatePoint);
     Utils::ReleaseAndMakeNull(mSamplerStateLinear);
 
@@ -448,14 +453,18 @@ void SimpleDX11Renderer::DestroyDevice()
 }
 
 
-bool SimpleDX11Renderer::PassBuffer::Create(IRenderingContext &ctx)
+bool SimpleDX11Renderer::PassBuffer::Create(IRenderingContext &ctx,
+                                            uint32_t scaleDownFactor)
 {
     if (!ctx.IsValid())
         return false;
 
-    uint32_t wndWidth, wndHeight;
-    if (!ctx.GetWindowSize(wndWidth, wndHeight))
+    uint32_t width, height;
+    if (!ctx.GetWindowSize(width, height))
         return false;
+
+    width  /= scaleDownFactor;
+    height /= scaleDownFactor;
 
     auto device = ctx.GetDevice();
 
@@ -468,8 +477,8 @@ bool SimpleDX11Renderer::PassBuffer::Create(IRenderingContext &ctx)
     descTex.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
     descTex.Usage = D3D11_USAGE_DEFAULT;
     descTex.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    descTex.Width  = wndWidth;
-    descTex.Height = wndHeight;
+    descTex.Width  = width;
+    descTex.Height = height;
     descTex.MipLevels = 1;
     descTex.SampleDesc.Count = 1;
     hr = device->CreateTexture2D(&descTex, nullptr, &tex);
@@ -648,23 +657,45 @@ void SimpleDX11Renderer::Render()
         mScene->Render(*this);
     }
 
-    // Pass 1: postprocessing...
+    // Post pass 1
+    if (mIsPostProcessingActive)
+    {
+        ID3D11RenderTargetView* aRTViews[1] = { mPass1Buff.GetRTV() };
+        mImmediateContext->OMSetRenderTargets(1, aRTViews, nullptr);
+
+        ID3D11ShaderResourceView* aSRViews[1] = { mPass0Buff.GetSRV() };
+        mImmediateContext->PSSetShaderResources(0, 1, aSRViews);
+
+        ID3D11SamplerState* aSamplers[] = { mSamplerStatePoint, mSamplerStateLinear };
+        mImmediateContext->PSSetSamplers(0, 2, aSamplers);
+
+        DrawFullScreenQuad(mPass1PS,
+                           mWndWidth/mPass1ScaleDownFactor,
+                           mWndHeight/mPass1ScaleDownFactor);
+
+        ID3D11ShaderResourceView* aSRViewsNull[1] = { nullptr };
+        mImmediateContext->PSSetShaderResources(0, 1, aSRViewsNull);
+    }
+
+    // Post pass 2
     if (mIsPostProcessingActive)
     {
         // Restore the swap chain render target for the last pass
         ID3D11RenderTargetView* aRTViews[1] = { swapChainRTV };
         mImmediateContext->OMSetRenderTargets(1, aRTViews, swapChainDSV);
 
-        ID3D11ShaderResourceView* aRViews[1] = { mPass0Buff.GetSRV() };
-        mImmediateContext->PSSetShaderResources(0, 1, aRViews);
+        ID3D11ShaderResourceView* aSRViews[1] = { mPass1Buff.GetSRV() };
+        mImmediateContext->PSSetShaderResources(0, 1, aSRViews);
 
         ID3D11SamplerState* aSamplers[] = { mSamplerStatePoint, mSamplerStateLinear };
         mImmediateContext->PSSetSamplers(0, 2, aSamplers);
 
-        DrawFullScreenQuad(mPass1PS, mWndWidth, mWndHeight);
+        DrawFullScreenQuad(mPass2PS,
+                           mWndWidth/mPass1ScaleDownFactor,
+                           mWndHeight/mPass1ScaleDownFactor);
 
-        ID3D11ShaderResourceView* aRViewsNull[1] = { nullptr };
-        mImmediateContext->PSSetShaderResources(0, 1, aRViewsNull);
+        ID3D11ShaderResourceView* aSRViewsNull[1] = { nullptr };
+        mImmediateContext->PSSetShaderResources(0, 1, aSRViewsNull);
     }
 
     Utils::ReleaseAndMakeNull(swapChainRTV);

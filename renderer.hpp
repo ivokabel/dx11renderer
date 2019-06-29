@@ -118,7 +118,7 @@ private:
         PassBuffer() {}
         ~PassBuffer() { Destroy(); }
 
-        bool Create(IRenderingContext &ctx);
+        bool Create(IRenderingContext &ctx, uint32_t scaleDownFactor);
         void Destroy();
 
         ID3D11RenderTargetView*     GetRTV() { return rtv; }
@@ -141,7 +141,10 @@ private:
     ID3D11InputLayout*          mScreenQuadLayout = nullptr;
     ID3D11VertexShader*         mScreenQuadVS = nullptr;
     PassBuffer                  mPass0Buff;
+    PassBuffer                  mPass1Buff;
+    uint32_t                    mPass1ScaleDownFactor = 1;
     ID3D11PixelShader*          mPass1PS = nullptr;
+    ID3D11PixelShader*          mPass2PS = nullptr;
     ID3D11SamplerState*         mSamplerStatePoint = nullptr;
     ID3D11SamplerState*         mSamplerStateLinear = nullptr;
 
