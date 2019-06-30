@@ -37,24 +37,21 @@ float4 BloomPS(QUAD_VS_OUTPUT Input) : SV_TARGET
 {
     // Convolute by blurring filter in one dimension
     float4 convolution = 0.0f;
-    float4 color = 0.0f;
+    float4 input = 0.0f;
     float2 samplePos;
     for (int i = 0; i < 15; i++)
     {
         samplePos = Input.Tex + BlurOffsets[i];
-        color = s0.Sample(LinearSampler, samplePos);
-        convolution += BlurWeights[i] * color;
+        input = s0.Sample(LinearSampler, samplePos);
+        convolution += BlurWeights[i] * input;
     }
     return convolution;
 }
 
 float4 FinalPassPS(QUAD_VS_OUTPUT Input) : SV_TARGET
 {
-    float4 color = s0.Sample(PointSampler, Input.Tex);
+    float4 render = s0.Sample(PointSampler, Input.Tex);
     float4 bloom = s1.Sample(LinearSampler, Input.Tex);
 
-    //return color;
-    //return bloom;
-
-    return color * 0.99f + bloom * 0.01f;
+    return render * 0.99f + bloom * 0.01f;
 }
