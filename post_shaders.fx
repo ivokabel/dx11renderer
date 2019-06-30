@@ -44,14 +44,14 @@ float4 BloomPS(QUAD_VS_OUTPUT Input) : SV_TARGET
         color = s0.Sample(LinearSampler, samplePos);
         convolution += BlurWeights[i] * color;
     }
-    return convolution * 0.05f;
+    return convolution;
 }
 
-float4 Pass2PS(QUAD_VS_OUTPUT Input) : SV_TARGET
+float4 FinalPassPS(QUAD_VS_OUTPUT Input) : SV_TARGET
 {
     float4 color = s0.Sample(LinearSampler, Input.Tex);
 
     //...
 
-    return color;
+    return color * 0.01f;
 }

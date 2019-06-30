@@ -103,6 +103,9 @@ private:
                                                    float weights[15],
                                                    float offsets[15]);
 
+    void                            SetBloomCB(bool horizontal);
+
+
 private:
 
     const wchar_t * const       mWndClassName    = L"SimpleDirectX11RendererWndClass";
@@ -156,7 +159,8 @@ private:
     ID3D11VertexShader*         mScreenQuadVS = nullptr;
     PassBuffer                  mRenderBuff;
     PassBuffer                  mBloomHorzBuff;
-    uint32_t                    mBloomDownscaleFactor = 4;
+    PassBuffer                  mBloomBuff;
+    uint32_t                    mBloomDownscaleFactor = 2;
     struct BloomCB
     {
         XMFLOAT4 offsets[15];
@@ -164,7 +168,7 @@ private:
     };
     ID3D11Buffer*               mBloomCB = NULL;
     ID3D11PixelShader*          mBloomPS = nullptr;
-    ID3D11PixelShader*          mPass2PS = nullptr;
+    ID3D11PixelShader*          mFinalPassPS = nullptr;
     ID3D11SamplerState*         mSamplerStatePoint = nullptr;
     ID3D11SamplerState*         mSamplerStateLinear = nullptr;
 

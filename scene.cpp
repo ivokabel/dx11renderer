@@ -367,7 +367,7 @@ void Scene::Render(IRenderingContext &ctx)
     immCtx->PSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
     immCtx->PSSetShaderResources(0, 1, &mTextureSRV);
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
-    //immCtx->DrawIndexed((UINT)sGeometry.indices.size(), 0, 0);
+    immCtx->DrawIndexed((UINT)sGeometry.indices.size(), 0, 0);
 
     // Symbolic light geometry for point lights
     for (int i = 0; i < sPointLights.size(); i++)

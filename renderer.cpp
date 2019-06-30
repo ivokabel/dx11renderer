@@ -397,6 +397,7 @@ bool SimpleDX11Renderer::CreatePostprocessingResources()
 
     mRenderBuff.Create(*this, 1);
     mBloomHorzBuff.Create(*this, mBloomDownscaleFactor);
+    mBloomBuff.Create(*this, mBloomDownscaleFactor);
 
     // Samplers
     D3D11_SAMPLER_DESC descSampler;
@@ -427,7 +428,7 @@ bool SimpleDX11Renderer::CreatePostprocessingResources()
     // Shaders
     if (!CreatePixelShader(L"../post_shaders.fx", "BloomPS", "ps_4_0", mBloomPS))
         return false;
-    if (!CreatePixelShader(L"../post_shaders.fx", "Pass2PS", "ps_4_0", mPass2PS))
+    if (!CreatePixelShader(L"../post_shaders.fx", "FinalPassPS", "ps_4_0", mFinalPassPS))
         return false;
 
     return true;
@@ -448,9 +449,10 @@ void SimpleDX11Renderer::DestroyDevice()
     // Postprocessing resources
     mRenderBuff.Destroy();
     mBloomHorzBuff.Destroy();
+    mBloomBuff.Destroy();
     Utils::ReleaseAndMakeNull(mBloomCB);
     Utils::ReleaseAndMakeNull(mBloomPS);
-    Utils::ReleaseAndMakeNull(mPass2PS);
+    Utils::ReleaseAndMakeNull(mFinalPassPS);
     Utils::ReleaseAndMakeNull(mSamplerStatePoint);
     Utils::ReleaseAndMakeNull(mSamplerStateLinear);
 
@@ -672,27 +674,7 @@ void SimpleDX11Renderer::Render()
     // Bloom - part 1: Scale image down & blur horizontally
     if (mIsPostProcessingActive)
     {
-        // Prepare blurring coeffs
-        // TODO: SetBloomCB(horizontal/vertical)
-        {
-            D3D11_MAPPED_SUBRESOURCE mappedRes;
-            mImmediateContext->Map(mBloomCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes);
-            BloomCB* cbBloom = (BloomCB*)mappedRes.pData;
-            XMFLOAT4* offsets = cbBloom->offsets;
-            XMFLOAT4* weights = cbBloom->weights;
-
-            float offsetsF[15];
-            float weightsF[15];
-            GetBloomCoeffs(mWndWidth/mBloomDownscaleFactor, weightsF, offsetsF);
-            for (uint32_t i = 0; i < 15; i++)
-            {
-                offsets[i] = XMFLOAT4(offsetsF[i], 0.0f, 0.0f, 0.0f);
-                weights[i] = XMFLOAT4(weightsF[i], weightsF[i], weightsF[i], 0.0f);
-            }
-            mImmediateContext->Unmap(mBloomCB, 0);
-
-            mImmediateContext->PSSetConstantBuffers(0, 1, &mBloomCB);
-        }
+        SetBloomCB(true);
 
         ID3D11RenderTargetView* aRTViews[1] = { mBloomHorzBuff.GetRTV() };
         mImmediateContext->OMSetRenderTargets(1, aRTViews, nullptr);
@@ -704,8 +686,8 @@ void SimpleDX11Renderer::Render()
         mImmediateContext->PSSetSamplers(0, 2, aSamplers);
 
         DrawFullScreenQuad(mBloomPS,
-                           mWndWidth/mBloomDownscaleFactor,
-                           mWndHeight/mBloomDownscaleFactor);
+                           mWndWidth / mBloomDownscaleFactor,
+                           mWndHeight / mBloomDownscaleFactor);
 
         ID3D11ShaderResourceView* aSRViewsNull[1] = { nullptr };
         mImmediateContext->PSSetShaderResources(0, 1, aSRViewsNull);
@@ -714,9 +696,10 @@ void SimpleDX11Renderer::Render()
     // Bloom - part 2: blur (downscaled image) vertically
     if (mIsPostProcessingActive)
     {
-        // Restore the swap chain render target for the last pass
-        ID3D11RenderTargetView* aRTViews[1] = { swapChainRTV };
-        mImmediateContext->OMSetRenderTargets(1, aRTViews, swapChainDSV);
+        SetBloomCB(false);
+
+        ID3D11RenderTargetView* aRTViews[1] = { mBloomBuff.GetRTV() };
+        mImmediateContext->OMSetRenderTargets(1, aRTViews, nullptr);
 
         ID3D11ShaderResourceView* aSRViews[1] = { mBloomHorzBuff.GetSRV() };
         mImmediateContext->PSSetShaderResources(0, 1, aSRViews);
@@ -724,7 +707,28 @@ void SimpleDX11Renderer::Render()
         ID3D11SamplerState* aSamplers[] = { mSamplerStatePoint, mSamplerStateLinear };
         mImmediateContext->PSSetSamplers(0, 2, aSamplers);
 
-        DrawFullScreenQuad(mPass2PS,
+        DrawFullScreenQuad(mBloomPS,
+                           mWndWidth / mBloomDownscaleFactor,
+                           mWndHeight / mBloomDownscaleFactor);
+
+        ID3D11ShaderResourceView* aSRViewsNull[1] = { nullptr };
+        mImmediateContext->PSSetShaderResources(0, 1, aSRViewsNull);
+    }
+
+    // TODO: Final pass: Compose original and (upscaled) blurred image
+    if (mIsPostProcessingActive)
+    {
+        // Restore the swap chain render target for the last pass
+        ID3D11RenderTargetView* aRTViews[1] = { swapChainRTV };
+        mImmediateContext->OMSetRenderTargets(1, aRTViews, swapChainDSV);
+
+        ID3D11ShaderResourceView* aSRViews[1] = { mBloomBuff.GetSRV() };
+        mImmediateContext->PSSetShaderResources(0, 1, aSRViews);
+
+        ID3D11SamplerState* aSamplers[] = { mSamplerStatePoint, mSamplerStateLinear };
+        mImmediateContext->PSSetSamplers(0, 2, aSamplers);
+
+        DrawFullScreenQuad(mFinalPassPS,
                            //mWndWidth/mBloomDownscaleFactor, mWndHeight/mBloomDownscaleFactor
                            mWndWidth, mWndHeight
         );
@@ -732,9 +736,6 @@ void SimpleDX11Renderer::Render()
         ID3D11ShaderResourceView* aSRViewsNull[1] = { nullptr };
         mImmediateContext->PSSetShaderResources(0, 1, aSRViewsNull);
     }
-
-    // TODO: Final pass: Composite original and (upscaled) blurred image
-    //...
 
     Utils::ReleaseAndMakeNull(swapChainRTV);
     Utils::ReleaseAndMakeNull(swapChainDSV);
@@ -760,6 +761,7 @@ void SimpleDX11Renderer::Render()
 //    ID3D11ShaderResourceView* NullSRVs[1] = {};
 //    mImmediateContext->PSSetShaderResources(0, 1, NullSRVs);
 //}
+
 
 void SimpleDX11Renderer::DrawFullScreenQuad(ID3D11PixelShader* PS,
                                             UINT width,
@@ -796,17 +798,19 @@ void SimpleDX11Renderer::DrawFullScreenQuad(ID3D11PixelShader* PS,
     mImmediateContext->RSSetViewports(nViewPorts, vpOrig);
 }
 
+
 float SimpleDX11Renderer::GaussianDistribution(float x, float y, float rho)
 {
     float g = 1.0f / sqrtf(2.0f * XM_PI * rho * rho);
     return g * expf(-(x * x + y * y) / (2 * rho * rho));
 }
 
+
 void SimpleDX11Renderer::GetBloomCoeffs(DWORD textureSize,
                                         float weights[15],
                                         float offsets[15])
 {
-    const float deviation = 2.5f; // 3.0f;
+    const float deviation = 2.0f; // 3.0f;
 
     int i = 0;
     float tu = 1.0f / (float)textureSize;
@@ -835,6 +839,33 @@ void SimpleDX11Renderer::GetBloomCoeffs(DWORD textureSize,
     //ZeroMemory(weights, sizeof(float) * 15);
     //weights[7] = 1.f;
 }
+
+
+void SimpleDX11Renderer::SetBloomCB(bool horizontal)
+{
+    D3D11_MAPPED_SUBRESOURCE mappedRes;
+    mImmediateContext->Map(mBloomCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes);
+    BloomCB* cbBloom = (BloomCB*)mappedRes.pData;
+    XMFLOAT4* offsets = cbBloom->offsets;
+    XMFLOAT4* weights = cbBloom->weights;
+
+    float offsetsF[15];
+    float weightsF[15];
+    auto wndSize = horizontal ? mWndWidth : mWndHeight;
+    GetBloomCoeffs(wndSize / mBloomDownscaleFactor, weightsF, offsetsF);
+    for (uint32_t i = 0; i < 15; i++)
+    {
+        if (horizontal)
+            offsets[i] = XMFLOAT4(offsetsF[i], 0.0f, 0.0f, 0.0f);
+        else
+            offsets[i] = XMFLOAT4(0.0f, offsetsF[i], 0.0f, 0.0f);
+        weights[i] = XMFLOAT4(weightsF[i], weightsF[i], weightsF[i], 0.0f);
+    }
+    mImmediateContext->Unmap(mBloomCB, 0);
+
+    mImmediateContext->PSSetConstantBuffers(0, 1, &mBloomCB);
+};
+
 
 bool SimpleDX11Renderer::GetWindowSize(uint32_t &width,
                                        uint32_t &height) const
@@ -865,5 +896,5 @@ float SimpleDX11Renderer::GetCurrentAnimationTime() const
         time = (timeCur - timeStart) / 1000.0f;
     }
 
-    return time * 0.2f;
+    return time;
 }
