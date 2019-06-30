@@ -715,26 +715,23 @@ void SimpleDX11Renderer::Render()
         mImmediateContext->PSSetShaderResources(0, 1, aSRViewsNull);
     }
 
-    // TODO: Final pass: Compose original and (upscaled) blurred image
+    // Final pass: Compose original and (upscaled) blurred image
     if (mIsPostProcessingActive)
     {
         // Restore the swap chain render target for the last pass
         ID3D11RenderTargetView* aRTViews[1] = { swapChainRTV };
         mImmediateContext->OMSetRenderTargets(1, aRTViews, swapChainDSV);
 
-        ID3D11ShaderResourceView* aSRViews[1] = { mBloomBuff.GetSRV() };
-        mImmediateContext->PSSetShaderResources(0, 1, aSRViews);
+        ID3D11ShaderResourceView* aSRViews[2] = { mRenderBuff.GetSRV(), mBloomBuff.GetSRV() };
+        mImmediateContext->PSSetShaderResources(0, 2, aSRViews);
 
         ID3D11SamplerState* aSamplers[] = { mSamplerStatePoint, mSamplerStateLinear };
         mImmediateContext->PSSetSamplers(0, 2, aSamplers);
 
-        DrawFullScreenQuad(mFinalPassPS,
-                           //mWndWidth/mBloomDownscaleFactor, mWndHeight/mBloomDownscaleFactor
-                           mWndWidth, mWndHeight
-        );
+        DrawFullScreenQuad(mFinalPassPS, mWndWidth, mWndHeight);
 
-        ID3D11ShaderResourceView* aSRViewsNull[1] = { nullptr };
-        mImmediateContext->PSSetShaderResources(0, 1, aSRViewsNull);
+        ID3D11ShaderResourceView* aSRViewsNull[2] = { nullptr, nullptr };
+        mImmediateContext->PSSetShaderResources(0, 2, aSRViewsNull);
     }
 
     Utils::ReleaseAndMakeNull(swapChainRTV);
@@ -810,7 +807,7 @@ void SimpleDX11Renderer::GetBloomCoeffs(DWORD textureSize,
                                         float weights[15],
                                         float offsets[15])
 {
-    const float deviation = 2.0f; // 3.0f;
+    const float deviation = 2.0f;
 
     int i = 0;
     float tu = 1.0f / (float)textureSize;

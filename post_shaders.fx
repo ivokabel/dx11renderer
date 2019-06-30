@@ -17,6 +17,7 @@ struct QUAD_VS_OUTPUT
 };
 
 Texture2D s0 : register(t0);
+Texture2D s1 : register(t1);
 
 QUAD_VS_OUTPUT QuadVS(QUAD_VS_INPUT Input)
 {
@@ -49,9 +50,11 @@ float4 BloomPS(QUAD_VS_OUTPUT Input) : SV_TARGET
 
 float4 FinalPassPS(QUAD_VS_OUTPUT Input) : SV_TARGET
 {
-    float4 color = s0.Sample(LinearSampler, Input.Tex);
+    float4 color = s0.Sample(PointSampler, Input.Tex);
+    float4 bloom = s1.Sample(LinearSampler, Input.Tex);
 
-    //...
+    //return color;
+    //return bloom;
 
-    return color * 0.01f;
+    return color * 0.99f + bloom * 0.01f;
 }
