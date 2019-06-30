@@ -413,6 +413,17 @@ bool SimpleDX11Renderer::CreatePostprocessingResources()
     if (FAILED(hr))
         return false;
 
+    // Blurring constant buffer
+    D3D11_BUFFER_DESC Desc;
+    Desc.Usage = D3D11_USAGE_DYNAMIC;
+    Desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    Desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    Desc.MiscFlags = 0;
+    Desc.ByteWidth = sizeof(CB_Bloom_PS);
+    hr = mDevice->CreateBuffer(&Desc, NULL, &g_pcbBloom);
+    if (FAILED(hr))
+        return false;
+
     // Shaders
     if (!CreatePixelShader(L"../post_shaders.fx", "Pass1PS", "ps_4_0", mPass1PS))
         return false;
@@ -437,6 +448,7 @@ void SimpleDX11Renderer::DestroyDevice()
     // Postprocessing resources
     mPass0Buff.Destroy();
     mPass1Buff.Destroy();
+    Utils::ReleaseAndMakeNull(g_pcbBloom);
     Utils::ReleaseAndMakeNull(mPass1PS);
     Utils::ReleaseAndMakeNull(mPass2PS);
     Utils::ReleaseAndMakeNull(mSamplerStatePoint);
@@ -657,9 +669,26 @@ void SimpleDX11Renderer::Render()
         mScene->Render(*this);
     }
 
-    // Post pass 1
+    // Post pass 1: Scale image down & horizontal blur
     if (mIsPostProcessingActive)
     {
+        // Prepare blurring coeffs
+        {
+            D3D11_MAPPED_SUBRESOURCE MappedResource;
+            mImmediateContext->Map(g_pcbBloom, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+            CB_Bloom_PS* pcbBloom = (CB_Bloom_PS*)MappedResource.pData;
+            XMFLOAT4* avSampleOffsets = pcbBloom->avSampleOffsets;
+            XMFLOAT4* avSampleWeights = pcbBloom->avSampleWeights;
+
+            float afSampleOffsets[15];
+            GetSampleOffsets_Bloom_D3D11(mWndWidth/mPass1ScaleDownFactor, avSampleWeights, afSampleOffsets);
+            for (uint32_t i = 0; i < 15; i++)
+                avSampleOffsets[i] = XMFLOAT4(afSampleOffsets[i], 0.0f, 0.0f, 0.0f);
+            mImmediateContext->Unmap(g_pcbBloom, 0);
+
+            mImmediateContext->PSSetConstantBuffers(0, 1, &g_pcbBloom);
+        }
+
         ID3D11RenderTargetView* aRTViews[1] = { mPass1Buff.GetRTV() };
         mImmediateContext->OMSetRenderTargets(1, aRTViews, nullptr);
 
@@ -691,8 +720,9 @@ void SimpleDX11Renderer::Render()
         mImmediateContext->PSSetSamplers(0, 2, aSamplers);
 
         DrawFullScreenQuad(mPass2PS,
-                           mWndWidth/mPass1ScaleDownFactor,
-                           mWndHeight/mPass1ScaleDownFactor);
+                           //mWndWidth/mPass1ScaleDownFactor, mWndHeight/mPass1ScaleDownFactor
+                           mWndWidth, mWndHeight
+        );
 
         ID3D11ShaderResourceView* aSRViewsNull[1] = { nullptr };
         mImmediateContext->PSSetShaderResources(0, 1, aSRViewsNull);
@@ -758,6 +788,47 @@ void SimpleDX11Renderer::DrawFullScreenQuad(ID3D11PixelShader* PS,
     mImmediateContext->RSSetViewports(nViewPorts, vpOrig);
 }
 
+float SimpleDX11Renderer::GaussianDistribution(float x, float y, float rho)
+{
+    float g = 1.0f / sqrtf(2.0f * XM_PI * rho * rho);
+    return g * expf(-(x * x + y * y) / (2 * rho * rho));
+}
+
+void SimpleDX11Renderer::GetSampleOffsets_Bloom_D3D11(DWORD dwD3DTexSize,
+                                                      XMFLOAT4* avColorWeight,
+                                                      float afTexCoordOffset[15])
+{
+    const float fDeviation = 2.5f; // 3.0f;
+    const float fMultiplier = 1.f; // 1.25f;
+
+    int i = 0;
+    float tu = 1.0f / (float)dwD3DTexSize;
+
+    // The center texel
+    float weight = 1.0f * GaussianDistribution(0, 0, fDeviation);
+    avColorWeight[7] = XMFLOAT4(weight, weight, weight, 1.0f);
+    afTexCoordOffset[7] = 0.0f;
+
+    // One side
+    for (i = 1; i < 8; i++)
+    {
+        weight = fMultiplier * GaussianDistribution((float)i, 0, fDeviation);
+        avColorWeight[7 - i] = XMFLOAT4(weight, weight, weight, 1.0f);
+        afTexCoordOffset[7 - i] = -i * tu;
+    }
+
+    // Other side - copy
+    for (i = 8; i < 15; i++)
+    {
+        avColorWeight[i] = avColorWeight[14 - i];
+        afTexCoordOffset[i] = -afTexCoordOffset[14 - i];
+    }
+
+    // Debug convolution kernel which doesn't transform input data
+    //ZeroMemory( avColorWeight, sizeof(XMFLOAT4)*15 );
+    //avColorWeight[7] = XMFLOAT4( 1, 1, 1, 1 );
+}
+
 bool SimpleDX11Renderer::GetWindowSize(uint32_t &width,
                                        uint32_t &height) const
 {
@@ -787,5 +858,5 @@ float SimpleDX11Renderer::GetCurrentAnimationTime() const
         time = (timeCur - timeStart) / 1000.0f;
     }
 
-    return time;
+    return time * 0.2f;
 }

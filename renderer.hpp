@@ -97,6 +97,12 @@ private:
     //                                                  UINT width,
     //                                                  UINT height);
 
+    static float                    GaussianDistribution(float x, float y, float rho);
+
+    static void                     GetSampleOffsets_Bloom_D3D11(DWORD dwD3DTexSize,
+                                                                 XMFLOAT4* avColorWeight,
+                                                                 float afTexCoordOffset[15]);
+
 private:
 
     const wchar_t * const       mWndClassName    = L"SimpleDirectX11RendererWndClass";
@@ -150,7 +156,13 @@ private:
     ID3D11VertexShader*         mScreenQuadVS = nullptr;
     PassBuffer                  mPass0Buff;
     PassBuffer                  mPass1Buff;
-    uint32_t                    mPass1ScaleDownFactor = 8;
+    uint32_t                    mPass1ScaleDownFactor = 4;
+    struct CB_Bloom_PS
+    {
+        XMFLOAT4 avSampleOffsets[15];
+        XMFLOAT4 avSampleWeights[15];
+    };
+    ID3D11Buffer*               g_pcbBloom = NULL;
     ID3D11PixelShader*          mPass1PS = nullptr;
     ID3D11PixelShader*          mPass2PS = nullptr;
     ID3D11SamplerState*         mSamplerStatePoint = nullptr;
