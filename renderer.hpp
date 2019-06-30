@@ -99,9 +99,9 @@ private:
 
     static float                    GaussianDistribution(float x, float y, float rho);
 
-    static void                     GetSampleOffsets_Bloom_D3D11(DWORD dwD3DTexSize,
-                                                                 XMFLOAT4* avColorWeight,
-                                                                 float afTexCoordOffset[15]);
+    static void                     GetBloomCoeffs(DWORD textureSize,
+                                                   float weights[15],
+                                                   float offsets[15]);
 
 private:
 
@@ -154,16 +154,16 @@ private:
     ID3D11Buffer*               mScreenQuadVB = nullptr;
     ID3D11InputLayout*          mScreenQuadLayout = nullptr;
     ID3D11VertexShader*         mScreenQuadVS = nullptr;
-    PassBuffer                  mPass0Buff;
-    PassBuffer                  mPass1Buff;
-    uint32_t                    mPass1ScaleDownFactor = 4;
-    struct CB_Bloom_PS
+    PassBuffer                  mRenderBuff;
+    PassBuffer                  mBloomHorzBuff;
+    uint32_t                    mBloomDownscaleFactor = 4;
+    struct BloomCB
     {
-        XMFLOAT4 avSampleOffsets[15];
-        XMFLOAT4 avSampleWeights[15];
+        XMFLOAT4 offsets[15];
+        XMFLOAT4 weights[15];
     };
-    ID3D11Buffer*               g_pcbBloom = NULL;
-    ID3D11PixelShader*          mPass1PS = nullptr;
+    ID3D11Buffer*               mBloomCB = NULL;
+    ID3D11PixelShader*          mBloomPS = nullptr;
     ID3D11PixelShader*          mPass2PS = nullptr;
     ID3D11SamplerState*         mSamplerStatePoint = nullptr;
     ID3D11SamplerState*         mSamplerStateLinear = nullptr;

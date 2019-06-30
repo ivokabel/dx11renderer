@@ -28,27 +28,23 @@ QUAD_VS_OUTPUT QuadVS(QUAD_VS_INPUT Input)
 
 cbuffer cbBloom
 {
-    float2 g_avSampleOffsets[15];
-    float4 g_avSampleWeights[15];
+    float2 BlurOffsets[15];
+    float4 BlurWeights[15];
 }
 
-float4 Pass1PS(QUAD_VS_OUTPUT Input) : SV_TARGET
+float4 BloomPS(QUAD_VS_OUTPUT Input) : SV_TARGET
 {
-    float2 texCoords = Input.Tex;
-    //texCoords.x = texCoords.x + 0.3f * sin(texCoords.y * 2.f * PI);
-
-    // Convolute by blurring filter
+    // Convolute by blurring filter in one dimension
     float4 convolution = 0.0f;
     float4 color = 0.0f;
     float2 samplePos;
     for (int i = 0; i < 15; i++)
     {
-        samplePos = texCoords + g_avSampleOffsets[i];
+        samplePos = Input.Tex + BlurOffsets[i];
         color = s0.Sample(LinearSampler, samplePos);
-
-        convolution += g_avSampleWeights[i] * color;
+        convolution += BlurWeights[i] * color;
     }
-    return convolution * 0.01f;
+    return convolution * 0.05f;
 }
 
 float4 Pass2PS(QUAD_VS_OUTPUT Input) : SV_TARGET
