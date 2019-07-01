@@ -6,7 +6,7 @@ Simple DirectX 11 pet renderer heavily based on DX11 SDK tutorials.
  - Light types: point, directional, ambient (background)
  - Lights defined physical quantities/units
  - Blinn-Phong material model
- - Simple, but physically based bloom post-processing effect (so far just for single-sampled rendering)
+ - Simple, but physically-based bloom effect (so far just for single-sampled rendering)
 
 # Screenshots
 
