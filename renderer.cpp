@@ -164,6 +164,10 @@ LRESULT CALLBACK SimpleDX11Renderer::WndProc(HWND wnd,
 int SimpleDX11Renderer::Run()
 {
     Log::Debug(L"Running renderer...");
+    Log::Debug(L"-------------------");
+
+    const auto startTime = GetCurrentAnimationTime();
+    uint32_t frameCount = 0;
 
     // Message loop
     MSG msg = {};
@@ -175,11 +179,29 @@ int SimpleDX11Renderer::Run()
             DispatchMessage(&msg);
         }
         else
+        {
             Render();
+            frameCount++;
+        }
     }
+
+    // Statistics
+    const auto endTime = GetCurrentAnimationTime();
+    const auto timeElapsed = endTime - startTime;
+    const auto avgFps = (timeElapsed > 0.0001f) ? frameCount / timeElapsed : 0;
+    const auto avgDuration = frameCount ? timeElapsed / frameCount : 0;
+
+    Log::Debug(L"-------------------");
+    Log::Debug(L"Renderer finished: "
+               L"time elapsed %.1f, "
+               L"frames count %d, "
+               L"average fps %.1f, "
+               L"average frame duration %.3f ms",
+               timeElapsed, frameCount, avgFps, avgDuration);
 
     return (int)msg.wParam;
 }
+
 
 
 ID3D11Device* SimpleDX11Renderer::GetDevice() const
