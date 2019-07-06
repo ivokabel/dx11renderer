@@ -164,6 +164,10 @@ LRESULT CALLBACK SimpleDX11Renderer::WndProc(HWND wnd,
 int SimpleDX11Renderer::Run()
 {
     Log::Debug(L"Running renderer...");
+    Log::Debug(L"-------------------");
+
+    const auto startTime = GetCurrentAnimationTime();
+    uint32_t frameCount = 0;
 
     // Message loop
     MSG msg = {};
@@ -175,8 +179,25 @@ int SimpleDX11Renderer::Run()
             DispatchMessage(&msg);
         }
         else
+        {
             Render();
+            Sleep(30);
+            frameCount++;
+        }
     }
+
+    const auto endTime = GetCurrentAnimationTime();
+    const auto timeElapsed = endTime - startTime;
+    const auto avgFps = (timeElapsed > 0.0001f) ? frameCount / timeElapsed : 0;
+    const auto avgDuration = frameCount ? timeElapsed / frameCount : 0;
+    
+    Log::Debug(L"-------------------");
+    Log::Debug(L"Renderer finished: "
+               L"time elapsed %.1f, "
+               L"frames count %d, "
+               L"average fps %.1f, "
+               L"average frame duration %.3f ms",
+               timeElapsed, frameCount, avgFps, avgDuration);
 
     return (int)msg.wParam;
 }
@@ -696,8 +717,9 @@ void SimpleDX11Renderer::Render()
         mImmediateContext->PSSetSamplers(0, 2, aSamplers);
 
         DrawFullScreenQuad(mPass2PS,
-                           mWndWidth/mPass1ScaleDownFactor,
-                           mWndHeight/mPass1ScaleDownFactor);
+                           mWndWidth, mWndHeight
+                           //mWndWidth/mPass1ScaleDownFactor, mWndHeight/mPass1ScaleDownFactor
+        );
 
         ID3D11ShaderResourceView* aSRViewsNull[1] = { nullptr };
         mImmediateContext->PSSetShaderResources(0, 1, aSRViewsNull);

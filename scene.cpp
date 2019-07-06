@@ -100,8 +100,8 @@ struct PointLight
 
 
 //AmbientLight sAmbientLight{ XMFLOAT4(0.01f, 0.07f, 0.10f, 1.0f) };
-AmbientLight sAmbientLight{ XMFLOAT4(0.50f, 0.50f, 0.50f, 1.0f) };
-//AmbientLight sAmbientLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) };
+//AmbientLight sAmbientLight{ XMFLOAT4(0.50f, 0.50f, 0.50f, 1.0f) };
+AmbientLight sAmbientLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) };
 
 std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights =
 {
@@ -276,7 +276,7 @@ void Scene::Animate(IRenderingContext &ctx)
         return;
 
     const float time = ctx.GetCurrentAnimationTime();
-    const float period = 20.f; //seconds
+    const float period = 100.f; //seconds
     const float totalAnimPos = time / period;
     const float mainObjAngle = totalAnimPos * XM_2PI;
 
@@ -358,12 +358,12 @@ void Scene::Render(IRenderingContext &ctx)
     immCtx->PSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
     immCtx->PSSetShaderResources(0, 1, &mTextureSRV);
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
-    immCtx->DrawIndexed((UINT)sGeometry.indices.size(), 0, 0);
+    //immCtx->DrawIndexed((UINT)sGeometry.indices.size(), 0, 0);
 
     // Symbolic light geometry for point lights
     for (int i = 0; i < sPointLights.size(); i++)
     {
-        const float radius = 0.04f; //0.07f;
+        const float radius = 0.10f; // 0.04f; //0.07f;
         XMMATRIX lightScaleMtrx = XMMatrixScaling(radius, radius, radius);
         XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(XMLoadFloat4(&sPointLights[i].posTransf));
         XMMATRIX lightMtrx = lightScaleMtrx * lightTrnslMtrx;
