@@ -197,7 +197,7 @@ int SimpleDX11Renderer::Run()
                L"frames count %d, "
                L"average fps %.1f, "
                L"average frame duration %.3f ms",
-               timeElapsed, frameCount, avgFps, avgDuration);
+               timeElapsed, frameCount, avgFps, avgDuration * 1000.f);
 
     return (int)msg.wParam;
 }
