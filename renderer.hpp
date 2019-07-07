@@ -139,10 +139,15 @@ private:
         PassBuffer() {}
         ~PassBuffer() { Destroy(); }
 
+        enum ECreateFlags
+        {
+            eRtv            = 0x01,
+            eSrv            = 0x02,
+            eSingleSample   = 0x04
+        };
+
         bool Create(IRenderingContext &ctx,
-                    bool createRtv,
-                    bool createSrv,
-                    bool singleSample,
+                    ECreateFlags flags,
                     uint32_t scaleDownFactor);
         void Destroy();
 

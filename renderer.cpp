@@ -421,11 +421,15 @@ bool SimpleDX11Renderer::CreatePostprocessingResources()
     if (FAILED(hr))
         return false;
 
-    mRenderBuff.Create(*this, true, true, true, 1);
+    auto msaaBufferFlags = PassBuffer::eRtv;
+    auto postBufferFlags = (PassBuffer::ECreateFlags)(PassBuffer::eRtv |
+                                                      PassBuffer::eSrv |
+                                                      PassBuffer::eSingleSample);
     if (mUseMSAA)
-        mRenderBuffMS.Create(*this, true, false, false, 1);
-    mBloomHorzBuff.Create(*this, true, true, true, mBloomDownscaleFactor);
-    mBloomBuff.Create(*this, true, true, true, mBloomDownscaleFactor);
+        mRenderBuffMS.Create(*this, msaaBufferFlags, 1);
+    mRenderBuff.Create(*this, postBufferFlags, 1);
+    mBloomHorzBuff.Create(*this, postBufferFlags, mBloomDownscaleFactor);
+    mBloomBuff.Create(*this, postBufferFlags, mBloomDownscaleFactor);
 
     // Samplers
     D3D11_SAMPLER_DESC descSampler;
@@ -498,9 +502,7 @@ void SimpleDX11Renderer::DestroyDevice()
 
 
 bool SimpleDX11Renderer::PassBuffer::Create(IRenderingContext &ctx,
-                                            bool createRtv,
-                                            bool createSrv,
-                                            bool singleSample,
+                                            ECreateFlags flags,
                                             uint32_t scaleDownFactor)
 {
     if (!ctx.IsValid())
@@ -514,6 +516,9 @@ bool SimpleDX11Renderer::PassBuffer::Create(IRenderingContext &ctx,
 
     HRESULT hr = S_OK;
     auto device = ctx.GetDevice();
+    bool createRtv    = flags & eRtv;
+    bool createSrv    = flags & eSrv;
+    bool singleSample = flags & eSingleSample;
 
     // Texture
     D3D11_TEXTURE2D_DESC descTex;
