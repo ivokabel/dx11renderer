@@ -35,6 +35,10 @@ public:
     virtual bool                    GetWindowSize(uint32_t &width,
                                                   uint32_t &height) const = 0;
 
+    virtual bool                    UsesMSAA() const = 0;
+    virtual uint32_t                GetMsaaCount() const = 0;
+    virtual uint32_t                GetMsaaQuality() const = 0;
+
     virtual float                   GetCurrentAnimationTime() const = 0; // In seconds
 
     virtual bool IsValid() const

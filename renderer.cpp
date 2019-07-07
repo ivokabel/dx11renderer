@@ -120,6 +120,7 @@ LRESULT CALLBACK SimpleDX11Renderer::WndProcStatic(HWND wnd, UINT message, WPARA
         return DefWindowProc(wnd, message, wParam, lParam);
 }
 
+
 LRESULT CALLBACK SimpleDX11Renderer::WndProc(HWND wnd,
                                              UINT message,
                                              WPARAM wParam,
@@ -292,8 +293,8 @@ bool SimpleDX11Renderer::CreateDevice()
     scd.BufferDesc.RefreshRate.Denominator = 1;
     scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     scd.OutputWindow = mWnd;
-    scd.SampleDesc.Count = 1; //4; //
-    scd.SampleDesc.Quality = 0;
+    scd.SampleDesc.Count   = GetMsaaCount();
+    scd.SampleDesc.Quality = GetMsaaQuality();
     scd.Windowed = TRUE;
 
     for (auto driverType : driverTypes)
@@ -311,9 +312,11 @@ bool SimpleDX11Renderer::CreateDevice()
     if (FAILED(hr))
         return false;
 
-    Log::Debug(L"Created device: type %s, feature level %s",
+    Log::Debug(L"Created device: type %s, feature level %s, MSAA %d:%d",
                DriverTypeToString(mDriverType),
-               FeatureLevelToString(mFeatureLevel));
+               FeatureLevelToString(mFeatureLevel),
+               GetMsaaCount(),
+               GetMsaaQuality());
 
     // Create a render target view
     ID3D11Texture2D* swapChainBuffer = nullptr;
@@ -334,8 +337,8 @@ bool SimpleDX11Renderer::CreateDevice()
     descDepth.MipLevels = 1;
     descDepth.ArraySize = 1;
     descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    descDepth.SampleDesc.Count = 1; //4; //
-    descDepth.SampleDesc.Quality = 0;
+    descDepth.SampleDesc.Count   = GetMsaaCount();
+    descDepth.SampleDesc.Quality = GetMsaaQuality();
     descDepth.Usage = D3D11_USAGE_DEFAULT;
     descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
     hr = mDevice->CreateTexture2D(&descDepth, nullptr, &mSwapChainDSTex);
@@ -346,7 +349,8 @@ bool SimpleDX11Renderer::CreateDevice()
     D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
     ZeroMemory(&descDSV, sizeof(descDSV));
     descDSV.Format = descDepth.Format;
-    descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS; //D3D11_DSV_DIMENSION_TEXTURE2D;
+    descDSV.ViewDimension = mUseMSAA ? D3D11_DSV_DIMENSION_TEXTURE2DMS :
+                                       D3D11_DSV_DIMENSION_TEXTURE2D;
     descDSV.Texture2D.MipSlice = 0;
     hr = mDevice->CreateDepthStencilView(mSwapChainDSTex, &descDSV, &mSwapChainDSV);
     if (FAILED(hr))
@@ -417,9 +421,11 @@ bool SimpleDX11Renderer::CreatePostprocessingResources()
     if (FAILED(hr))
         return false;
 
-    mRenderBuff.Create(*this, 1);
-    mBloomHorzBuff.Create(*this, mBloomDownscaleFactor);
-    mBloomBuff.Create(*this, mBloomDownscaleFactor);
+    mRenderBuff.Create(*this, true, true, true, 1);
+    if (mUseMSAA)
+        mRenderBuffMS.Create(*this, true, false, false, 1);
+    mBloomHorzBuff.Create(*this, true, true, true, mBloomDownscaleFactor);
+    mBloomBuff.Create(*this, true, true, true, mBloomDownscaleFactor);
 
     // Samplers
     D3D11_SAMPLER_DESC descSampler;
@@ -456,6 +462,7 @@ bool SimpleDX11Renderer::CreatePostprocessingResources()
     return true;
 }
 
+
 void SimpleDX11Renderer::DestroyDevice()
 {
     Log::Debug(L"Destroying device");
@@ -470,6 +477,7 @@ void SimpleDX11Renderer::DestroyDevice()
 
     // Postprocessing resources
     mRenderBuff.Destroy();
+    mRenderBuffMS.Destroy();
     mBloomHorzBuff.Destroy();
     mBloomBuff.Destroy();
     Utils::ReleaseAndMakeNull(mBloomCB);
@@ -490,6 +498,9 @@ void SimpleDX11Renderer::DestroyDevice()
 
 
 bool SimpleDX11Renderer::PassBuffer::Create(IRenderingContext &ctx,
+                                            bool createRtv,
+                                            bool createSrv,
+                                            bool singleSample,
                                             uint32_t scaleDownFactor)
 {
     if (!ctx.IsValid())
@@ -498,47 +509,58 @@ bool SimpleDX11Renderer::PassBuffer::Create(IRenderingContext &ctx,
     uint32_t width, height;
     if (!ctx.GetWindowSize(width, height))
         return false;
-
     width  /= scaleDownFactor;
     height /= scaleDownFactor;
 
-    auto device = ctx.GetDevice();
-
     HRESULT hr = S_OK;
+    auto device = ctx.GetDevice();
 
     // Texture
     D3D11_TEXTURE2D_DESC descTex;
     ZeroMemory(&descTex, sizeof(D3D11_TEXTURE2D_DESC));
     descTex.ArraySize = 1;
-    descTex.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    descTex.BindFlags =
+        (createRtv ? D3D11_BIND_RENDER_TARGET   : 0) |
+        (createSrv ? D3D11_BIND_SHADER_RESOURCE : 0);
     descTex.Usage = D3D11_USAGE_DEFAULT;
     descTex.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
     descTex.Width  = width;
     descTex.Height = height;
     descTex.MipLevels = 1;
-    descTex.SampleDesc.Count = 1;
+    descTex.SampleDesc.Count   = singleSample ? 1 : ctx.GetMsaaCount();
+    descTex.SampleDesc.Quality = singleSample ? 0 : ctx.GetMsaaQuality();
     hr = device->CreateTexture2D(&descTex, nullptr, &tex);
     if (FAILED(hr))
         return false;
 
+    bool isMultiSample = !singleSample && ctx.UsesMSAA();
+
     // Render target view
-    D3D11_RENDER_TARGET_VIEW_DESC descRTV;
-    descRTV.Format = descTex.Format;
-    descRTV.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-    descRTV.Texture2D.MipSlice = 0;
-    hr = device->CreateRenderTargetView(tex, &descRTV, &rtv);
-    if (FAILED(hr))
-        return false;
+    if (createRtv)
+    {
+        D3D11_RENDER_TARGET_VIEW_DESC descRTV;
+        descRTV.Format = descTex.Format;
+        descRTV.ViewDimension = isMultiSample ? D3D11_RTV_DIMENSION_TEXTURE2DMS :
+                                                D3D11_RTV_DIMENSION_TEXTURE2D;
+        descRTV.Texture2D.MipSlice = 0;
+        hr = device->CreateRenderTargetView(tex, &descRTV, &rtv);
+        if (FAILED(hr))
+            return false;
+    }
 
     // Shader resource view
-    D3D11_SHADER_RESOURCE_VIEW_DESC descSRV;
-    descSRV.Format = descTex.Format;
-    descSRV.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-    descSRV.Texture2D.MipLevels = 1;
-    descSRV.Texture2D.MostDetailedMip = 0;
-    hr = device->CreateShaderResourceView(tex, &descSRV, &srv);
-    if (FAILED(hr))
-        return false;
+    if (createSrv)
+    {
+        D3D11_SHADER_RESOURCE_VIEW_DESC descSRV;
+        descSRV.Format = descTex.Format;
+        descSRV.ViewDimension = isMultiSample ? D3D11_SRV_DIMENSION_TEXTURE2DMS :
+                                                D3D11_SRV_DIMENSION_TEXTURE2D;
+        descSRV.Texture2D.MipLevels = 1;
+        descSRV.Texture2D.MostDetailedMip = 0;
+        hr = device->CreateShaderResourceView(tex, &descSRV, &srv);
+        if (FAILED(hr))
+            return false;
+    }
 
     return true;
 }
@@ -681,9 +703,20 @@ void SimpleDX11Renderer::Render()
     // Pass 0: Replace render target view with our buffer
     if (mIsPostProcessingActive)
     {
-        ID3D11RenderTargetView* aRTViews[1] = { mRenderBuff.GetRTV() };
-        mImmediateContext->OMSetRenderTargets(1, aRTViews, swapChainDSV);
-        mImmediateContext->ClearRenderTargetView(mRenderBuff.GetRTV(), ambientColor);
+        if (mUseMSAA)
+        {
+            // We need to render into multi-sampled buffer, which will be converted into 
+            // single-sampled before post processing passes
+            ID3D11RenderTargetView* aRTViews[1] = { mRenderBuffMS.GetRTV() };
+            mImmediateContext->OMSetRenderTargets(1, aRTViews, swapChainDSV);
+            mImmediateContext->ClearRenderTargetView(mRenderBuffMS.GetRTV(), ambientColor);
+        } 
+        else
+        {
+            ID3D11RenderTargetView* aRTViews[1] = { mRenderBuff.GetRTV() };
+            mImmediateContext->OMSetRenderTargets(1, aRTViews, swapChainDSV);
+            mImmediateContext->ClearRenderTargetView(mRenderBuff.GetRTV(), ambientColor);
+        }
     }
 
     // Render scene
@@ -691,6 +724,23 @@ void SimpleDX11Renderer::Render()
     {
         mScene->Animate(*this);
         mScene->Render(*this);
+    }
+
+    // Resolve multisampled buffer into single sampled before post processing
+    if (mIsPostProcessingActive && mUseMSAA)
+    {
+        auto renderTex = mRenderBuff.GetTex();
+        auto renderTexMS = mRenderBuffMS.GetTex();
+        if (renderTex && renderTexMS)
+        {
+            D3D11_TEXTURE2D_DESC desc;
+            renderTex->GetDesc(&desc);
+            mImmediateContext->ResolveSubresource(renderTex,   D3D11CalcSubresource(0, 0, 1),
+                                                  renderTexMS, D3D11CalcSubresource(0, 0, 1),
+                                                  desc.Format);
+            ID3D11RenderTargetView* aRTViews[1] = { nullptr };
+            mImmediateContext->OMSetRenderTargets(1, aRTViews, nullptr);
+        }
     }
 
     // Bloom - part 1: Scale image down & blur horizontally
@@ -917,3 +967,26 @@ float SimpleDX11Renderer::GetCurrentAnimationTime() const
 
     return time;
 }
+
+
+bool SimpleDX11Renderer::UsesMSAA() const
+{
+    return mUseMSAA;
+}
+
+uint32_t SimpleDX11Renderer::GetMsaaCount() const
+{
+    if (mUseMSAA)
+        return 4;
+    else
+        return 1;
+}
+
+uint32_t SimpleDX11Renderer::GetMsaaQuality() const
+{
+    if (mUseMSAA)
+        return 0;
+    else
+        return 0;
+}
+

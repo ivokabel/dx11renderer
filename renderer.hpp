@@ -58,7 +58,11 @@ public:
                                                       ID3D11PixelShader *&pPixelShader) const override;
     virtual bool                    GetWindowSize(uint32_t &width,
                                                   uint32_t &height) const override;
+    virtual bool                    UsesMSAA() const;
+    virtual uint32_t                GetMsaaCount() const;
+    virtual uint32_t                GetMsaaQuality() const;
     virtual float                   GetCurrentAnimationTime() const override; // In seconds
+
 
 private:
 
@@ -135,9 +139,14 @@ private:
         PassBuffer() {}
         ~PassBuffer() { Destroy(); }
 
-        bool Create(IRenderingContext &ctx, uint32_t scaleDownFactor);
+        bool Create(IRenderingContext &ctx,
+                    bool createRtv,
+                    bool createSrv,
+                    bool singleSample,
+                    uint32_t scaleDownFactor);
         void Destroy();
 
+        ID3D11Texture2D*            GetTex() { return tex; }
         ID3D11RenderTargetView*     GetRTV() { return rtv; }
         ID3D11ShaderResourceView*   GetSRV() { return srv; }
 
@@ -158,6 +167,7 @@ private:
     ID3D11InputLayout*          mScreenQuadLayout = nullptr;
     ID3D11VertexShader*         mScreenQuadVS = nullptr;
     PassBuffer                  mRenderBuff;
+    PassBuffer                  mRenderBuffMS;
     PassBuffer                  mBloomHorzBuff;
     PassBuffer                  mBloomBuff;
     uint32_t                    mBloomDownscaleFactor = 2;
@@ -174,5 +184,8 @@ private:
 
     std::shared_ptr<IScene>     mScene;
 
+private: // Options
+
+    const bool                  mUseMSAA = true;
     bool                        mIsPostProcessingActive = true;
 };
