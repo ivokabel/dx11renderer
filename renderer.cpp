@@ -181,7 +181,7 @@ int SimpleDX11Renderer::Run()
         else
         {
             Render();
-            Sleep(30);
+            Sleep(40);
             frameCount++;
         }
     }
@@ -416,8 +416,8 @@ bool SimpleDX11Renderer::CreatePostprocessingResources()
     if (FAILED(hr))
         return false;
 
-    mPass0Buff.Create(*this, 1);
-    mPass1Buff.Create(*this, mPass1ScaleDownFactor);
+    mPass0Buff.Create(*this, 1, "Pass0Buff");
+    mPass1Buff.Create(*this, mPass1ScaleDownFactor, "Pass1Buff");
 
     // Samplers
     D3D11_SAMPLER_DESC descSampler;
@@ -474,8 +474,27 @@ void SimpleDX11Renderer::DestroyDevice()
 }
 
 
+template <UINT TNameLength>
+void SetDebugObjectName(ID3D11DeviceChild* resource, const char(&name)[TNameLength])
+{
+#if defined(_DEBUG) || defined(PROFILE)
+    resource->SetPrivateData(WKPDID_D3DDebugObjectName, TNameLength - 1, name);
+#endif
+}
+
+
+inline void SetDebugObjectName(ID3D11DeviceChild* child, const std::string& name)
+{
+#if defined(_DEBUG) || defined(PROFILE)
+    if (child && !name.empty())
+        child->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)name.size(), name.c_str());
+#endif
+}
+
+
 bool SimpleDX11Renderer::PassBuffer::Create(IRenderingContext &ctx,
-                                            uint32_t scaleDownFactor)
+                                            uint32_t scaleDownFactor,
+                                            const std::string& debugName)
 {
     if (!ctx.IsValid())
         return false;
@@ -501,11 +520,14 @@ bool SimpleDX11Renderer::PassBuffer::Create(IRenderingContext &ctx,
     descTex.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
     descTex.Width  = width;
     descTex.Height = height;
-    descTex.MipLevels = 0; // debug; 1;
+    //descTex.MipLevels = 1;
+    descTex.MipLevels = 0; // debug
     descTex.SampleDesc.Count = 1;
     hr = device->CreateTexture2D(&descTex, nullptr, &tex);
     if (FAILED(hr))
         return false;
+
+    SetDebugObjectName(tex, debugName);
 
     // Render target view
     D3D11_RENDER_TARGET_VIEW_DESC descRTV;
@@ -516,16 +538,21 @@ bool SimpleDX11Renderer::PassBuffer::Create(IRenderingContext &ctx,
     if (FAILED(hr))
         return false;
 
+    SetDebugObjectName(rtv, debugName + "[RTV]");
+
     // Shader resource view
     D3D11_SHADER_RESOURCE_VIEW_DESC descSRV;
     ZeroMemory(&descSRV, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
     descSRV.Format = descTex.Format;
     descSRV.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-    descSRV.Texture2D.MipLevels = (UINT)-1; // debug; 1;
+    //descSRV.Texture2D.MipLevels = 1;
+    descSRV.Texture2D.MipLevels = (UINT)-1;
     descSRV.Texture2D.MostDetailedMip = 0;
     hr = device->CreateShaderResourceView(tex, &descSRV, &srv);
     if (FAILED(hr))
         return false;
+
+    SetDebugObjectName(srv, debugName + "[SRV]");
 
     return true;
 }
@@ -683,11 +710,14 @@ void SimpleDX11Renderer::Render()
     // Post pass 1
     if (mIsPostProcessingActive)
     {
+        // debug
+        mImmediateContext->GenerateMips(mPass0Buff.GetSRV());
+
         ID3D11RenderTargetView* aRTViews[1] = { mPass1Buff.GetRTV() };
         mImmediateContext->OMSetRenderTargets(1, aRTViews, nullptr);
 
         // debug
-        mImmediateContext->GenerateMips(mPass0Buff.GetSRV());
+        mImmediateContext->ClearRenderTargetView(mPass1Buff.GetRTV(), ambientColor);
 
         ID3D11ShaderResourceView* aSRViews[1] = { mPass0Buff.GetSRV() };
         mImmediateContext->PSSetShaderResources(0, 1, aSRViews);

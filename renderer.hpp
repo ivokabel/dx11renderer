@@ -118,7 +118,9 @@ private:
         PassBuffer() {}
         ~PassBuffer() { Destroy(); }
 
-        bool Create(IRenderingContext &ctx, uint32_t scaleDownFactor);
+        bool Create(IRenderingContext &ctx,
+                    uint32_t scaleDownFactor,
+                    const std::string& debugName);
         void Destroy();
 
         ID3D11RenderTargetView*     GetRTV() { return rtv; }

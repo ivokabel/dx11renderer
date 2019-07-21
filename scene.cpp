@@ -112,9 +112,9 @@ std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights =
 
 std::array<PointLight, POINT_LIGHTS_COUNT> sPointLights =
 {
-    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.0390f, 0.0080f, 0.0080f, 1.0f)/*cd = lm * sr-1]*/ }, // red
-    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.80f, 3.00f, 0.80f, 1.0f)/*cd = lm * sr-1]*/ }, // green
-    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.80f, 0.80f, 4.00f, 1.0f)/*cd = lm * sr-1]*/ }, // blue
+    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.035f, 0.006f, 0.006f, 1.0f)/*cd = lm * sr-1]*/ }, // red
+    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.006f, 0.025f, 0.006f, 1.0f)/*cd = lm * sr-1]*/ }, // green
+    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.006f, 0.006f, 0.035f, 1.0f)/*cd = lm * sr-1]*/ }, // blue
     //PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f)/*cd = lm * sr-1]*/ }, // black
 };
 
