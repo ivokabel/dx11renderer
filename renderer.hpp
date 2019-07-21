@@ -175,7 +175,7 @@ private:
     PassBuffer                  mRenderBuffMS;
     PassBuffer                  mBloomHorzBuff;
     PassBuffer                  mBloomBuff;
-    uint32_t                    mBloomDownscaleFactor = 2;
+    uint32_t                    mBloomDownscaleFactor = 4;
     struct BloomCB
     {
         XMFLOAT4 offsets[15];

@@ -53,5 +53,5 @@ float4 FinalPassPS(QUAD_VS_OUTPUT Input) : SV_TARGET
     float4 render = s0.Sample(PointSampler, Input.Tex);
     float4 bloom = s1.Sample(LinearSampler, Input.Tex);
 
-    return render * 0.99f + bloom * 0.01f;
+    return render * 0.995f + bloom * 0.005f;
 }
