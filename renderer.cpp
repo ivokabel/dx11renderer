@@ -438,6 +438,8 @@ bool SimpleDX11Renderer::CreatePostprocessingResources()
     descSampler.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
     descSampler.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
     descSampler.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    descSampler.MinLOD = 0;
+    descSampler.MaxLOD = D3D11_FLOAT32_MAX;
     hr = mDevice->CreateSamplerState(&descSampler, &mSamplerStateLinear);
     if (FAILED(hr))
         return false;
@@ -519,6 +521,7 @@ bool SimpleDX11Renderer::PassBuffer::Create(IRenderingContext &ctx,
     bool createRtv    = flags & eRtv;
     bool createSrv    = flags & eSrv;
     bool singleSample = flags & eSingleSample;
+    bool generateMips = createRtv && createSrv;
 
     // Texture
     D3D11_TEXTURE2D_DESC descTex;
@@ -527,11 +530,12 @@ bool SimpleDX11Renderer::PassBuffer::Create(IRenderingContext &ctx,
     descTex.BindFlags =
         (createRtv ? D3D11_BIND_RENDER_TARGET   : 0) |
         (createSrv ? D3D11_BIND_SHADER_RESOURCE : 0);
+    descTex.MiscFlags = generateMips ? D3D11_RESOURCE_MISC_GENERATE_MIPS : 0;
     descTex.Usage = D3D11_USAGE_DEFAULT;
     descTex.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
     descTex.Width  = width;
     descTex.Height = height;
-    descTex.MipLevels = 1;
+    descTex.MipLevels = generateMips ? 0 : 1;
     descTex.SampleDesc.Count   = singleSample ? 1 : ctx.GetMsaaCount();
     descTex.SampleDesc.Quality = singleSample ? 0 : ctx.GetMsaaQuality();
     hr = device->CreateTexture2D(&descTex, nullptr, &tex);
@@ -560,7 +564,7 @@ bool SimpleDX11Renderer::PassBuffer::Create(IRenderingContext &ctx,
         descSRV.Format = descTex.Format;
         descSRV.ViewDimension = isMultiSample ? D3D11_SRV_DIMENSION_TEXTURE2DMS :
                                                 D3D11_SRV_DIMENSION_TEXTURE2D;
-        descSRV.Texture2D.MipLevels = 1;
+        descSRV.Texture2D.MipLevels = generateMips ? -1 : 1;
         descSRV.Texture2D.MostDetailedMip = 0;
         hr = device->CreateShaderResourceView(tex, &descSRV, &srv);
         if (FAILED(hr))
@@ -755,6 +759,8 @@ void SimpleDX11Renderer::Render()
 
         ID3D11RenderTargetView* aRTViews[1] = { mBloomHorzBuff.GetRTV() };
         mImmediateContext->OMSetRenderTargets(1, aRTViews, nullptr);
+
+        mImmediateContext->GenerateMips(mRenderBuff.GetSRV()); // for nicer downscaling
 
         ID3D11ShaderResourceView* aSRViews[1] = { mRenderBuff.GetSRV() };
         mImmediateContext->PSSetShaderResources(0, 1, aSRViews);
