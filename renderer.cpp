@@ -426,6 +426,8 @@ bool SimpleDX11Renderer::CreatePostprocessingResources()
     descSampler.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
     descSampler.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
     descSampler.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    descSampler.MinLOD = 0;
+    descSampler.MaxLOD = D3D11_FLOAT32_MAX;
     hr = mDevice->CreateSamplerState(&descSampler, &mSamplerStateLinear);
     if (FAILED(hr))
         return false;
