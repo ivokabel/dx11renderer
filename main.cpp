@@ -28,7 +28,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
     auto scene = std::make_shared<Scene>();
     SimpleDX11Renderer renderer(scene);
 
-    if (!renderer.Init(instance, cmdShow, 1000u, 700u))
+    if (!renderer.Init(instance, cmdShow, 800u, 600u))
         return -1;
 
     return renderer.Run();

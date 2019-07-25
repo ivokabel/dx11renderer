@@ -153,7 +153,7 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
 
     LightContrib lightContribs = { {0, 0, 0, 0}, {0, 0, 0, 0} };
 
-    const float specPower = 400.f;
+    const float specPower = 50.f;
 
     lightContribs = AmbLightContrib(AmbientLightLuminance);
 

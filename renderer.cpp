@@ -182,6 +182,7 @@ int SimpleDX11Renderer::Run()
         else
         {
             Render();
+            //Sleep(32);
             frameCount++;
         }
     }

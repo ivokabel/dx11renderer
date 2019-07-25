@@ -99,25 +99,23 @@ struct PointLight
 };
 
 
-//AmbientLight sAmbientLight{ XMFLOAT4(0.01f, 0.07f, 0.10f, 1.0f) };
-AmbientLight sAmbientLight{ XMFLOAT4(0.42f, 0.42f, 0.42f, 1.0f) };
+AmbientLight sAmbientLight{ XMFLOAT4(0.01f, 0.07f, 0.10f, 1.0f) };
+//AmbientLight sAmbientLight{ XMFLOAT4(0.42f, 0.42f, 0.42f, 1.0f) };
 //AmbientLight sAmbientLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) };
 
 std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights =
 {
-    //DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.f, 0.f, 0.f, 1.0f) },
-    DirectLight{ XMFLOAT4(0.f, 1.f, 0.f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f) },
-    //DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f) },
-    //DirectLight{ XMFLOAT4(-0.577f, 0.577f,-0.577f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(3.141f, 3.141f, 3.141f, 1.0f) },
+    //DirectLight{ XMFLOAT4(0.f, 1.f, 0.f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.f, 0.f, 0.f, 1.0f) },
+    DirectLight{ XMFLOAT4(0.f, 1.f, 0.f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f) },
 };
 
 
 std::array<PointLight, POINT_LIGHTS_COUNT> sPointLights =
 {
     // coloured
-    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(4.000f, 0.800f, 0.800f, 1.0f)/*cd = lm * sr-1]*/ }, // red
-    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.800f, 3.000f, 0.800f, 1.0f)/*cd = lm * sr-1]*/ }, // green
-    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.800f, 0.800f, 4.000f, 1.0f)/*cd = lm * sr-1]*/ }, // blue
+    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(4.000f, 1.800f, 1.200f, 1.0f)/*cd = lm * sr-1]*/ }, // red
+    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1.000f, 2.500f, 1.100f, 1.0f)/*cd = lm * sr-1]*/ }, // green
+    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1.200f, 1.800f, 4.000f, 1.0f)/*cd = lm * sr-1]*/ }, // blue
 
     // grayscale
     //PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.0500f, 0.0500f, 0.0500f, 1.0f)/*cd = lm * sr-1]*/ },
@@ -285,7 +283,7 @@ void Scene::Animate(IRenderingContext &ctx)
         return;
 
     const float time = ctx.GetCurrentAnimationTime();
-    const float period = 20.f; //seconds
+    const float period = 15.f; //seconds
     const float totalAnimPos = time / period;
     const float mainObjAngle = totalAnimPos * XM_2PI;
 
