@@ -11,5 +11,3 @@ Simple DirectX 11 pet renderer heavily based on DX11 SDK tutorials.
 # Screenshots
 
 ![Screenshot 1](/Doc/screenshot1.jpg)
-
-![Screenshot 2](/Doc/screenshot2.jpg)
