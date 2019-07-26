@@ -33,7 +33,7 @@ public:
 
     bool GenerateCubeGeometry();
     bool GenerateOctahedronGeometry();
-    bool GenerateSphereGeometry();
+    bool GenerateSphereGeometry(const WORD vertSegmCount = 40, const WORD stripCount = 80);
 
     bool CreateDeviceBuffers(IRenderingContext &ctx);
 
@@ -49,7 +49,6 @@ private:
     void DestroyGeomData();
     void DestroyDeviceBuffers();
 
-
 private:
 
     // Geometry data
@@ -63,7 +62,7 @@ private:
 
     XMMATRIX                    mWorldMtrx;
 }
-sMainObject;
+sMainObject, sPointLightProxy;
 
 
 struct {
@@ -205,11 +204,16 @@ bool Scene::Init(IRenderingContext &ctx)
     if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsEmissiveSurf", "ps_4_0", mPixelShaderSolid))
         return false;
 
-  //if (!sMainObject.GenerateCubeGeometry())
-  //if (!sMainObject.GenerateOctahedronGeometry())
+    //if (!sMainObject.GenerateCubeGeometry())
+    //if (!sMainObject.GenerateOctahedronGeometry())
     if (!sMainObject.GenerateSphereGeometry())
         return false;
     if (!sMainObject.CreateDeviceBuffers(ctx))
+        return false;
+
+    if (!sPointLightProxy.GenerateSphereGeometry(8, 16))
+        return false;
+    if (!sPointLightProxy.CreateDeviceBuffers(ctx))
         return false;
 
     // Create constant buffers
@@ -282,7 +286,9 @@ void Scene::Destroy()
     Utils::ReleaseAndMakeNull(mCbChangedEachFrame);
     Utils::ReleaseAndMakeNull(mTextureSRV);
     Utils::ReleaseAndMakeNull(mSamplerLinear);
+
     sMainObject.Destroy();
+    sPointLightProxy.Destroy();
 }
 
 
@@ -365,7 +371,7 @@ void Scene::Render(IRenderingContext &ctx)
     // TODO: CbChangedEachObject::WorldMtrx
     sMainObject.DrawGeometry(ctx, mVertexLayout);
 
-    // Symbolic light geometry for point lights
+    // Proxy geometry for point lights
     for (int i = 0; i < sPointLights.size(); i++)
     {
         const float radius = 0.07f;
@@ -383,7 +389,7 @@ void Scene::Render(IRenderingContext &ctx)
         immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
 
         immCtx->PSSetShader(mPixelShaderSolid, nullptr, 0);
-        sMainObject.DrawGeometry(ctx, mVertexLayout); // Temporary hack; will be in a separate object
+        sPointLightProxy.DrawGeometry(ctx, mVertexLayout);
     }
 }
 
@@ -521,13 +527,18 @@ bool SceneObject::GenerateOctahedronGeometry()
 }
 
 
-bool SceneObject::GenerateSphereGeometry()
+bool SceneObject::GenerateSphereGeometry(const WORD vertSegmCount, const WORD stripCount)
 {
-    static const WORD vertSegmCount = 40;
-    static const WORD stripCount = 80;
-
-    static_assert(vertSegmCount >= 2, "Spherical stripe must have at least 2 vertical segments");
-    static_assert(stripCount >= 3, "Sphere must have at least 3 stripes");
+    if (vertSegmCount < 2)
+    {
+        Log::Error(L"Spherical stripe must have at least 2 vertical segments");
+        return false;
+    }
+    if (stripCount < 3)
+    {
+        Log::Error(L"Sphere must have at least 3 stripes");
+        return false;
+    }
 
     const WORD horzLineCount = vertSegmCount - 1;
     const WORD vertexCountPerStrip = 2 /*poles*/ + horzLineCount;
@@ -671,9 +682,8 @@ void SceneObject::Animate(IRenderingContext &ctx)
     const float angle = totalAnimPos * XM_2PI;
 
     XMMATRIX scaleMtrx = XMMatrixScaling(2.6f, 2.6f, 2.6f);
-    //XMMATRIX trnslMtrx = XMMatrixTranslation(0.f, cos(5 * totalAnimPos * XM_2PI) - 1.5f, 0.f);
     XMMATRIX rotMtrx = XMMatrixRotationY(angle);
-    mWorldMtrx = scaleMtrx * rotMtrx /** trnslMtrx*/;
+    mWorldMtrx = scaleMtrx * rotMtrx;
 }
 
 
