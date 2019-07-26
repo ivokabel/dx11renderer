@@ -93,13 +93,13 @@ private:
                                                        UINT width,
                                                        UINT height);
 
-    //void                            ExecuteRenderPass(ID3D11RenderTargetView* (&rtvs)[1],
-    //                                                  ID3D11DepthStencilView* dsv,
-    //                                                  ID3D11ShaderResourceView* (&srvs)[1],
-    //                                                  ID3D11SamplerState* samplers[2],
-    //                                                  ID3D11PixelShader* ps,
-    //                                                  UINT width,
-    //                                                  UINT height);
+    void                            ExecuteRenderPass(std::initializer_list<ID3D11ShaderResourceView*> srvs,
+                                                      std::initializer_list<ID3D11SamplerState*> samplers,
+                                                      ID3D11PixelShader* ps,
+                                                      ID3D11RenderTargetView* rtv,
+                                                      ID3D11DepthStencilView* dsv,
+                                                      UINT width,
+                                                      UINT height);
 
     static float                    GaussianDistribution(float x, float y, float rho);
 

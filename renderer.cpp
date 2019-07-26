@@ -9,6 +9,7 @@
 #pragma warning(pop)
 #include <cmath>
 #include <array>
+#include <vector>
 
 
 SimpleDX11Renderer::SimpleDX11Renderer(std::shared_ptr<IScene> scene) :
@@ -758,23 +759,14 @@ void SimpleDX11Renderer::Render()
     {
         SetBloomCB(true);
 
-        ID3D11RenderTargetView* aRTViews[1] = { mBloomHorzBuff.GetRTV() };
-        mImmediateContext->OMSetRenderTargets(1, aRTViews, nullptr);
-
         mImmediateContext->GenerateMips(mRenderBuff.GetSRV()); // for nicer downscaling
 
-        ID3D11ShaderResourceView* aSRViews[1] = { mRenderBuff.GetSRV() };
-        mImmediateContext->PSSetShaderResources(0, 1, aSRViews);
-
-        ID3D11SamplerState* aSamplers[] = { mSamplerStatePoint, mSamplerStateLinear };
-        mImmediateContext->PSSetSamplers(0, 2, aSamplers);
-
-        DrawFullScreenQuad(mBloomPS,
-                           mWndWidth / mBloomDownscaleFactor,
-                           mWndHeight / mBloomDownscaleFactor);
-
-        ID3D11ShaderResourceView* aSRViewsNull[1] = { nullptr };
-        mImmediateContext->PSSetShaderResources(0, 1, aSRViewsNull);
+        ExecuteRenderPass({ mRenderBuff.GetSRV() },
+                          { mSamplerStatePoint, mSamplerStateLinear },
+                          mBloomPS,
+                          mBloomHorzBuff.GetRTV(), nullptr,
+                          mWndWidth / mBloomDownscaleFactor,
+                          mWndHeight / mBloomDownscaleFactor);
     }
 
     // Bloom - part 2: blur (downscaled image) vertically
@@ -782,40 +774,22 @@ void SimpleDX11Renderer::Render()
     {
         SetBloomCB(false);
 
-        ID3D11RenderTargetView* aRTViews[1] = { mBloomBuff.GetRTV() };
-        mImmediateContext->OMSetRenderTargets(1, aRTViews, nullptr);
-
-        ID3D11ShaderResourceView* aSRViews[1] = { mBloomHorzBuff.GetSRV() };
-        mImmediateContext->PSSetShaderResources(0, 1, aSRViews);
-
-        ID3D11SamplerState* aSamplers[] = { mSamplerStatePoint, mSamplerStateLinear };
-        mImmediateContext->PSSetSamplers(0, 2, aSamplers);
-
-        DrawFullScreenQuad(mBloomPS,
-                           mWndWidth / mBloomDownscaleFactor,
-                           mWndHeight / mBloomDownscaleFactor);
-
-        ID3D11ShaderResourceView* aSRViewsNull[1] = { nullptr };
-        mImmediateContext->PSSetShaderResources(0, 1, aSRViewsNull);
+        ExecuteRenderPass({ mBloomHorzBuff.GetSRV() },
+                          { mSamplerStatePoint, mSamplerStateLinear },
+                          mBloomPS,
+                          mBloomBuff.GetRTV(), nullptr,
+                          mWndWidth / mBloomDownscaleFactor,
+                          mWndHeight / mBloomDownscaleFactor);
     }
 
     // Final pass: Compose original and (upscaled) blurred image
     if (mIsPostProcessingActive)
     {
-        // Restore the swap chain render target for the last pass
-        ID3D11RenderTargetView* aRTViews[1] = { swapChainRTV };
-        mImmediateContext->OMSetRenderTargets(1, aRTViews, swapChainDSV);
-
-        ID3D11ShaderResourceView* aSRViews[2] = { mRenderBuff.GetSRV(), mBloomBuff.GetSRV() };
-        mImmediateContext->PSSetShaderResources(0, 2, aSRViews);
-
-        ID3D11SamplerState* aSamplers[] = { mSamplerStatePoint, mSamplerStateLinear };
-        mImmediateContext->PSSetSamplers(0, 2, aSamplers);
-
-        DrawFullScreenQuad(mFinalPassPS, mWndWidth, mWndHeight);
-
-        ID3D11ShaderResourceView* aSRViewsNull[2] = { nullptr, nullptr };
-        mImmediateContext->PSSetShaderResources(0, 2, aSRViewsNull);
+        ExecuteRenderPass({ mRenderBuff.GetSRV(), mBloomBuff.GetSRV() },
+                          { mSamplerStatePoint, mSamplerStateLinear },
+                          mFinalPassPS,
+                          swapChainRTV, swapChainDSV, // restores swap chain buffers
+                          mWndWidth, mWndHeight);
     }
 
     Utils::ReleaseAndMakeNull(swapChainRTV);
@@ -825,23 +799,27 @@ void SimpleDX11Renderer::Render()
 }
 
 
-//void SimpleDX11Renderer::ExecuteRenderPass(ID3D11RenderTargetView* (&rtvs)[1],
-//                                           ID3D11DepthStencilView* dsv,
-//                                           ID3D11ShaderResourceView* (&srvs)[1],
-//                                           ID3D11SamplerState* samplers[2],
-//                                           ID3D11PixelShader* ps,
-//                                           UINT width,
-//                                           UINT height)
-//{
-//    mImmediateContext->OMSetRenderTargets(1, rtvs, dsv);
-//    mImmediateContext->PSSetShaderResources(0, 1, srvs);
-//    mImmediateContext->PSSetSamplers(0, 2, samplers);
-//
-//    DrawFullScreenQuad(ps, width, height);
-//
-//    ID3D11ShaderResourceView* NullSRVs[1] = {};
-//    mImmediateContext->PSSetShaderResources(0, 1, NullSRVs);
-//}
+void SimpleDX11Renderer::ExecuteRenderPass(std::initializer_list<ID3D11ShaderResourceView*> srvs,
+                                           std::initializer_list<ID3D11SamplerState*> samplers,
+                                           ID3D11PixelShader* ps,
+                                           ID3D11RenderTargetView* rtv,
+                                           ID3D11DepthStencilView* dsv,
+                                           UINT width,
+                                           UINT height)
+{
+    mImmediateContext->OMSetRenderTargets(1, &rtv, dsv);
+
+    std::vector<ID3D11ShaderResourceView*> srvsVec = srvs;
+    mImmediateContext->PSSetShaderResources(0, (UINT)srvsVec.size(), srvsVec.data());
+
+    std::vector<ID3D11SamplerState*> samplersVec = samplers;
+    mImmediateContext->PSSetSamplers(0, (UINT)samplersVec.size(), samplersVec.data());
+
+    DrawFullScreenQuad(ps, width, height);
+
+    std::vector<ID3D11ShaderResourceView*> nullSrvs(srvsVec.size(), nullptr);
+    mImmediateContext->PSSetShaderResources(0, (UINT)nullSrvs.size(), nullSrvs.data());
+}
 
 
 void SimpleDX11Renderer::DrawFullScreenQuad(ID3D11PixelShader* PS,
