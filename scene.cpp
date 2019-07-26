@@ -609,13 +609,13 @@ bool SceneGeometry::CreateDeviceBuffers(IRenderingContext & ctx)
     D3D11_BUFFER_DESC bd;
     ZeroMemory(&bd, sizeof(bd));
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = (UINT)(sizeof(SceneVertex) * sGeometry.vertices.size());
+    bd.ByteWidth = (UINT)(sizeof(SceneVertex) * vertices.size());
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bd.CPUAccessFlags = 0;
     D3D11_SUBRESOURCE_DATA initData;
     ZeroMemory(&initData, sizeof(initData));
-    initData.pSysMem = sGeometry.vertices.data();
-    hr = device->CreateBuffer(&bd, &initData, &sGeometry.mVertexBuffer);
+    initData.pSysMem = vertices.data();
+    hr = device->CreateBuffer(&bd, &initData, &mVertexBuffer);
     if (FAILED(hr))
     {
         DestroyDeviceBuffers();
@@ -624,11 +624,11 @@ bool SceneGeometry::CreateDeviceBuffers(IRenderingContext & ctx)
 
     // Index buffer
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(WORD) * (UINT)sGeometry.indices.size();
+    bd.ByteWidth = sizeof(WORD) * (UINT)indices.size();
     bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
     bd.CPUAccessFlags = 0;
-    initData.pSysMem = sGeometry.indices.data();
-    hr = device->CreateBuffer(&bd, &initData, &sGeometry.mIndexBuffer);
+    initData.pSysMem = indices.data();
+    hr = device->CreateBuffer(&bd, &initData, &mIndexBuffer);
     if (FAILED(hr))
     {
         DestroyDeviceBuffers();
