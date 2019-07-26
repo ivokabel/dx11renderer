@@ -28,6 +28,7 @@ class SceneGeometry
 {
 public:
 
+    SceneGeometry();
     ~SceneGeometry();
 
     bool GenerateCube();
@@ -36,6 +37,11 @@ public:
 
     bool CreateDeviceBuffers(IRenderingContext &ctx);
 
+    void Animate(IRenderingContext &ctx);
+    void Render(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout);
+
+    XMMATRIX GetWorldMtrx() const { return mWorldMtrx; }
+
     void Destroy();
 
 private:
@@ -43,12 +49,20 @@ private:
     void DestroyGeomData();
     void DestroyDeviceBuffers();
 
+//TODO: private:
 public:
 
     // Local data
     std::vector<SceneVertex>    vertices;
     std::vector<WORD>           indices;
     D3D11_PRIMITIVE_TOPOLOGY    topology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+
+private:
+
+    XMMATRIX                    mWorldMtrx;
+
+//TODO: private:
+public:
 
     // Device data
     ID3D11Buffer*               mVertexBuffer = nullptr;
@@ -241,7 +255,6 @@ bool Scene::Init(IRenderingContext &ctx)
         return hr;
 
     // Matrices
-    mMainObjectWorldMtrx = XMMatrixIdentity();
     mViewMtrx = XMMatrixLookAtLH(sViewData.eye, sViewData.at, sViewData.up);
     mProjectionMtrx = XMMatrixPerspectiveFovLH(XM_PIDIV4,
                                                  (FLOAT)wndWidth / wndHeight,
@@ -282,33 +295,26 @@ void Scene::Animate(IRenderingContext &ctx)
     if (!ctx.IsValid())
         return;
 
-    const float time = ctx.GetCurrentAnimationTime();
-    const float period = 15.f; //seconds
-    const float totalAnimPos = time / period;
-    const float mainObjAngle = totalAnimPos * XM_2PI;
-
-    // Rotate main object
-    XMMATRIX mainObjectScaleMtrx = XMMatrixScaling(2.6f, 2.6f, 2.6f);
-    //XMMATRIX mainObjectTrnslMtrx = XMMatrixTranslation(0.f, cos(5 * totalAnimPos * XM_2PI) - 1.5f, 0.f);
-    XMMATRIX mainObjectRotMtrx = XMMatrixRotationY(mainObjAngle);
-    mMainObjectWorldMtrx = mainObjectScaleMtrx * mainObjectRotMtrx /** mainObjectTrnslMtrx*/;
-
-    // Update mesh color
-    mMeshColor.x = ( sinf( totalAnimPos * 1.0f ) + 1.0f ) * 0.5f;
-    mMeshColor.y = ( cosf( totalAnimPos * 3.0f ) + 1.0f ) * 0.5f;
-    mMeshColor.z = ( sinf( totalAnimPos * 5.0f ) + 1.0f ) * 0.5f;
+    // Animate main object
+    sGeometry.Animate(ctx);
 
     // Directional light is steady
     sDirectLights[0].dirTransf = sDirectLights[0].dir;
 
-    // Point lights are animated
+    // Animate point lights
+
+    const float time = ctx.GetCurrentAnimationTime();
+    const float period = 15.f; //seconds
+    const float totalAnimPos = time / period;
+    const float angle = totalAnimPos * XM_2PI;
+
     const auto pointCount = sPointLights.size();
     for (int i = 0; i < pointCount; i++)
     {
         const float lightRelOffset = (float)i / pointCount;
 
         const float orbitRadius = 4.2f;
-        const float rotationAngle = -2.f * mainObjAngle - lightRelOffset * XM_2PI;
+        const float rotationAngle = -2.f * angle - lightRelOffset * XM_2PI;
         const float orbitInclination = lightRelOffset * XM_PI;
 
         const XMMATRIX translationMtrx  = XMMatrixTranslation(orbitRadius, 0.f, 0.f);
@@ -330,18 +336,11 @@ void Scene::Render(IRenderingContext &ctx)
 
     auto immCtx = ctx.GetImmediateContext();
 
-    // Geometry
-    immCtx->IASetInputLayout(mVertexLayout);
-    UINT stride = sizeof(SceneVertex);
-    UINT offset = 0;
-    immCtx->IASetVertexBuffers(0, 1, &sGeometry.mVertexBuffer, &stride, &offset);
-    immCtx->IASetIndexBuffer(sGeometry.mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-    immCtx->IASetPrimitiveTopology(sGeometry.topology);
-
-    // Constant buffer - main object
+    // Update frame constant buffer
+    // TODO: Move to Animate()?
     CbChangedEachFrame cbEachFrame;
-    cbEachFrame.WorldMtrx = XMMatrixTranspose(mMainObjectWorldMtrx);
-    cbEachFrame.MeshColor = mMeshColor;
+    cbEachFrame.WorldMtrx = XMMatrixTranspose(sGeometry.GetWorldMtrx());
+    cbEachFrame.MeshColor = { 0.f, 1.f, 0.f, 1.f, };
     cbEachFrame.AmbientLightLuminance = sAmbientLight.luminance;
     for (int i = 0; i < sDirectLights.size(); i++)
     {
@@ -355,17 +354,21 @@ void Scene::Render(IRenderingContext &ctx)
     }
     immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
 
-    // Render main object
+    // Setup vertex shader
     immCtx->VSSetShader(mVertexShader, nullptr, 0);
     immCtx->VSSetConstantBuffers(0, 1, &mCbNeverChanged);
     immCtx->VSSetConstantBuffers(1, 1, &mCbChangedOnResize);
     immCtx->VSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
+
+    // Setup pixel shader
     immCtx->PSSetShader(mPixelShaderIllum, nullptr, 0);
     immCtx->PSSetConstantBuffers(0, 1, &mCbNeverChanged);
     immCtx->PSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
     immCtx->PSSetShaderResources(0, 1, &mTextureSRV);
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
-    immCtx->DrawIndexed((UINT)sGeometry.indices.size(), 0, 0);
+
+    // Render main object
+    sGeometry.Render(ctx, mVertexLayout);
 
     // Symbolic light geometry for point lights
     for (int i = 0; i < sPointLights.size(); i++)
@@ -397,6 +400,10 @@ bool Scene::GetAmbientColor(float(&rgba)[4])
     rgba[3] = sAmbientLight.luminance.w;
     return true;
 }
+
+SceneGeometry::SceneGeometry() :
+    mWorldMtrx(XMMatrixIdentity())
+{}
 
 SceneGeometry::~SceneGeometry()
 {
@@ -645,6 +652,7 @@ void SceneGeometry::Destroy()
     DestroyDeviceBuffers();
 }
 
+
 void SceneGeometry::DestroyGeomData()
 {
     vertices.clear();
@@ -652,8 +660,38 @@ void SceneGeometry::DestroyGeomData()
     topology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 }
 
+
 void SceneGeometry::DestroyDeviceBuffers()
 {
     Utils::ReleaseAndMakeNull(mVertexBuffer);
     Utils::ReleaseAndMakeNull(mIndexBuffer);
+}
+
+
+void SceneGeometry::Animate(IRenderingContext &ctx)
+{
+    const float time = ctx.GetCurrentAnimationTime();
+    const float period = 15.f; //seconds
+    const float totalAnimPos = time / period;
+    const float angle = totalAnimPos * XM_2PI;
+
+    XMMATRIX scaleMtrx = XMMatrixScaling(2.6f, 2.6f, 2.6f);
+    //XMMATRIX trnslMtrx = XMMatrixTranslation(0.f, cos(5 * totalAnimPos * XM_2PI) - 1.5f, 0.f);
+    XMMATRIX rotMtrx = XMMatrixRotationY(angle);
+    mWorldMtrx = scaleMtrx * rotMtrx /** trnslMtrx*/;
+}
+
+
+void SceneGeometry::Render(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout)
+{
+    auto immCtx = ctx.GetImmediateContext();
+
+    immCtx->IASetInputLayout(vertexLayout);
+    UINT stride = sizeof(SceneVertex);
+    UINT offset = 0;
+    immCtx->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offset);
+    immCtx->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+    immCtx->IASetPrimitiveTopology(topology);
+
+    immCtx->DrawIndexed((UINT)indices.size(), 0, 0);
 }
