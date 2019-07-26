@@ -148,10 +148,6 @@ struct CbChangedOnResize
 
 struct CbChangedEachFrame
 {
-    // Transformations
-    XMMATRIX WorldMtrx;
-    XMFLOAT4 MeshColor;
-
     // Light sources
     XMFLOAT4 AmbientLightLuminance;
     XMFLOAT4 DirectLightDirs[DIRECT_LIGHTS_COUNT];
@@ -160,6 +156,11 @@ struct CbChangedEachFrame
     XMFLOAT4 PointLightIntensities[POINT_LIGHTS_COUNT];
 };
 
+struct CbChangedPerObject
+{
+    XMMATRIX WorldMtrx;
+    XMFLOAT4 MeshColor; // May be eventually replaced by the emmisive component of the standard surface shader
+};
 
 Scene::~Scene()
 {
@@ -234,6 +235,10 @@ bool Scene::Init(IRenderingContext &ctx)
     hr = device->CreateBuffer(&bd, nullptr, &mCbChangedEachFrame);
     if (FAILED(hr))
         return hr;
+    bd.ByteWidth = sizeof(CbChangedPerObject);
+    hr = device->CreateBuffer(&bd, nullptr, &mCbChangedPerObject);
+    if (FAILED(hr))
+        return hr;
 
     // Load texture
     hr = D3DX11CreateShaderResourceViewFromFile(device, L"../uv_grid_ash.dds", nullptr, nullptr, &mTextureSRV, nullptr);
@@ -284,6 +289,7 @@ void Scene::Destroy()
     Utils::ReleaseAndMakeNull(mCbNeverChanged);
     Utils::ReleaseAndMakeNull(mCbChangedOnResize);
     Utils::ReleaseAndMakeNull(mCbChangedEachFrame);
+    Utils::ReleaseAndMakeNull(mCbChangedPerObject);
     Utils::ReleaseAndMakeNull(mTextureSRV);
     Utils::ReleaseAndMakeNull(mSamplerLinear);
 
@@ -337,10 +343,8 @@ void Scene::Render(IRenderingContext &ctx)
 
     auto immCtx = ctx.GetImmediateContext();
 
-    // Update frame constant buffer
+    // Frame constant buffer
     CbChangedEachFrame cbEachFrame;
-    cbEachFrame.WorldMtrx = XMMatrixTranspose(sMainObject.GetWorldMtrx());
-    cbEachFrame.MeshColor = { 0.f, 1.f, 0.f, 1.f, };
     cbEachFrame.AmbientLightLuminance = sAmbientLight.luminance;
     for (int i = 0; i < sDirectLights.size(); i++)
     {
@@ -359,16 +363,22 @@ void Scene::Render(IRenderingContext &ctx)
     immCtx->VSSetConstantBuffers(0, 1, &mCbNeverChanged);
     immCtx->VSSetConstantBuffers(1, 1, &mCbChangedOnResize);
     immCtx->VSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
+    immCtx->VSSetConstantBuffers(3, 1, &mCbChangedPerObject);
 
     // Setup pixel shader
     immCtx->PSSetShader(mPixelShaderIllum, nullptr, 0);
     immCtx->PSSetConstantBuffers(0, 1, &mCbNeverChanged);
     immCtx->PSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
+    immCtx->PSSetConstantBuffers(3, 1, &mCbChangedPerObject);
     immCtx->PSSetShaderResources(0, 1, &mTextureSRV);
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
 
-    // Render main object
-    // TODO: CbChangedEachObject::WorldMtrx
+    // Per-object constant buffer
+    CbChangedPerObject cbPerObject;
+    cbPerObject.WorldMtrx = XMMatrixTranspose(sMainObject.GetWorldMtrx());
+    cbPerObject.MeshColor = { 0.f, 1.f, 0.f, 1.f, };
+    immCtx->UpdateSubresource(mCbChangedPerObject, 0, nullptr, &cbPerObject, 0, 0);
+
     sMainObject.DrawGeometry(ctx, mVertexLayout);
 
     // Proxy geometry for point lights
@@ -378,15 +388,17 @@ void Scene::Render(IRenderingContext &ctx)
         XMMATRIX lightScaleMtrx = XMMatrixScaling(radius, radius, radius);
         XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(XMLoadFloat4(&sPointLights[i].posTransf));
         XMMATRIX lightMtrx = lightScaleMtrx * lightTrnslMtrx;
-        cbEachFrame.WorldMtrx = XMMatrixTranspose(lightMtrx);
+        cbPerObject.WorldMtrx = XMMatrixTranspose(lightMtrx);
+
         const float radius2 = radius * radius;
-        cbEachFrame.MeshColor = {
+        cbPerObject.MeshColor = {
             sPointLights[i].intensity.x / radius2,
             sPointLights[i].intensity.y / radius2,
             sPointLights[i].intensity.z / radius2,
             sPointLights[i].intensity.w / radius2,
         };
-        immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
+
+        immCtx->UpdateSubresource(mCbChangedPerObject, 0, nullptr, &cbPerObject, 0, 0);
 
         immCtx->PSSetShader(mPixelShaderSolid, nullptr, 0);
         sPointLightProxy.DrawGeometry(ctx, mVertexLayout);

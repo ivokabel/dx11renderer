@@ -19,10 +19,6 @@ cbuffer cbChangeOnResize : register(b1)
 
 cbuffer cbChangesEachFrame : register(b2)
 {
-    // Transformations
-    matrix WorldMtrx;
-    float4 MeshColor;
-
     // Light sources
     float4 AmbientLightLuminance;
     float4 DirectLightDirs[DIRECT_LIGHTS_COUNT];
@@ -31,6 +27,11 @@ cbuffer cbChangesEachFrame : register(b2)
     float4 PointLightIntensities[POINT_LIGHTS_COUNT];
 };
 
+cbuffer cbChangesPerObject : register(b3)
+{
+    matrix WorldMtrx;
+    float4 MeshColor;
+};
 
 struct VS_INPUT
 {
