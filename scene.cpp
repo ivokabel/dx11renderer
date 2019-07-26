@@ -38,7 +38,7 @@ public:
     bool CreateDeviceBuffers(IRenderingContext &ctx);
 
     void Animate(IRenderingContext &ctx);
-    void Render(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout);
+    void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout);
 
     XMMATRIX GetWorldMtrx() const { return mWorldMtrx; }
 
@@ -49,25 +49,21 @@ private:
     void DestroyGeomData();
     void DestroyDeviceBuffers();
 
-//TODO: private:
-public:
-
-    // Local data
-    std::vector<SceneVertex>    vertices;
-    std::vector<WORD>           indices;
-    D3D11_PRIMITIVE_TOPOLOGY    topology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 
 private:
 
-    XMMATRIX                    mWorldMtrx;
-
-//TODO: private:
-public:
+    // Geometry data
+    std::vector<SceneVertex>    mVertices;
+    std::vector<WORD>           mIndices;
+    D3D11_PRIMITIVE_TOPOLOGY    mTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 
     // Device data
     ID3D11Buffer*               mVertexBuffer = nullptr;
     ID3D11Buffer*               mIndexBuffer = nullptr;
-} sMainObject;
+
+    XMMATRIX                    mWorldMtrx;
+}
+sMainObject;
 
 
 struct {
@@ -367,7 +363,7 @@ void Scene::Render(IRenderingContext &ctx)
 
     // Render main object
     // TODO: CbChangedEachObject::WorldMtrx
-    sMainObject.Render(ctx, mVertexLayout);
+    sMainObject.DrawGeometry(ctx, mVertexLayout);
 
     // Symbolic light geometry for point lights
     for (int i = 0; i < sPointLights.size(); i++)
@@ -387,7 +383,7 @@ void Scene::Render(IRenderingContext &ctx)
         immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
 
         immCtx->PSSetShader(mPixelShaderSolid, nullptr, 0);
-        immCtx->DrawIndexed((UINT)sMainObject.indices.size(), 0, 0);
+        sMainObject.DrawGeometry(ctx, mVertexLayout); // Temporary hack; will be in a separate object
     }
 }
 
@@ -411,7 +407,7 @@ SceneObject::~SceneObject()
 
 bool SceneObject::GenerateCubeGeometry()
 {
-    vertices =
+    mVertices =
     {
         // Up
         SceneVertex{ XMFLOAT3(-1.0f, 1.0f, -1.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(0.0f, 0.0f) },
@@ -450,7 +446,7 @@ bool SceneObject::GenerateCubeGeometry()
         SceneVertex{ XMFLOAT3(-1.0f,  1.0f, 1.0f),  XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT2(0.0f, 1.0f) },
     };
 
-    indices =
+    mIndices =
     {
         // Up
         3, 1, 0,
@@ -477,7 +473,7 @@ bool SceneObject::GenerateCubeGeometry()
         23, 20, 22
     };
 
-    topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    mTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
     return true;
 }
@@ -485,7 +481,7 @@ bool SceneObject::GenerateCubeGeometry()
 
 bool SceneObject::GenerateOctahedronGeometry()
 {
-    vertices =
+    mVertices =
     {
         // Noth pole
         SceneVertex{ XMFLOAT3( 0.0f, 1.0f, 0.0f),  XMFLOAT3( 0.0f, 1.0f, 0.0f),  XMFLOAT2(0.0f, 0.0f) },
@@ -500,7 +496,7 @@ bool SceneObject::GenerateOctahedronGeometry()
         SceneVertex{ XMFLOAT3( 0.0f,-1.0f, 0.0f),  XMFLOAT3( 0.0f,-1.0f, 0.0f),  XMFLOAT2(1.0f, 1.0f) },
     };
 
-    indices =
+    mIndices =
     {
         // Band ++
         0, 2, 1,
@@ -519,7 +515,7 @@ bool SceneObject::GenerateOctahedronGeometry()
         4, 1, 5,
     };
 
-    topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    mTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
     return true;
 }
@@ -539,7 +535,7 @@ bool SceneObject::GenerateSphereGeometry()
     const WORD indexCount  = stripCount * (2 /*poles*/ + 2 * horzLineCount + 1 /*strip restart*/);
 
     // Vertices
-    vertices.reserve(vertexCount);
+    mVertices.reserve(vertexCount);
     const float stripSizeAng = XM_2PI / stripCount;
     const float stripSizeRel =    1.f / stripCount;
     const float vertSegmSizeAng = XM_PI / vertSegmCount;
@@ -558,38 +554,38 @@ bool SceneObject::GenerateSphereGeometry()
             const float y = cos(theta);
             const XMFLOAT3 pt(xBase * ringRadius, y, zBase * ringRadius);
             const float v = (line + 1) * vertSegmSizeRel;
-            vertices.push_back(SceneVertex{ pt, pt,  XMFLOAT2(uLine, v) }); // position==normal
+            mVertices.push_back(SceneVertex{ pt, pt,  XMFLOAT2(uLine, v) }); // position==normal
         }
 
         // Poles
         const XMFLOAT3 northPole(0.0f,  1.0f, 0.0f);
         const XMFLOAT3 southPole(0.0f, -1.0f, 0.0f);
         const float uPole = uLine + stripSizeRel / 2;
-        vertices.push_back(SceneVertex{ northPole,  northPole,  XMFLOAT2(uPole, 0.0f) }); // position==normal
-        vertices.push_back(SceneVertex{ southPole,  southPole,  XMFLOAT2(uPole, 1.0f) }); // position==normal
+        mVertices.push_back(SceneVertex{ northPole,  northPole,  XMFLOAT2(uPole, 0.0f) }); // position==normal
+        mVertices.push_back(SceneVertex{ southPole,  southPole,  XMFLOAT2(uPole, 1.0f) }); // position==normal
     }
 
-    assert(vertices.size() == vertexCount);
+    assert(mVertices.size() == vertexCount);
 
     // Indices
-    indices.reserve(indexCount);
+    mIndices.reserve(indexCount);
     for (WORD strip = 0; strip < stripCount; strip++)
     {
         const WORD idxOffset = strip * vertexCountPerStrip;
-        indices.push_back(idxOffset + vertexCountPerStrip - 2); // north pole
+        mIndices.push_back(idxOffset + vertexCountPerStrip - 2); // north pole
         for (WORD line = 0; line < horzLineCount; line++)
         {
-            indices.push_back((idxOffset + line + vertexCountPerStrip) % vertexCount); // next strip, same line
-            indices.push_back( idxOffset + line);
+            mIndices.push_back((idxOffset + line + vertexCountPerStrip) % vertexCount); // next strip, same line
+            mIndices.push_back( idxOffset + line);
         }
-        indices.push_back(idxOffset + vertexCountPerStrip - 1); // south pole
-        indices.push_back(static_cast<WORD>(-1)); // strip restart
+        mIndices.push_back(idxOffset + vertexCountPerStrip - 1); // south pole
+        mIndices.push_back(static_cast<WORD>(-1)); // strip restart
     }
 
-    assert(indices.size() == indexCount);
+    assert(mIndices.size() == indexCount);
 
-    topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
-    //topology = D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP; // debug
+    mTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+    //mTopology = D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP; // debug
 
     Log::Debug(L"SceneObject::GenerateSphereGeometry: "
                L"%d segments, %d strips => %d triangles, %d vertices, %d indices",
@@ -615,12 +611,12 @@ bool SceneObject::CreateDeviceBuffers(IRenderingContext & ctx)
     D3D11_BUFFER_DESC bd;
     ZeroMemory(&bd, sizeof(bd));
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = (UINT)(sizeof(SceneVertex) * vertices.size());
+    bd.ByteWidth = (UINT)(sizeof(SceneVertex) * mVertices.size());
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bd.CPUAccessFlags = 0;
     D3D11_SUBRESOURCE_DATA initData;
     ZeroMemory(&initData, sizeof(initData));
-    initData.pSysMem = vertices.data();
+    initData.pSysMem = mVertices.data();
     hr = device->CreateBuffer(&bd, &initData, &mVertexBuffer);
     if (FAILED(hr))
     {
@@ -630,10 +626,10 @@ bool SceneObject::CreateDeviceBuffers(IRenderingContext & ctx)
 
     // Index buffer
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(WORD) * (UINT)indices.size();
+    bd.ByteWidth = sizeof(WORD) * (UINT)mIndices.size();
     bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
     bd.CPUAccessFlags = 0;
-    initData.pSysMem = indices.data();
+    initData.pSysMem = mIndices.data();
     hr = device->CreateBuffer(&bd, &initData, &mIndexBuffer);
     if (FAILED(hr))
     {
@@ -654,9 +650,9 @@ void SceneObject::Destroy()
 
 void SceneObject::DestroyGeomData()
 {
-    vertices.clear();
-    indices.clear();
-    topology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    mVertices.clear();
+    mIndices.clear();
+    mTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 }
 
 
@@ -681,7 +677,7 @@ void SceneObject::Animate(IRenderingContext &ctx)
 }
 
 
-void SceneObject::Render(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout)
+void SceneObject::DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout)
 {
     auto immCtx = ctx.GetImmediateContext();
 
@@ -690,7 +686,7 @@ void SceneObject::Render(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout
     UINT offset = 0;
     immCtx->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offset);
     immCtx->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-    immCtx->IASetPrimitiveTopology(topology);
+    immCtx->IASetPrimitiveTopology(mTopology);
 
-    immCtx->DrawIndexed((UINT)indices.size(), 0, 0);
+    immCtx->DrawIndexed((UINT)mIndices.size(), 0, 0);
 }
