@@ -38,9 +38,10 @@ public:
                           const float scale = 1.f,
                           const wchar_t * diffuseTexturePath = nullptr);
     bool CreateSphere(IRenderingContext & ctx,
-                      const float scale = 1.f,
                       const WORD vertSegmCount = 40,
                       const WORD stripCount = 80,
+                      const XMFLOAT4 pos = XMFLOAT4(0, 0, 0, 1),
+                      const float scale = 1.f,
                       const wchar_t * diffuseTexturePath = nullptr);
 
     void Animate(IRenderingContext &ctx);
@@ -78,12 +79,15 @@ private:
 
     // Animation
     float                       mScale = 1.f;
+    XMFLOAT4                    mPos = XMFLOAT4(0, 0, 0, 1);
     XMMATRIX                    mWorldMtrx;
 
     // Textures
     ID3D11ShaderResourceView*   mDiffuseSRV = nullptr;
-}
-sMainObject, sPointLightProxy;
+};
+
+std::array<SceneObject, 3> sSceneObjects;
+SceneObject sPointLightProxy;
 
 
 struct {
@@ -129,14 +133,14 @@ struct PointLight
 };
 
 
+AmbientLight sAmbientLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) };
 //AmbientLight sAmbientLight{ XMFLOAT4(0.01f, 0.07f, 0.10f, 1.0f) };
-AmbientLight sAmbientLight{ XMFLOAT4(0.42f, 0.42f, 0.42f, 1.0f) };
-//AmbientLight sAmbientLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) };
+//AmbientLight sAmbientLight{ XMFLOAT4(0.42f, 0.42f, 0.42f, 1.0f) };
 
 std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights =
 {
     //DirectLight{ XMFLOAT4(0.f, 1.f, 0.f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.f, 0.f, 0.f, 1.0f) },
-    DirectLight{ XMFLOAT4(0.f, 1.f, 0.f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f) },
+    DirectLight{ XMFLOAT4(0.f, 1.f, 0.f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1.2f, 1.2f, 1.2f, 1.0f) },
 };
 
 
@@ -226,13 +230,44 @@ bool Scene::Init(IRenderingContext &ctx)
     if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsEmissiveSurf", "ps_4_0", mPixelShaderSolid))
         return false;
 
-    //if (!sMainObject.CreateCube(ctx, 2.f,
-    //                            L"../Textures/vfx_debug_textures by Chris Judkins/debug_uv_02.png"))
-    //if (!sMainObject.CreateOctahedron(ctx, 3.5f,
-    //                                  L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png"))
-    if (!sMainObject.CreateSphere(ctx, 2.9f, 40, 80,
-                                  L"../Textures/vfx_debug_textures by Chris Judkins/debug_uv_02.png"))
-        return false;
+    assert(sSceneObjects.size() == 3);
+
+    for (size_t i = 0; i < sSceneObjects.size(); ++i)
+    {
+        //if (!object.CreateCube(ctx, 1.8f,
+        //                       L"../Textures/vfx_debug_textures by Chris Judkins/debug_uv_02.png"))
+        //if (!object.CreateOctahedron(ctx, 3.5f,
+        //                             L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png"))
+
+        switch (i)
+        {
+        case 0:
+            if (!sSceneObjects[i].CreateSphere(ctx,
+                                               40, 80,
+                                               XMFLOAT4(0.f, 0.f, 2.0f, 1.f),
+                                               1.1f,
+                                               L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
+                return false;
+            break;
+        case 1:
+            if (!sSceneObjects[i].CreateSphere(ctx,
+                                               40, 80,
+                                               XMFLOAT4(-2.0f, 0.f, -2.0f, 1.f),
+                                               1.1f,
+                                               L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
+                return false;
+            break;
+        case 2:
+            if (!sSceneObjects[i].CreateSphere(ctx,
+                                               40, 80,
+                                               XMFLOAT4(2.0f, 0.f, -2.0f, 1.f),
+                                               1.1f,
+                                               L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg"))
+                return false;
+            break;
+        }
+    }
+
     if (!sPointLightProxy.CreateSphere(ctx, 8, 16))
         return false;
 
@@ -306,7 +341,8 @@ void Scene::Destroy()
     Utils::ReleaseAndMakeNull(mCbChangedPerObject);
     Utils::ReleaseAndMakeNull(mSamplerLinear);
 
-    sMainObject.Destroy();
+    for (auto &object : sSceneObjects)
+        object.Destroy();
     sPointLightProxy.Destroy();
 }
 
@@ -316,7 +352,8 @@ void Scene::Animate(IRenderingContext &ctx)
     if (!ctx.IsValid())
         return;
 
-    sMainObject.Animate(ctx);
+    for (auto &object : sSceneObjects)
+        object.Animate(ctx);
 
     // Directional light is steady
     sDirectLights[0].dirTransf = sDirectLights[0].dir;
@@ -333,9 +370,9 @@ void Scene::Animate(IRenderingContext &ctx)
     {
         const float lightRelOffset = (float)i / pointCount;
 
-        const float orbitRadius = 4.2f;
+        const float orbitRadius = 4.8f;
         const float rotationAngle = -2.f * angle - lightRelOffset * XM_2PI;
-        const float orbitInclination = lightRelOffset * XM_PI;
+        const float orbitInclination = 0.f; // lightRelOffset * XM_PI;
 
         const XMMATRIX translationMtrx  = XMMatrixTranslation(orbitRadius, 0.f, 0.f);
         const XMMATRIX rotationMtrx     = XMMatrixRotationY(rotationAngle);
@@ -385,18 +422,24 @@ void Scene::Render(IRenderingContext &ctx)
     immCtx->PSSetConstantBuffers(3, 1, &mCbChangedPerObject);
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
 
-    // Per-object constant buffer
-    CbChangedPerObject cbPerObject;
-    cbPerObject.WorldMtrx = XMMatrixTranspose(sMainObject.GetWorldMtrx());
-    cbPerObject.MeshColor = { 0.f, 1.f, 0.f, 1.f, };
-    immCtx->UpdateSubresource(mCbChangedPerObject, 0, nullptr, &cbPerObject, 0, 0);
+    for (auto &object : sSceneObjects)
+    {
+        // Per-object constant buffer
+        CbChangedPerObject cbPerObject;
+        cbPerObject.WorldMtrx = XMMatrixTranspose(object.GetWorldMtrx());
+        cbPerObject.MeshColor = { 0.f, 1.f, 0.f, 1.f, };
+        immCtx->UpdateSubresource(mCbChangedPerObject, 0, nullptr, &cbPerObject, 0, 0);
 
-    immCtx->PSSetShaderResources(0, 1, sMainObject.GetDiffuseSRV());
-    sMainObject.DrawGeometry(ctx, mVertexLayout);
+        // Draw
+        immCtx->PSSetShaderResources(0, 1, object.GetDiffuseSRV());
+        object.DrawGeometry(ctx, mVertexLayout);
+    }
 
     // Proxy geometry for point lights
     for (int i = 0; i < sPointLights.size(); i++)
     {
+        CbChangedPerObject cbPerObject;
+
         const float radius = 0.07f;
         XMMATRIX lightScaleMtrx = XMMatrixScaling(radius, radius, radius);
         XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(XMLoadFloat4(&sPointLights[i].posTransf));
@@ -473,12 +516,14 @@ bool SceneObject::CreateOctahedron(IRenderingContext & ctx,
 
 
 bool SceneObject::CreateSphere(IRenderingContext & ctx,
-                               const float scale,
                                const WORD vertSegmCount,
                                const WORD stripCount,
+                               const XMFLOAT4 pos,
+                               const float scale,
                                const wchar_t * diffuseTexturePath)
 {
     mScale = scale;
+    mPos = pos;
 
     if (!GenerateSphereGeometry(vertSegmCount, stripCount))
         return false;
@@ -787,9 +832,10 @@ void SceneObject::Animate(IRenderingContext &ctx)
     const float totalAnimPos = time / period;
     const float angle = totalAnimPos * XM_2PI;
 
+    XMMATRIX shiftMtrx = XMMatrixTranslationFromVector(XMLoadFloat4(&mPos));
     XMMATRIX scaleMtrx = XMMatrixScaling(mScale, mScale, mScale);
     XMMATRIX rotMtrx = XMMatrixRotationY(angle);
-    mWorldMtrx = scaleMtrx * rotMtrx;
+    mWorldMtrx = scaleMtrx * rotMtrx * shiftMtrx;
 }
 
 
