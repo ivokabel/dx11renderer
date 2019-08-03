@@ -31,9 +31,14 @@ public:
     SceneObject();
     ~SceneObject();
 
-    bool CreateCube(IRenderingContext & ctx, const wchar_t * diffuseTexturePath = nullptr);
-    bool CreateOctahedron(IRenderingContext & ctx, const wchar_t * diffuseTexturePath = nullptr);
+    bool CreateCube(IRenderingContext & ctx,
+                    const float scale = 1.f,
+                    const wchar_t * diffuseTexturePath = nullptr);
+    bool CreateOctahedron(IRenderingContext & ctx,
+                          const float scale = 1.f,
+                          const wchar_t * diffuseTexturePath = nullptr);
     bool CreateSphere(IRenderingContext & ctx,
+                      const float scale = 1.f,
                       const WORD vertSegmCount = 40,
                       const WORD stripCount = 80,
                       const wchar_t * diffuseTexturePath = nullptr);
@@ -71,10 +76,12 @@ private:
     ID3D11Buffer*               mVertexBuffer = nullptr;
     ID3D11Buffer*               mIndexBuffer = nullptr;
 
+    // Animation
+    float                       mScale = 1.f;
+    XMMATRIX                    mWorldMtrx;
+
     // Textures
     ID3D11ShaderResourceView*   mDiffuseSRV = nullptr;
-
-    XMMATRIX                    mWorldMtrx;
 }
 sMainObject, sPointLightProxy;
 
@@ -219,9 +226,9 @@ bool Scene::Init(IRenderingContext &ctx)
     if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsEmissiveSurf", "ps_4_0", mPixelShaderSolid))
         return false;
 
-    //if (!sMainObject.CreateCube(ctx, L"../uv_grid_ash.dds"))
-    //if (!sMainObject.CreateOctahedron(ctx, L"../uv_grid_ash.dds"))
-    if (!sMainObject.CreateSphere(ctx, 40, 80, L"../uv_grid_ash.dds"))
+    //if (!sMainObject.CreateCube(ctx, 2.f, L"../uv_grid_ash.dds"))
+    //if (!sMainObject.CreateOctahedron(ctx, 3.5f, L"../uv_grid_ash.dds"))
+    if (!sMainObject.CreateSphere(ctx, 2.9f, 40, 80, L"../uv_grid_ash.dds"))
         return false;
     if (!sPointLightProxy.CreateSphere(ctx, 8, 16))
         return false;
@@ -428,8 +435,12 @@ SceneObject::~SceneObject()
 }
 
 
-bool SceneObject::CreateCube(IRenderingContext & ctx, const wchar_t * diffuseTexturePath)
+bool SceneObject::CreateCube(IRenderingContext & ctx,
+                             const float scale,
+                             const wchar_t * diffuseTexturePath)
 {
+    mScale = scale;
+
     if (!GenerateCubeGeometry())
         return false;
     if (!CreateDeviceBuffers(ctx))
@@ -441,8 +452,12 @@ bool SceneObject::CreateCube(IRenderingContext & ctx, const wchar_t * diffuseTex
 }
 
 
-bool SceneObject::CreateOctahedron(IRenderingContext & ctx, const wchar_t * diffuseTexturePath)
+bool SceneObject::CreateOctahedron(IRenderingContext & ctx,
+                                   const float scale,
+                                   const wchar_t * diffuseTexturePath)
 {
+    mScale = scale;
+
     if (!GenerateOctahedronGeometry())
         return false;
     if (!CreateDeviceBuffers(ctx))
@@ -455,10 +470,13 @@ bool SceneObject::CreateOctahedron(IRenderingContext & ctx, const wchar_t * diff
 
 
 bool SceneObject::CreateSphere(IRenderingContext & ctx,
+                               const float scale,
                                const WORD vertSegmCount,
                                const WORD stripCount,
                                const wchar_t * diffuseTexturePath)
 {
+    mScale = scale;
+
     if (!GenerateSphereGeometry(vertSegmCount, stripCount))
         return false;
     if (!CreateDeviceBuffers(ctx))
@@ -766,7 +784,7 @@ void SceneObject::Animate(IRenderingContext &ctx)
     const float totalAnimPos = time / period;
     const float angle = totalAnimPos * XM_2PI;
 
-    XMMATRIX scaleMtrx = XMMatrixScaling(2.6f, 2.6f, 2.6f);
+    XMMATRIX scaleMtrx = XMMatrixScaling(mScale, mScale, mScale);
     XMMATRIX rotMtrx = XMMatrixRotationY(angle);
     mWorldMtrx = scaleMtrx * rotMtrx;
 }
