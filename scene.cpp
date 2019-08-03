@@ -31,13 +31,13 @@ public:
     SceneObject();
     ~SceneObject();
 
-    bool GenerateCubeGeometry();
-    bool GenerateOctahedronGeometry();
-    bool GenerateSphereGeometry(const WORD vertSegmCount = 40, const WORD stripCount = 80);
-
-    bool CreateDeviceBuffers(IRenderingContext &ctx);
+    bool CreateCube(IRenderingContext & ctx);
+    bool CreateOctahedron(IRenderingContext & ctx);
+    bool CreateSphere(IRenderingContext & ctx,
+                      const WORD vertSegmCount = 40, const WORD stripCount = 80);
 
     void Animate(IRenderingContext &ctx);
+    ID3D11ShaderResourceView* const* GetTextureSRV() const { return &mTextureSRV; };
     void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout);
 
     XMMATRIX GetWorldMtrx() const { return mWorldMtrx; }
@@ -46,8 +46,16 @@ public:
 
 private:
 
+    bool GenerateCubeGeometry();
+    bool GenerateOctahedronGeometry();
+    bool GenerateSphereGeometry(const WORD vertSegmCount = 40, const WORD stripCount = 80);
+
+    bool CreateDeviceBuffers(IRenderingContext &ctx);
+    bool LoadTextures(IRenderingContext &ctx);
+
     void DestroyGeomData();
     void DestroyDeviceBuffers();
+    void DestroyTextures();
 
 private:
 
@@ -56,11 +64,12 @@ private:
     std::vector<WORD>           mIndices;
     D3D11_PRIMITIVE_TOPOLOGY    mTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 
-    // Device data
+    // Device geometry data
     ID3D11Buffer*               mVertexBuffer = nullptr;
     ID3D11Buffer*               mIndexBuffer = nullptr;
 
     XMMATRIX                    mWorldMtrx;
+    ID3D11ShaderResourceView*   mTextureSRV = nullptr;
 }
 sMainObject, sPointLightProxy;
 
@@ -205,16 +214,11 @@ bool Scene::Init(IRenderingContext &ctx)
     if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsEmissiveSurf", "ps_4_0", mPixelShaderSolid))
         return false;
 
-    //if (!sMainObject.GenerateCubeGeometry())
-    //if (!sMainObject.GenerateOctahedronGeometry())
-    if (!sMainObject.GenerateSphereGeometry())
+    //if (!sMainObject.CreateCube())
+    //if (!sMainObject.CreateOctahedron())
+    if (!sMainObject.CreateSphere(ctx))
         return false;
-    if (!sMainObject.CreateDeviceBuffers(ctx))
-        return false;
-
-    if (!sPointLightProxy.GenerateSphereGeometry(8, 16))
-        return false;
-    if (!sPointLightProxy.CreateDeviceBuffers(ctx))
+    if (!sPointLightProxy.CreateSphere(ctx, 8, 16))
         return false;
 
     // Create constant buffers
@@ -237,11 +241,6 @@ bool Scene::Init(IRenderingContext &ctx)
         return hr;
     bd.ByteWidth = sizeof(CbChangedPerObject);
     hr = device->CreateBuffer(&bd, nullptr, &mCbChangedPerObject);
-    if (FAILED(hr))
-        return hr;
-
-    // Load texture
-    hr = D3DX11CreateShaderResourceViewFromFile(device, L"../uv_grid_ash.dds", nullptr, nullptr, &mTextureSRV, nullptr);
     if (FAILED(hr))
         return hr;
 
@@ -290,7 +289,6 @@ void Scene::Destroy()
     Utils::ReleaseAndMakeNull(mCbChangedOnResize);
     Utils::ReleaseAndMakeNull(mCbChangedEachFrame);
     Utils::ReleaseAndMakeNull(mCbChangedPerObject);
-    Utils::ReleaseAndMakeNull(mTextureSRV);
     Utils::ReleaseAndMakeNull(mSamplerLinear);
 
     sMainObject.Destroy();
@@ -370,7 +368,6 @@ void Scene::Render(IRenderingContext &ctx)
     immCtx->PSSetConstantBuffers(0, 1, &mCbNeverChanged);
     immCtx->PSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
     immCtx->PSSetConstantBuffers(3, 1, &mCbChangedPerObject);
-    immCtx->PSSetShaderResources(0, 1, &mTextureSRV);
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
 
     // Per-object constant buffer
@@ -379,6 +376,7 @@ void Scene::Render(IRenderingContext &ctx)
     cbPerObject.MeshColor = { 0.f, 1.f, 0.f, 1.f, };
     immCtx->UpdateSubresource(mCbChangedPerObject, 0, nullptr, &cbPerObject, 0, 0);
 
+    immCtx->PSSetShaderResources(0, 1, sMainObject.GetTextureSRV());
     sMainObject.DrawGeometry(ctx, mVertexLayout);
 
     // Proxy geometry for point lights
@@ -414,6 +412,7 @@ bool Scene::GetAmbientColor(float(&rgba)[4])
     return true;
 }
 
+
 SceneObject::SceneObject() :
     mWorldMtrx(XMMatrixIdentity())
 {}
@@ -422,6 +421,48 @@ SceneObject::~SceneObject()
 {
     Destroy();
 }
+
+
+bool SceneObject::CreateCube(IRenderingContext & ctx)
+{
+    if (!GenerateCubeGeometry())
+        return false;
+    if (!CreateDeviceBuffers(ctx))
+        return false;
+    if (!LoadTextures(ctx))
+        return false;
+
+    return true;
+}
+
+
+bool SceneObject::CreateOctahedron(IRenderingContext & ctx)
+{
+    if (!GenerateOctahedronGeometry())
+        return false;
+    if (!CreateDeviceBuffers(ctx))
+        return false;
+    if (!LoadTextures(ctx))
+        return false;
+
+    return true;
+}
+
+
+bool SceneObject::CreateSphere(IRenderingContext & ctx,
+                               const WORD vertSegmCount,
+                               const WORD stripCount)
+{
+    if (!GenerateSphereGeometry(vertSegmCount, stripCount))
+        return false;
+    if (!CreateDeviceBuffers(ctx))
+        return false;
+    if (!LoadTextures(ctx))
+        return false;
+
+    return true;
+}
+
 
 bool SceneObject::GenerateCubeGeometry()
 {
@@ -664,10 +705,27 @@ bool SceneObject::CreateDeviceBuffers(IRenderingContext & ctx)
 }
 
 
+bool SceneObject::LoadTextures(IRenderingContext &ctx)
+{
+    HRESULT hr = S_OK;
+
+    auto device = ctx.GetDevice();
+    if (!device)
+        return false;
+
+    hr = D3DX11CreateShaderResourceViewFromFile(device, L"../uv_grid_ash.dds", nullptr, nullptr, &mTextureSRV, nullptr);
+    if (FAILED(hr))
+        return false;
+
+    return true;
+}
+
+
 void SceneObject::Destroy()
 {
     DestroyGeomData();
     DestroyDeviceBuffers();
+    DestroyTextures();
 }
 
 
@@ -683,6 +741,12 @@ void SceneObject::DestroyDeviceBuffers()
 {
     Utils::ReleaseAndMakeNull(mVertexBuffer);
     Utils::ReleaseAndMakeNull(mIndexBuffer);
+}
+
+
+void SceneObject::DestroyTextures()
+{
+    Utils::ReleaseAndMakeNull(mTextureSRV);
 }
 
 
