@@ -37,8 +37,9 @@ public:
                       const WORD vertSegmCount = 40, const WORD stripCount = 80);
 
     void Animate(IRenderingContext &ctx);
-    ID3D11ShaderResourceView* const* GetTextureSRV() const { return &mTextureSRV; };
     void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout);
+
+    ID3D11ShaderResourceView* const* GetDiffuseSRV() const { return &mDiffuseSRV; };
 
     XMMATRIX GetWorldMtrx() const { return mWorldMtrx; }
 
@@ -69,7 +70,7 @@ private:
     ID3D11Buffer*               mIndexBuffer = nullptr;
 
     XMMATRIX                    mWorldMtrx;
-    ID3D11ShaderResourceView*   mTextureSRV = nullptr;
+    ID3D11ShaderResourceView*   mDiffuseSRV = nullptr;
 }
 sMainObject, sPointLightProxy;
 
@@ -376,7 +377,7 @@ void Scene::Render(IRenderingContext &ctx)
     cbPerObject.MeshColor = { 0.f, 1.f, 0.f, 1.f, };
     immCtx->UpdateSubresource(mCbChangedPerObject, 0, nullptr, &cbPerObject, 0, 0);
 
-    immCtx->PSSetShaderResources(0, 1, sMainObject.GetTextureSRV());
+    immCtx->PSSetShaderResources(0, 1, sMainObject.GetDiffuseSRV());
     sMainObject.DrawGeometry(ctx, mVertexLayout);
 
     // Proxy geometry for point lights
@@ -713,7 +714,7 @@ bool SceneObject::LoadTextures(IRenderingContext &ctx)
     if (!device)
         return false;
 
-    hr = D3DX11CreateShaderResourceViewFromFile(device, L"../uv_grid_ash.dds", nullptr, nullptr, &mTextureSRV, nullptr);
+    hr = D3DX11CreateShaderResourceViewFromFile(device, L"../uv_grid_ash.dds", nullptr, nullptr, &mDiffuseSRV, nullptr);
     if (FAILED(hr))
         return false;
 
@@ -746,7 +747,7 @@ void SceneObject::DestroyDeviceBuffers()
 
 void SceneObject::DestroyTextures()
 {
-    Utils::ReleaseAndMakeNull(mTextureSRV);
+    Utils::ReleaseAndMakeNull(mDiffuseSRV);
 }
 
 
