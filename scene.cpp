@@ -33,8 +33,7 @@ public:
 
     bool CreateCube(IRenderingContext & ctx);
     bool CreateOctahedron(IRenderingContext & ctx);
-    bool CreateSphere(IRenderingContext & ctx,
-                      const WORD vertSegmCount = 40, const WORD stripCount = 80);
+    bool CreateSphere(IRenderingContext & ctx, const WORD vertSegmCount = 40, const WORD stripCount = 80);
 
     void Animate(IRenderingContext &ctx);
     void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout);
@@ -49,7 +48,7 @@ private:
 
     bool GenerateCubeGeometry();
     bool GenerateOctahedronGeometry();
-    bool GenerateSphereGeometry(const WORD vertSegmCount = 40, const WORD stripCount = 80);
+    bool GenerateSphereGeometry(const WORD vertSegmCount, const WORD stripCount);
 
     bool CreateDeviceBuffers(IRenderingContext &ctx);
     bool LoadTextures(IRenderingContext &ctx);
