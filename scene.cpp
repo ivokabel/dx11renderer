@@ -32,9 +32,11 @@ public:
     ~SceneObject();
 
     bool CreateCube(IRenderingContext & ctx,
+                    const XMFLOAT4 pos = XMFLOAT4(0, 0, 0, 1),
                     const float scale = 1.f,
                     const wchar_t * diffuseTexturePath = nullptr);
     bool CreateOctahedron(IRenderingContext & ctx,
+                          const XMFLOAT4 pos = XMFLOAT4(0, 0, 0, 1),
                           const float scale = 1.f,
                           const wchar_t * diffuseTexturePath = nullptr);
     bool CreateSphere(IRenderingContext & ctx,
@@ -234,11 +236,6 @@ bool Scene::Init(IRenderingContext &ctx)
 
     for (size_t i = 0; i < sSceneObjects.size(); ++i)
     {
-        //if (!object.CreateCube(ctx, 1.8f,
-        //                       L"../Textures/vfx_debug_textures by Chris Judkins/debug_uv_02.png"))
-        //if (!object.CreateOctahedron(ctx, 3.5f,
-        //                             L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png"))
-
         switch (i)
         {
         case 0:
@@ -482,10 +479,12 @@ SceneObject::~SceneObject()
 
 
 bool SceneObject::CreateCube(IRenderingContext & ctx,
+                             const XMFLOAT4 pos,
                              const float scale,
                              const wchar_t * diffuseTexturePath)
 {
     mScale = scale;
+    mPos = pos;
 
     if (!GenerateCubeGeometry())
         return false;
@@ -499,10 +498,12 @@ bool SceneObject::CreateCube(IRenderingContext & ctx,
 
 
 bool SceneObject::CreateOctahedron(IRenderingContext & ctx,
+                                   const XMFLOAT4 pos,
                                    const float scale,
                                    const wchar_t * diffuseTexturePath)
 {
     mScale = scale;
+    mPos = pos;
 
     if (!GenerateOctahedronGeometry())
         return false;
