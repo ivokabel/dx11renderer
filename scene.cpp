@@ -31,9 +31,12 @@ public:
     SceneObject();
     ~SceneObject();
 
-    bool CreateCube(IRenderingContext & ctx);
-    bool CreateOctahedron(IRenderingContext & ctx);
-    bool CreateSphere(IRenderingContext & ctx, const WORD vertSegmCount = 40, const WORD stripCount = 80);
+    bool CreateCube(IRenderingContext & ctx, const wchar_t * diffuseTexturePath = nullptr);
+    bool CreateOctahedron(IRenderingContext & ctx, const wchar_t * diffuseTexturePath = nullptr);
+    bool CreateSphere(IRenderingContext & ctx,
+                      const WORD vertSegmCount = 40,
+                      const WORD stripCount = 80,
+                      const wchar_t * diffuseTexturePath = nullptr);
 
     void Animate(IRenderingContext &ctx);
     void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout);
@@ -51,7 +54,7 @@ private:
     bool GenerateSphereGeometry(const WORD vertSegmCount, const WORD stripCount);
 
     bool CreateDeviceBuffers(IRenderingContext &ctx);
-    bool LoadTextures(IRenderingContext &ctx);
+    bool LoadTextures(IRenderingContext &ctx, const wchar_t * diffuseTexturePath);
 
     void DestroyGeomData();
     void DestroyDeviceBuffers();
@@ -68,8 +71,10 @@ private:
     ID3D11Buffer*               mVertexBuffer = nullptr;
     ID3D11Buffer*               mIndexBuffer = nullptr;
 
-    XMMATRIX                    mWorldMtrx;
+    // Textures
     ID3D11ShaderResourceView*   mDiffuseSRV = nullptr;
+
+    XMMATRIX                    mWorldMtrx;
 }
 sMainObject, sPointLightProxy;
 
@@ -214,9 +219,9 @@ bool Scene::Init(IRenderingContext &ctx)
     if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsEmissiveSurf", "ps_4_0", mPixelShaderSolid))
         return false;
 
-    //if (!sMainObject.CreateCube())
-    //if (!sMainObject.CreateOctahedron())
-    if (!sMainObject.CreateSphere(ctx))
+    //if (!sMainObject.CreateCube(ctx, L"../uv_grid_ash.dds"))
+    //if (!sMainObject.CreateOctahedron(ctx, L"../uv_grid_ash.dds"))
+    if (!sMainObject.CreateSphere(ctx, 40, 80, L"../uv_grid_ash.dds"))
         return false;
     if (!sPointLightProxy.CreateSphere(ctx, 8, 16))
         return false;
@@ -423,26 +428,26 @@ SceneObject::~SceneObject()
 }
 
 
-bool SceneObject::CreateCube(IRenderingContext & ctx)
+bool SceneObject::CreateCube(IRenderingContext & ctx, const wchar_t * diffuseTexturePath)
 {
     if (!GenerateCubeGeometry())
         return false;
     if (!CreateDeviceBuffers(ctx))
         return false;
-    if (!LoadTextures(ctx))
+    if (!LoadTextures(ctx, diffuseTexturePath))
         return false;
 
     return true;
 }
 
 
-bool SceneObject::CreateOctahedron(IRenderingContext & ctx)
+bool SceneObject::CreateOctahedron(IRenderingContext & ctx, const wchar_t * diffuseTexturePath)
 {
     if (!GenerateOctahedronGeometry())
         return false;
     if (!CreateDeviceBuffers(ctx))
         return false;
-    if (!LoadTextures(ctx))
+    if (!LoadTextures(ctx, diffuseTexturePath))
         return false;
 
     return true;
@@ -451,13 +456,14 @@ bool SceneObject::CreateOctahedron(IRenderingContext & ctx)
 
 bool SceneObject::CreateSphere(IRenderingContext & ctx,
                                const WORD vertSegmCount,
-                               const WORD stripCount)
+                               const WORD stripCount,
+                               const wchar_t * diffuseTexturePath)
 {
     if (!GenerateSphereGeometry(vertSegmCount, stripCount))
         return false;
     if (!CreateDeviceBuffers(ctx))
         return false;
-    if (!LoadTextures(ctx))
+    if (!LoadTextures(ctx, diffuseTexturePath))
         return false;
 
     return true;
@@ -705,7 +711,7 @@ bool SceneObject::CreateDeviceBuffers(IRenderingContext & ctx)
 }
 
 
-bool SceneObject::LoadTextures(IRenderingContext &ctx)
+bool SceneObject::LoadTextures(IRenderingContext &ctx, const wchar_t * diffuseTexturePath)
 {
     HRESULT hr = S_OK;
 
@@ -713,9 +719,12 @@ bool SceneObject::LoadTextures(IRenderingContext &ctx)
     if (!device)
         return false;
 
-    hr = D3DX11CreateShaderResourceViewFromFile(device, L"../uv_grid_ash.dds", nullptr, nullptr, &mDiffuseSRV, nullptr);
-    if (FAILED(hr))
-        return false;
+    if (diffuseTexturePath)
+    {
+        hr = D3DX11CreateShaderResourceViewFromFile(device, diffuseTexturePath, nullptr, nullptr, &mDiffuseSRV, nullptr);
+        if (FAILED(hr))
+            return false;
+    }
 
     return true;
 }
