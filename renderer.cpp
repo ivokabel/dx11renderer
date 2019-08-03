@@ -809,15 +809,15 @@ void SimpleDX11Renderer::ExecuteRenderPass(std::initializer_list<ID3D11ShaderRes
 {
     mImmediateContext->OMSetRenderTargets(1, &rtv, dsv);
 
-    std::vector<ID3D11ShaderResourceView*> srvsVec = srvs;
+    const std::vector<ID3D11ShaderResourceView*> srvsVec = srvs;
     mImmediateContext->PSSetShaderResources(0, (UINT)srvsVec.size(), srvsVec.data());
 
-    std::vector<ID3D11SamplerState*> samplersVec = samplers;
+    const std::vector<ID3D11SamplerState*> samplersVec = samplers;
     mImmediateContext->PSSetSamplers(0, (UINT)samplersVec.size(), samplersVec.data());
 
     DrawFullScreenQuad(ps, width, height);
 
-    std::vector<ID3D11ShaderResourceView*> nullSrvs(srvsVec.size(), nullptr);
+    const std::vector<ID3D11ShaderResourceView*> nullSrvs(srvsVec.size(), nullptr);
     mImmediateContext->PSSetShaderResources(0, (UINT)nullSrvs.size(), nullSrvs.data());
 }
 
