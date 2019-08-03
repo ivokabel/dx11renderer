@@ -24,36 +24,70 @@ struct SceneVertex
 };
 
 
-class SceneGeometry
+class SceneObject
 {
 public:
 
-    ~SceneGeometry();
+    SceneObject();
+    ~SceneObject();
 
-    bool GenerateCube();
-    bool GenerateOctahedron();
-    bool GenerateSphere();
+    bool CreateCube(IRenderingContext & ctx,
+                    const float scale = 1.f,
+                    const wchar_t * diffuseTexturePath = nullptr);
+    bool CreateOctahedron(IRenderingContext & ctx,
+                          const float scale = 1.f,
+                          const wchar_t * diffuseTexturePath = nullptr);
+    bool CreateSphere(IRenderingContext & ctx,
+                      const WORD vertSegmCount = 40,
+                      const WORD stripCount = 80,
+                      const XMFLOAT4 pos = XMFLOAT4(0, 0, 0, 1),
+                      const float scale = 1.f,
+                      const wchar_t * diffuseTexturePath = nullptr);
 
-    bool CreateDeviceBuffers(IRenderingContext &ctx);
+    void Animate(IRenderingContext &ctx);
+    void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout);
+
+    ID3D11ShaderResourceView* const* GetDiffuseSRV() const { return &mDiffuseSRV; };
+
+    XMMATRIX GetWorldMtrx() const { return mWorldMtrx; }
 
     void Destroy();
 
 private:
 
+    bool GenerateCubeGeometry();
+    bool GenerateOctahedronGeometry();
+    bool GenerateSphereGeometry(const WORD vertSegmCount, const WORD stripCount);
+
+    bool CreateDeviceBuffers(IRenderingContext &ctx);
+    bool LoadTextures(IRenderingContext &ctx, const wchar_t * diffuseTexturePath);
+
     void DestroyGeomData();
     void DestroyDeviceBuffers();
+    void DestroyTextures();
 
-public:
+private:
 
-    // Local data
-    std::vector<SceneVertex>    vertices;
-    std::vector<WORD>           indices;
-    D3D11_PRIMITIVE_TOPOLOGY    topology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    // Geometry data
+    std::vector<SceneVertex>    mVertices;
+    std::vector<WORD>           mIndices;
+    D3D11_PRIMITIVE_TOPOLOGY    mTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 
-    // Device data
+    // Device geometry data
     ID3D11Buffer*               mVertexBuffer = nullptr;
     ID3D11Buffer*               mIndexBuffer = nullptr;
-} sGeometry;
+
+    // Animation
+    float                       mScale = 1.f;
+    XMFLOAT4                    mPos = XMFLOAT4(0, 0, 0, 1);
+    XMMATRIX                    mWorldMtrx;
+
+    // Textures
+    ID3D11ShaderResourceView*   mDiffuseSRV = nullptr;
+};
+
+std::array<SceneObject, 3> sSceneObjects;
+SceneObject sPointLightProxy;
 
 
 struct {
@@ -99,14 +133,14 @@ struct PointLight
 };
 
 
-AmbientLight sAmbientLight{ XMFLOAT4(0.01f, 0.07f, 0.10f, 1.0f) };
+AmbientLight sAmbientLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) };
+//AmbientLight sAmbientLight{ XMFLOAT4(0.01f, 0.07f, 0.10f, 1.0f) };
 //AmbientLight sAmbientLight{ XMFLOAT4(0.42f, 0.42f, 0.42f, 1.0f) };
-//AmbientLight sAmbientLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) };
 
 std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights =
 {
     //DirectLight{ XMFLOAT4(0.f, 1.f, 0.f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.f, 0.f, 0.f, 1.0f) },
-    DirectLight{ XMFLOAT4(0.f, 1.f, 0.f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f) },
+    DirectLight{ XMFLOAT4(0.f, 1.f, 0.f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1.2f, 1.2f, 1.2f, 1.0f) },
 };
 
 
@@ -139,10 +173,6 @@ struct CbChangedOnResize
 
 struct CbChangedEachFrame
 {
-    // Transformations
-    XMMATRIX WorldMtrx;
-    XMFLOAT4 MeshColor;
-
     // Light sources
     XMFLOAT4 AmbientLightLuminance;
     XMFLOAT4 DirectLightDirs[DIRECT_LIGHTS_COUNT];
@@ -151,6 +181,11 @@ struct CbChangedEachFrame
     XMFLOAT4 PointLightIntensities[POINT_LIGHTS_COUNT];
 };
 
+struct CbChangedPerObject
+{
+    XMMATRIX WorldMtrx;
+    XMFLOAT4 MeshColor; // May be eventually replaced by the emmisive component of the standard surface shader
+};
 
 Scene::~Scene()
 {
@@ -195,11 +230,45 @@ bool Scene::Init(IRenderingContext &ctx)
     if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsEmissiveSurf", "ps_4_0", mPixelShaderSolid))
         return false;
 
-  //if (!sGeometry.GenerateCube())
-  //if (!sGeometry.GenerateOctahedron())
-    if (!sGeometry.GenerateSphere())
-        return false;
-    if (!sGeometry.CreateDeviceBuffers(ctx))
+    assert(sSceneObjects.size() == 3);
+
+    for (size_t i = 0; i < sSceneObjects.size(); ++i)
+    {
+        //if (!object.CreateCube(ctx, 1.8f,
+        //                       L"../Textures/vfx_debug_textures by Chris Judkins/debug_uv_02.png"))
+        //if (!object.CreateOctahedron(ctx, 3.5f,
+        //                             L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png"))
+
+        switch (i)
+        {
+        case 0:
+            if (!sSceneObjects[i].CreateSphere(ctx,
+                                               40, 80,
+                                               XMFLOAT4(0.f, 0.f, 2.0f, 1.f),
+                                               1.1f,
+                                               L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
+                return false;
+            break;
+        case 1:
+            if (!sSceneObjects[i].CreateSphere(ctx,
+                                               40, 80,
+                                               XMFLOAT4(-2.0f, 0.f, -2.0f, 1.f),
+                                               1.1f,
+                                               L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
+                return false;
+            break;
+        case 2:
+            if (!sSceneObjects[i].CreateSphere(ctx,
+                                               40, 80,
+                                               XMFLOAT4(2.0f, 0.f, -2.0f, 1.f),
+                                               1.1f,
+                                               L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg"))
+                return false;
+            break;
+        }
+    }
+
+    if (!sPointLightProxy.CreateSphere(ctx, 8, 16))
         return false;
 
     // Create constant buffers
@@ -220,9 +289,8 @@ bool Scene::Init(IRenderingContext &ctx)
     hr = device->CreateBuffer(&bd, nullptr, &mCbChangedEachFrame);
     if (FAILED(hr))
         return hr;
-
-    // Load texture
-    hr = D3DX11CreateShaderResourceViewFromFile(device, L"../uv_grid_ash.dds", nullptr, nullptr, &mTextureSRV, nullptr);
+    bd.ByteWidth = sizeof(CbChangedPerObject);
+    hr = device->CreateBuffer(&bd, nullptr, &mCbChangedPerObject);
     if (FAILED(hr))
         return hr;
 
@@ -241,7 +309,6 @@ bool Scene::Init(IRenderingContext &ctx)
         return hr;
 
     // Matrices
-    mMainObjectWorldMtrx = XMMatrixIdentity();
     mViewMtrx = XMMatrixLookAtLH(sViewData.eye, sViewData.at, sViewData.up);
     mProjectionMtrx = XMMatrixPerspectiveFovLH(XM_PIDIV4,
                                                  (FLOAT)wndWidth / wndHeight,
@@ -271,9 +338,12 @@ void Scene::Destroy()
     Utils::ReleaseAndMakeNull(mCbNeverChanged);
     Utils::ReleaseAndMakeNull(mCbChangedOnResize);
     Utils::ReleaseAndMakeNull(mCbChangedEachFrame);
-    Utils::ReleaseAndMakeNull(mTextureSRV);
+    Utils::ReleaseAndMakeNull(mCbChangedPerObject);
     Utils::ReleaseAndMakeNull(mSamplerLinear);
-    sGeometry.Destroy();
+
+    for (auto &object : sSceneObjects)
+        object.Destroy();
+    sPointLightProxy.Destroy();
 }
 
 
@@ -282,34 +352,27 @@ void Scene::Animate(IRenderingContext &ctx)
     if (!ctx.IsValid())
         return;
 
-    const float time = ctx.GetCurrentAnimationTime();
-    const float period = 15.f; //seconds
-    const float totalAnimPos = time / period;
-    const float mainObjAngle = totalAnimPos * XM_2PI;
-
-    // Rotate main object
-    XMMATRIX mainObjectScaleMtrx = XMMatrixScaling(2.6f, 2.6f, 2.6f);
-    //XMMATRIX mainObjectTrnslMtrx = XMMatrixTranslation(0.f, cos(5 * totalAnimPos * XM_2PI) - 1.5f, 0.f);
-    XMMATRIX mainObjectRotMtrx = XMMatrixRotationY(mainObjAngle);
-    mMainObjectWorldMtrx = mainObjectScaleMtrx * mainObjectRotMtrx /** mainObjectTrnslMtrx*/;
-
-    // Update mesh color
-    mMeshColor.x = ( sinf( totalAnimPos * 1.0f ) + 1.0f ) * 0.5f;
-    mMeshColor.y = ( cosf( totalAnimPos * 3.0f ) + 1.0f ) * 0.5f;
-    mMeshColor.z = ( sinf( totalAnimPos * 5.0f ) + 1.0f ) * 0.5f;
+    for (auto &object : sSceneObjects)
+        object.Animate(ctx);
 
     // Directional light is steady
     sDirectLights[0].dirTransf = sDirectLights[0].dir;
 
-    // Point lights are animated
+    // Animate point lights
+
+    const float time = ctx.GetCurrentAnimationTime();
+    const float period = 15.f; //seconds
+    const float totalAnimPos = time / period;
+    const float angle = totalAnimPos * XM_2PI;
+
     const auto pointCount = sPointLights.size();
     for (int i = 0; i < pointCount; i++)
     {
         const float lightRelOffset = (float)i / pointCount;
 
-        const float orbitRadius = 4.2f;
-        const float rotationAngle = -2.f * mainObjAngle - lightRelOffset * XM_2PI;
-        const float orbitInclination = lightRelOffset * XM_PI;
+        const float orbitRadius = 4.8f;
+        const float rotationAngle = -2.f * angle - lightRelOffset * XM_2PI;
+        const float orbitInclination = 0.f; // lightRelOffset * XM_PI;
 
         const XMMATRIX translationMtrx  = XMMatrixTranslation(orbitRadius, 0.f, 0.f);
         const XMMATRIX rotationMtrx     = XMMatrixRotationY(rotationAngle);
@@ -330,18 +393,8 @@ void Scene::Render(IRenderingContext &ctx)
 
     auto immCtx = ctx.GetImmediateContext();
 
-    // Geometry
-    immCtx->IASetInputLayout(mVertexLayout);
-    UINT stride = sizeof(SceneVertex);
-    UINT offset = 0;
-    immCtx->IASetVertexBuffers(0, 1, &sGeometry.mVertexBuffer, &stride, &offset);
-    immCtx->IASetIndexBuffer(sGeometry.mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-    immCtx->IASetPrimitiveTopology(sGeometry.topology);
-
-    // Constant buffer - main object
+    // Frame constant buffer
     CbChangedEachFrame cbEachFrame;
-    cbEachFrame.WorldMtrx = XMMatrixTranspose(mMainObjectWorldMtrx);
-    cbEachFrame.MeshColor = mMeshColor;
     cbEachFrame.AmbientLightLuminance = sAmbientLight.luminance;
     for (int i = 0; i < sDirectLights.size(); i++)
     {
@@ -355,37 +408,56 @@ void Scene::Render(IRenderingContext &ctx)
     }
     immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
 
-    // Render main object
+    // Setup vertex shader
     immCtx->VSSetShader(mVertexShader, nullptr, 0);
     immCtx->VSSetConstantBuffers(0, 1, &mCbNeverChanged);
     immCtx->VSSetConstantBuffers(1, 1, &mCbChangedOnResize);
     immCtx->VSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
+    immCtx->VSSetConstantBuffers(3, 1, &mCbChangedPerObject);
+
+    // Setup pixel shader
     immCtx->PSSetShader(mPixelShaderIllum, nullptr, 0);
     immCtx->PSSetConstantBuffers(0, 1, &mCbNeverChanged);
     immCtx->PSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
-    immCtx->PSSetShaderResources(0, 1, &mTextureSRV);
+    immCtx->PSSetConstantBuffers(3, 1, &mCbChangedPerObject);
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
-    immCtx->DrawIndexed((UINT)sGeometry.indices.size(), 0, 0);
 
-    // Symbolic light geometry for point lights
+    for (auto &object : sSceneObjects)
+    {
+        // Per-object constant buffer
+        CbChangedPerObject cbPerObject;
+        cbPerObject.WorldMtrx = XMMatrixTranspose(object.GetWorldMtrx());
+        cbPerObject.MeshColor = { 0.f, 1.f, 0.f, 1.f, };
+        immCtx->UpdateSubresource(mCbChangedPerObject, 0, nullptr, &cbPerObject, 0, 0);
+
+        // Draw
+        immCtx->PSSetShaderResources(0, 1, object.GetDiffuseSRV());
+        object.DrawGeometry(ctx, mVertexLayout);
+    }
+
+    // Proxy geometry for point lights
     for (int i = 0; i < sPointLights.size(); i++)
     {
+        CbChangedPerObject cbPerObject;
+
         const float radius = 0.07f;
         XMMATRIX lightScaleMtrx = XMMatrixScaling(radius, radius, radius);
         XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(XMLoadFloat4(&sPointLights[i].posTransf));
         XMMATRIX lightMtrx = lightScaleMtrx * lightTrnslMtrx;
-        cbEachFrame.WorldMtrx = XMMatrixTranspose(lightMtrx);
+        cbPerObject.WorldMtrx = XMMatrixTranspose(lightMtrx);
+
         const float radius2 = radius * radius;
-        cbEachFrame.MeshColor = {
+        cbPerObject.MeshColor = {
             sPointLights[i].intensity.x / radius2,
             sPointLights[i].intensity.y / radius2,
             sPointLights[i].intensity.z / radius2,
             sPointLights[i].intensity.w / radius2,
         };
-        immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
+
+        immCtx->UpdateSubresource(mCbChangedPerObject, 0, nullptr, &cbPerObject, 0, 0);
 
         immCtx->PSSetShader(mPixelShaderSolid, nullptr, 0);
-        immCtx->DrawIndexed((UINT)sGeometry.indices.size(), 0, 0);
+        sPointLightProxy.DrawGeometry(ctx, mVertexLayout);
     }
 }
 
@@ -398,14 +470,75 @@ bool Scene::GetAmbientColor(float(&rgba)[4])
     return true;
 }
 
-SceneGeometry::~SceneGeometry()
+
+SceneObject::SceneObject() :
+    mWorldMtrx(XMMatrixIdentity())
+{}
+
+SceneObject::~SceneObject()
 {
     Destroy();
 }
 
-bool SceneGeometry::GenerateCube()
+
+bool SceneObject::CreateCube(IRenderingContext & ctx,
+                             const float scale,
+                             const wchar_t * diffuseTexturePath)
 {
-    vertices =
+    mScale = scale;
+
+    if (!GenerateCubeGeometry())
+        return false;
+    if (!CreateDeviceBuffers(ctx))
+        return false;
+    if (!LoadTextures(ctx, diffuseTexturePath))
+        return false;
+
+    return true;
+}
+
+
+bool SceneObject::CreateOctahedron(IRenderingContext & ctx,
+                                   const float scale,
+                                   const wchar_t * diffuseTexturePath)
+{
+    mScale = scale;
+
+    if (!GenerateOctahedronGeometry())
+        return false;
+    if (!CreateDeviceBuffers(ctx))
+        return false;
+    if (!LoadTextures(ctx, diffuseTexturePath))
+        return false;
+
+    return true;
+}
+
+
+bool SceneObject::CreateSphere(IRenderingContext & ctx,
+                               const WORD vertSegmCount,
+                               const WORD stripCount,
+                               const XMFLOAT4 pos,
+                               const float scale,
+                               const wchar_t * diffuseTexturePath)
+{
+    mScale = scale;
+    mPos = pos;
+
+    if (!GenerateSphereGeometry(vertSegmCount, stripCount))
+        return false;
+    if (!CreateDeviceBuffers(ctx))
+        return false;
+    if (!LoadTextures(ctx, diffuseTexturePath))
+        return false;
+
+    return true;
+}
+
+
+bool SceneObject::GenerateCubeGeometry()
+{
+    mVertices =
     {
         // Up
         SceneVertex{ XMFLOAT3(-1.0f, 1.0f, -1.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(0.0f, 0.0f) },
@@ -444,7 +577,7 @@ bool SceneGeometry::GenerateCube()
         SceneVertex{ XMFLOAT3(-1.0f,  1.0f, 1.0f),  XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT2(0.0f, 1.0f) },
     };
 
-    indices =
+    mIndices =
     {
         // Up
         3, 1, 0,
@@ -471,15 +604,15 @@ bool SceneGeometry::GenerateCube()
         23, 20, 22
     };
 
-    topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    mTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
     return true;
 }
 
 
-bool SceneGeometry::GenerateOctahedron()
+bool SceneObject::GenerateOctahedronGeometry()
 {
-    vertices =
+    mVertices =
     {
         // Noth pole
         SceneVertex{ XMFLOAT3( 0.0f, 1.0f, 0.0f),  XMFLOAT3( 0.0f, 1.0f, 0.0f),  XMFLOAT2(0.0f, 0.0f) },
@@ -494,7 +627,7 @@ bool SceneGeometry::GenerateOctahedron()
         SceneVertex{ XMFLOAT3( 0.0f,-1.0f, 0.0f),  XMFLOAT3( 0.0f,-1.0f, 0.0f),  XMFLOAT2(1.0f, 1.0f) },
     };
 
-    indices =
+    mIndices =
     {
         // Band ++
         0, 2, 1,
@@ -513,19 +646,24 @@ bool SceneGeometry::GenerateOctahedron()
         4, 1, 5,
     };
 
-    topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    mTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
     return true;
 }
 
 
-bool SceneGeometry::GenerateSphere()
+bool SceneObject::GenerateSphereGeometry(const WORD vertSegmCount, const WORD stripCount)
 {
-    static const WORD vertSegmCount = 40;
-    static const WORD stripCount = 80;
-
-    static_assert(vertSegmCount >= 2, "Spherical stripe must have at least 2 vertical segments");
-    static_assert(stripCount >= 3, "Sphere must have at least 3 stripes");
+    if (vertSegmCount < 2)
+    {
+        Log::Error(L"Spherical stripe must have at least 2 vertical segments");
+        return false;
+    }
+    if (stripCount < 3)
+    {
+        Log::Error(L"Sphere must have at least 3 stripes");
+        return false;
+    }
 
     const WORD horzLineCount = vertSegmCount - 1;
     const WORD vertexCountPerStrip = 2 /*poles*/ + horzLineCount;
@@ -533,7 +671,7 @@ bool SceneGeometry::GenerateSphere()
     const WORD indexCount  = stripCount * (2 /*poles*/ + 2 * horzLineCount + 1 /*strip restart*/);
 
     // Vertices
-    vertices.reserve(vertexCount);
+    mVertices.reserve(vertexCount);
     const float stripSizeAng = XM_2PI / stripCount;
     const float stripSizeRel =    1.f / stripCount;
     const float vertSegmSizeAng = XM_PI / vertSegmCount;
@@ -552,40 +690,40 @@ bool SceneGeometry::GenerateSphere()
             const float y = cos(theta);
             const XMFLOAT3 pt(xBase * ringRadius, y, zBase * ringRadius);
             const float v = (line + 1) * vertSegmSizeRel;
-            vertices.push_back(SceneVertex{ pt, pt,  XMFLOAT2(uLine, v) }); // position==normal
+            mVertices.push_back(SceneVertex{ pt, pt,  XMFLOAT2(uLine, v) }); // position==normal
         }
 
         // Poles
         const XMFLOAT3 northPole(0.0f,  1.0f, 0.0f);
         const XMFLOAT3 southPole(0.0f, -1.0f, 0.0f);
         const float uPole = uLine + stripSizeRel / 2;
-        vertices.push_back(SceneVertex{ northPole,  northPole,  XMFLOAT2(uPole, 0.0f) }); // position==normal
-        vertices.push_back(SceneVertex{ southPole,  southPole,  XMFLOAT2(uPole, 1.0f) }); // position==normal
+        mVertices.push_back(SceneVertex{ northPole,  northPole,  XMFLOAT2(uPole, 0.0f) }); // position==normal
+        mVertices.push_back(SceneVertex{ southPole,  southPole,  XMFLOAT2(uPole, 1.0f) }); // position==normal
     }
 
-    assert(vertices.size() == vertexCount);
+    assert(mVertices.size() == vertexCount);
 
     // Indices
-    indices.reserve(indexCount);
+    mIndices.reserve(indexCount);
     for (WORD strip = 0; strip < stripCount; strip++)
     {
         const WORD idxOffset = strip * vertexCountPerStrip;
-        indices.push_back(idxOffset + vertexCountPerStrip - 2); // north pole
+        mIndices.push_back(idxOffset + vertexCountPerStrip - 2); // north pole
         for (WORD line = 0; line < horzLineCount; line++)
         {
-            indices.push_back((idxOffset + line + vertexCountPerStrip) % vertexCount); // next strip, same line
-            indices.push_back( idxOffset + line);
+            mIndices.push_back((idxOffset + line + vertexCountPerStrip) % vertexCount); // next strip, same line
+            mIndices.push_back( idxOffset + line);
         }
-        indices.push_back(idxOffset + vertexCountPerStrip - 1); // south pole
-        indices.push_back(static_cast<WORD>(-1)); // strip restart
+        mIndices.push_back(idxOffset + vertexCountPerStrip - 1); // south pole
+        mIndices.push_back(static_cast<WORD>(-1)); // strip restart
     }
 
-    assert(indices.size() == indexCount);
+    assert(mIndices.size() == indexCount);
 
-    topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
-    //topology = D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP; // debug
+    mTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+    //mTopology = D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP; // debug
 
-    Log::Debug(L"SceneGeometry::GenerateSphere: "
+    Log::Debug(L"SceneObject::GenerateSphereGeometry: "
                L"%d segments, %d strips => %d triangles, %d vertices, %d indices",
                vertSegmCount, stripCount,
                stripCount * (2 * horzLineCount),
@@ -595,7 +733,7 @@ bool SceneGeometry::GenerateSphere()
 }
 
 
-bool SceneGeometry::CreateDeviceBuffers(IRenderingContext & ctx)
+bool SceneObject::CreateDeviceBuffers(IRenderingContext & ctx)
 {
     DestroyDeviceBuffers();
 
@@ -609,13 +747,13 @@ bool SceneGeometry::CreateDeviceBuffers(IRenderingContext & ctx)
     D3D11_BUFFER_DESC bd;
     ZeroMemory(&bd, sizeof(bd));
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = (UINT)(sizeof(SceneVertex) * sGeometry.vertices.size());
+    bd.ByteWidth = (UINT)(sizeof(SceneVertex) * mVertices.size());
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bd.CPUAccessFlags = 0;
     D3D11_SUBRESOURCE_DATA initData;
     ZeroMemory(&initData, sizeof(initData));
-    initData.pSysMem = sGeometry.vertices.data();
-    hr = device->CreateBuffer(&bd, &initData, &sGeometry.mVertexBuffer);
+    initData.pSysMem = mVertices.data();
+    hr = device->CreateBuffer(&bd, &initData, &mVertexBuffer);
     if (FAILED(hr))
     {
         DestroyDeviceBuffers();
@@ -624,11 +762,11 @@ bool SceneGeometry::CreateDeviceBuffers(IRenderingContext & ctx)
 
     // Index buffer
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(WORD) * (UINT)sGeometry.indices.size();
+    bd.ByteWidth = sizeof(WORD) * (UINT)mIndices.size();
     bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
     bd.CPUAccessFlags = 0;
-    initData.pSysMem = sGeometry.indices.data();
-    hr = device->CreateBuffer(&bd, &initData, &sGeometry.mIndexBuffer);
+    initData.pSysMem = mIndices.data();
+    hr = device->CreateBuffer(&bd, &initData, &mIndexBuffer);
     if (FAILED(hr))
     {
         DestroyDeviceBuffers();
@@ -639,21 +777,78 @@ bool SceneGeometry::CreateDeviceBuffers(IRenderingContext & ctx)
 }
 
 
-void SceneGeometry::Destroy()
+bool SceneObject::LoadTextures(IRenderingContext &ctx, const wchar_t * diffuseTexturePath)
+{
+    HRESULT hr = S_OK;
+
+    auto device = ctx.GetDevice();
+    if (!device)
+        return false;
+
+    if (diffuseTexturePath)
+    {
+        hr = D3DX11CreateShaderResourceViewFromFile(device, diffuseTexturePath, nullptr, nullptr, &mDiffuseSRV, nullptr);
+        if (FAILED(hr))
+            return false;
+    }
+
+    return true;
+}
+
+
+void SceneObject::Destroy()
 {
     DestroyGeomData();
     DestroyDeviceBuffers();
+    DestroyTextures();
 }
 
-void SceneGeometry::DestroyGeomData()
+
+void SceneObject::DestroyGeomData()
 {
-    vertices.clear();
-    indices.clear();
-    topology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    mVertices.clear();
+    mIndices.clear();
+    mTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 }
 
-void SceneGeometry::DestroyDeviceBuffers()
+
+void SceneObject::DestroyDeviceBuffers()
 {
     Utils::ReleaseAndMakeNull(mVertexBuffer);
     Utils::ReleaseAndMakeNull(mIndexBuffer);
+}
+
+
+void SceneObject::DestroyTextures()
+{
+    Utils::ReleaseAndMakeNull(mDiffuseSRV);
+}
+
+
+void SceneObject::Animate(IRenderingContext &ctx)
+{
+    const float time = ctx.GetCurrentAnimationTime();
+    const float period = 15.f; //seconds
+    const float totalAnimPos = time / period;
+    const float angle = totalAnimPos * XM_2PI;
+
+    XMMATRIX shiftMtrx = XMMatrixTranslationFromVector(XMLoadFloat4(&mPos));
+    XMMATRIX scaleMtrx = XMMatrixScaling(mScale, mScale, mScale);
+    XMMATRIX rotMtrx = XMMatrixRotationY(angle);
+    mWorldMtrx = scaleMtrx * rotMtrx * shiftMtrx;
+}
+
+
+void SceneObject::DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout)
+{
+    auto immCtx = ctx.GetImmediateContext();
+
+    immCtx->IASetInputLayout(vertexLayout);
+    UINT stride = sizeof(SceneVertex);
+    UINT offset = 0;
+    immCtx->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offset);
+    immCtx->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+    immCtx->IASetPrimitiveTopology(mTopology);
+
+    immCtx->DrawIndexed((UINT)mIndices.size(), 0, 0);
 }

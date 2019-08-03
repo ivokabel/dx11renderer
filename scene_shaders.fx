@@ -19,10 +19,6 @@ cbuffer cbChangeOnResize : register(b1)
 
 cbuffer cbChangesEachFrame : register(b2)
 {
-    // Transformations
-    matrix WorldMtrx;
-    float4 MeshColor;
-
     // Light sources
     float4 AmbientLightLuminance;
     float4 DirectLightDirs[DIRECT_LIGHTS_COUNT];
@@ -31,6 +27,11 @@ cbuffer cbChangesEachFrame : register(b2)
     float4 PointLightIntensities[POINT_LIGHTS_COUNT];
 };
 
+cbuffer cbChangesPerObject : register(b3)
+{
+    matrix WorldMtrx;
+    float4 MeshColor;
+};
 
 struct VS_INPUT
 {
@@ -153,7 +154,7 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
 
     LightContrib lightContribs = { {0, 0, 0, 0}, {0, 0, 0, 0} };
 
-    const float specPower = 50.f;
+    const float specPower = 100.f;
 
     lightContribs = AmbLightContrib(AmbientLightLuminance);
 
@@ -187,8 +188,8 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
     diffuseTexture = txDiffuse.Sample(samLinear, input.Tex);
 
     float4 output =
-          lightContribs.Diffuse  * diffuseTexture  * 0.9
-        + lightContribs.Specular * specularTexture * 0.1
+          lightContribs.Diffuse  * diffuseTexture  * 0.98
+        + lightContribs.Specular * specularTexture * 0.02
         ;
 
     output.a = 1;
