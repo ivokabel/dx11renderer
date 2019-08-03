@@ -129,8 +129,8 @@ struct PointLight
 };
 
 
-AmbientLight sAmbientLight{ XMFLOAT4(0.01f, 0.07f, 0.10f, 1.0f) };
-//AmbientLight sAmbientLight{ XMFLOAT4(0.42f, 0.42f, 0.42f, 1.0f) };
+//AmbientLight sAmbientLight{ XMFLOAT4(0.01f, 0.07f, 0.10f, 1.0f) };
+AmbientLight sAmbientLight{ XMFLOAT4(0.42f, 0.42f, 0.42f, 1.0f) };
 //AmbientLight sAmbientLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) };
 
 std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights =
@@ -226,9 +226,12 @@ bool Scene::Init(IRenderingContext &ctx)
     if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsEmissiveSurf", "ps_4_0", mPixelShaderSolid))
         return false;
 
-    //if (!sMainObject.CreateCube(ctx, 2.f, L"../uv_grid_ash.dds"))
-    //if (!sMainObject.CreateOctahedron(ctx, 3.5f, L"../uv_grid_ash.dds"))
-    if (!sMainObject.CreateSphere(ctx, 2.9f, 40, 80, L"../uv_grid_ash.dds"))
+    //if (!sMainObject.CreateCube(ctx, 2.f,
+    //                            L"../Textures/vfx_debug_textures by Chris Judkins/debug_uv_02.png"))
+    //if (!sMainObject.CreateOctahedron(ctx, 3.5f,
+    //                                  L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png"))
+    if (!sMainObject.CreateSphere(ctx, 2.9f, 40, 80,
+                                  L"../Textures/vfx_debug_textures by Chris Judkins/debug_uv_02.png"))
         return false;
     if (!sPointLightProxy.CreateSphere(ctx, 8, 16))
         return false;
