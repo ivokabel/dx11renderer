@@ -44,7 +44,8 @@ public:
                       const WORD stripCount = 80,
                       const XMFLOAT4 pos = XMFLOAT4(0, 0, 0, 1),
                       const float scale = 1.f,
-                      const wchar_t * diffuseTexPath = nullptr);
+                      const wchar_t * diffuseTexPath = nullptr,
+                      const wchar_t * specularityTexPath = nullptr);
 
     void Animate(IRenderingContext &ctx);
     void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout);
@@ -248,7 +249,8 @@ bool Scene::Init(IRenderingContext &ctx)
                                                40, 80,
                                                XMFLOAT4(0.f, 0.f, -1.7f, 1.f),
                                                2.0f,
-                                               L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg"))
+                                               L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
+                                               L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
                 return false;
             break;
         case 1:
@@ -527,7 +529,8 @@ bool SceneObject::CreateSphere(IRenderingContext & ctx,
                                const WORD stripCount,
                                const XMFLOAT4 pos,
                                const float scale,
-                               const wchar_t * diffuseTexPath)
+                               const wchar_t * diffuseTexPath,
+                               const wchar_t * specularityTexPath)
 {
     mScale = scale;
     mPos = pos;
@@ -536,7 +539,7 @@ bool SceneObject::CreateSphere(IRenderingContext & ctx,
         return false;
     if (!CreateDeviceBuffers(ctx))
         return false;
-    if (!LoadTextures(ctx, diffuseTexPath))
+    if (!LoadTextures(ctx, diffuseTexPath, specularityTexPath))
         return false;
 
     return true;
