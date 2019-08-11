@@ -34,22 +34,24 @@ public:
     bool CreateCube(IRenderingContext & ctx,
                     const XMFLOAT4 pos = XMFLOAT4(0, 0, 0, 1),
                     const float scale = 1.f,
-                    const wchar_t * diffuseTexturePath = nullptr);
+                    const wchar_t * diffuseTexPath = nullptr);
     bool CreateOctahedron(IRenderingContext & ctx,
                           const XMFLOAT4 pos = XMFLOAT4(0, 0, 0, 1),
                           const float scale = 1.f,
-                          const wchar_t * diffuseTexturePath = nullptr);
+                          const wchar_t * diffuseTexPath = nullptr);
     bool CreateSphere(IRenderingContext & ctx,
                       const WORD vertSegmCount = 40,
                       const WORD stripCount = 80,
                       const XMFLOAT4 pos = XMFLOAT4(0, 0, 0, 1),
                       const float scale = 1.f,
-                      const wchar_t * diffuseTexturePath = nullptr);
+                      const wchar_t * diffuseTexPath = nullptr,
+                      const wchar_t * specularTexPath = nullptr);
 
     void Animate(IRenderingContext &ctx);
     void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout);
 
-    ID3D11ShaderResourceView* const* GetDiffuseSRV() const { return &mDiffuseSRV; };
+    ID3D11ShaderResourceView* const* GetDiffuseSRV()  const { return &mDiffuseSRV; };
+    ID3D11ShaderResourceView* const* GetSpecularSRV() const { return &mSpecularSRV; };
 
     XMMATRIX GetWorldMtrx() const { return mWorldMtrx; }
 
@@ -62,7 +64,9 @@ private:
     bool GenerateSphereGeometry(const WORD vertSegmCount, const WORD stripCount);
 
     bool CreateDeviceBuffers(IRenderingContext &ctx);
-    bool LoadTextures(IRenderingContext &ctx, const wchar_t * diffuseTexturePath);
+    bool LoadTextures(IRenderingContext &ctx,
+                      const wchar_t * diffuseTexPath,
+                      const wchar_t * specularTexPath = nullptr);
 
     void DestroyGeomData();
     void DestroyDeviceBuffers();
@@ -86,6 +90,8 @@ private:
 
     // Textures
     ID3D11ShaderResourceView*   mDiffuseSRV = nullptr;
+    ID3D11Texture2D*            mSpecularTex = nullptr;
+    ID3D11ShaderResourceView*   mSpecularSRV = nullptr;
 };
 
 std::array<SceneObject, 3> sSceneObjects;
@@ -241,25 +247,26 @@ bool Scene::Init(IRenderingContext &ctx)
         case 0:
             if (!sSceneObjects[i].CreateSphere(ctx,
                                                40, 80,
-                                               XMFLOAT4(0.f, 0.f, 2.0f, 1.f),
-                                               1.1f,
-                                               L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
+                                               XMFLOAT4(0.f, 0.f, -1.7f, 1.f),
+                                               2.0f,
+                                               L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
+                                               L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
                 return false;
             break;
         case 1:
             if (!sSceneObjects[i].CreateSphere(ctx,
                                                40, 80,
-                                               XMFLOAT4(-2.0f, 0.f, -2.0f, 1.f),
-                                               1.1f,
+                                               XMFLOAT4(-2.5f, 0.f, 2.0f, 1.f),
+                                               1.2f,
                                                L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
                 return false;
             break;
         case 2:
             if (!sSceneObjects[i].CreateSphere(ctx,
                                                40, 80,
-                                               XMFLOAT4(2.0f, 0.f, -2.0f, 1.f),
-                                               1.1f,
-                                               L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg"))
+                                               XMFLOAT4(2.5f, 0.f, 2.0f, 1.f),
+                                               1.2f,
+                                               L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
                 return false;
             break;
         }
@@ -369,7 +376,7 @@ void Scene::Animate(IRenderingContext &ctx)
 
         const float orbitRadius = 4.8f;
         const float rotationAngle = -2.f * angle - lightRelOffset * XM_2PI;
-        const float orbitInclination = 0.f; // lightRelOffset * XM_PI;
+        const float orbitInclination = (lightRelOffset - 0.5f) * XM_PI / 2.f;
 
         const XMMATRIX translationMtrx  = XMMatrixTranslation(orbitRadius, 0.f, 0.f);
         const XMMATRIX rotationMtrx     = XMMatrixRotationY(rotationAngle);
@@ -429,6 +436,7 @@ void Scene::Render(IRenderingContext &ctx)
 
         // Draw
         immCtx->PSSetShaderResources(0, 1, object.GetDiffuseSRV());
+        immCtx->PSSetShaderResources(1, 1, object.GetSpecularSRV());
         object.DrawGeometry(ctx, mVertexLayout);
     }
 
@@ -481,7 +489,7 @@ SceneObject::~SceneObject()
 bool SceneObject::CreateCube(IRenderingContext & ctx,
                              const XMFLOAT4 pos,
                              const float scale,
-                             const wchar_t * diffuseTexturePath)
+                             const wchar_t * diffuseTexPath)
 {
     mScale = scale;
     mPos = pos;
@@ -490,7 +498,7 @@ bool SceneObject::CreateCube(IRenderingContext & ctx,
         return false;
     if (!CreateDeviceBuffers(ctx))
         return false;
-    if (!LoadTextures(ctx, diffuseTexturePath))
+    if (!LoadTextures(ctx, diffuseTexPath))
         return false;
 
     return true;
@@ -500,7 +508,7 @@ bool SceneObject::CreateCube(IRenderingContext & ctx,
 bool SceneObject::CreateOctahedron(IRenderingContext & ctx,
                                    const XMFLOAT4 pos,
                                    const float scale,
-                                   const wchar_t * diffuseTexturePath)
+                                   const wchar_t * diffuseTexPath)
 {
     mScale = scale;
     mPos = pos;
@@ -509,7 +517,7 @@ bool SceneObject::CreateOctahedron(IRenderingContext & ctx,
         return false;
     if (!CreateDeviceBuffers(ctx))
         return false;
-    if (!LoadTextures(ctx, diffuseTexturePath))
+    if (!LoadTextures(ctx, diffuseTexPath))
         return false;
 
     return true;
@@ -521,7 +529,8 @@ bool SceneObject::CreateSphere(IRenderingContext & ctx,
                                const WORD stripCount,
                                const XMFLOAT4 pos,
                                const float scale,
-                               const wchar_t * diffuseTexturePath)
+                               const wchar_t * diffuseTexPath,
+                               const wchar_t * specularTexPath)
 {
     mScale = scale;
     mPos = pos;
@@ -530,7 +539,7 @@ bool SceneObject::CreateSphere(IRenderingContext & ctx,
         return false;
     if (!CreateDeviceBuffers(ctx))
         return false;
-    if (!LoadTextures(ctx, diffuseTexturePath))
+    if (!LoadTextures(ctx, diffuseTexPath, specularTexPath))
         return false;
 
     return true;
@@ -778,7 +787,9 @@ bool SceneObject::CreateDeviceBuffers(IRenderingContext & ctx)
 }
 
 
-bool SceneObject::LoadTextures(IRenderingContext &ctx, const wchar_t * diffuseTexturePath)
+bool SceneObject::LoadTextures(IRenderingContext &ctx,
+                               const wchar_t * diffuseTexPath,
+                               const wchar_t * specularTexPath)
 {
     HRESULT hr = S_OK;
 
@@ -786,9 +797,46 @@ bool SceneObject::LoadTextures(IRenderingContext &ctx, const wchar_t * diffuseTe
     if (!device)
         return false;
 
-    if (diffuseTexturePath)
+    if (diffuseTexPath)
     {
-        hr = D3DX11CreateShaderResourceViewFromFile(device, diffuseTexturePath, nullptr, nullptr, &mDiffuseSRV, nullptr);
+        hr = D3DX11CreateShaderResourceViewFromFile(device, diffuseTexPath, nullptr, nullptr, &mDiffuseSRV, nullptr);
+        if (FAILED(hr))
+            return false;
+    }
+
+    if (specularTexPath)
+    {
+        hr = D3DX11CreateShaderResourceViewFromFile(device, specularTexPath, nullptr, nullptr, &mSpecularSRV, nullptr);
+        if (FAILED(hr))
+            return false;
+    }
+    else
+    {
+        // Default 1x1 zero-value texture
+        D3D11_TEXTURE2D_DESC descTex;
+        ZeroMemory(&descTex, sizeof(D3D11_TEXTURE2D_DESC));
+        descTex.ArraySize = 1;
+        descTex.Usage = D3D11_USAGE_IMMUTABLE;
+        descTex.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+        descTex.Width = 1;
+        descTex.Height = 1;
+        descTex.MipLevels = 1;
+        descTex.SampleDesc.Count = 1;
+        descTex.SampleDesc.Quality = 0;
+        descTex.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+        static const XMFLOAT4 blackColor = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
+        D3D11_SUBRESOURCE_DATA initData = { &blackColor, sizeof(XMFLOAT4), 0 };
+        hr = device->CreateTexture2D(&descTex, &initData, &mSpecularTex);
+        if (FAILED(hr))
+            return false;
+
+        // Shader resource view
+        D3D11_SHADER_RESOURCE_VIEW_DESC descSRV;
+        descSRV.Format = descTex.Format;
+        descSRV.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+        descSRV.Texture2D.MipLevels = 1;
+        descSRV.Texture2D.MostDetailedMip = 0;
+        hr = device->CreateShaderResourceView(mSpecularTex, &descSRV, &mSpecularSRV);
         if (FAILED(hr))
             return false;
     }
@@ -823,6 +871,8 @@ void SceneObject::DestroyDeviceBuffers()
 void SceneObject::DestroyTextures()
 {
     Utils::ReleaseAndMakeNull(mDiffuseSRV);
+    Utils::ReleaseAndMakeNull(mSpecularTex);
+    Utils::ReleaseAndMakeNull(mSpecularSRV);
 }
 
 
