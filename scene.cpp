@@ -812,8 +812,6 @@ bool SceneObject::LoadTextures(IRenderingContext &ctx,
     }
     else
     {
-        // TODO: Wrap into ConstantTexture class
-
         // Default 1x1 zero-value texture
         D3D11_TEXTURE2D_DESC descTex;
         ZeroMemory(&descTex, sizeof(D3D11_TEXTURE2D_DESC));
