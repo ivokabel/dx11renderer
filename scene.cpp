@@ -241,25 +241,25 @@ bool Scene::Init(IRenderingContext &ctx)
         case 0:
             if (!sSceneObjects[i].CreateSphere(ctx,
                                                40, 80,
-                                               XMFLOAT4(0.f, 0.f, 2.0f, 1.f),
-                                               1.1f,
-                                               L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
+                                               XMFLOAT4(0.f, 0.f, -1.7f, 1.f),
+                                               2.0f,
+                                               L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg"))
                 return false;
             break;
         case 1:
             if (!sSceneObjects[i].CreateSphere(ctx,
                                                40, 80,
-                                               XMFLOAT4(-2.0f, 0.f, -2.0f, 1.f),
-                                               1.1f,
+                                               XMFLOAT4(-2.5f, 0.f, 2.0f, 1.f),
+                                               1.2f,
                                                L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
                 return false;
             break;
         case 2:
             if (!sSceneObjects[i].CreateSphere(ctx,
                                                40, 80,
-                                               XMFLOAT4(2.0f, 0.f, -2.0f, 1.f),
-                                               1.1f,
-                                               L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg"))
+                                               XMFLOAT4(2.5f, 0.f, 2.0f, 1.f),
+                                               1.2f,
+                                               L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
                 return false;
             break;
         }
@@ -369,7 +369,7 @@ void Scene::Animate(IRenderingContext &ctx)
 
         const float orbitRadius = 4.8f;
         const float rotationAngle = -2.f * angle - lightRelOffset * XM_2PI;
-        const float orbitInclination = 0.f; // lightRelOffset * XM_PI;
+        const float orbitInclination = (lightRelOffset - 0.5f) * XM_PI / 2.f;
 
         const XMMATRIX translationMtrx  = XMMatrixTranslation(orbitRadius, 0.f, 0.f);
         const XMMATRIX rotationMtrx     = XMMatrixRotationY(rotationAngle);
