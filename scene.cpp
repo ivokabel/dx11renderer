@@ -34,17 +34,17 @@ public:
     bool CreateCube(IRenderingContext & ctx,
                     const XMFLOAT4 pos = XMFLOAT4(0, 0, 0, 1),
                     const float scale = 1.f,
-                    const wchar_t * diffuseTexturePath = nullptr);
+                    const wchar_t * diffuseTexPath = nullptr);
     bool CreateOctahedron(IRenderingContext & ctx,
                           const XMFLOAT4 pos = XMFLOAT4(0, 0, 0, 1),
                           const float scale = 1.f,
-                          const wchar_t * diffuseTexturePath = nullptr);
+                          const wchar_t * diffuseTexPath = nullptr);
     bool CreateSphere(IRenderingContext & ctx,
                       const WORD vertSegmCount = 40,
                       const WORD stripCount = 80,
                       const XMFLOAT4 pos = XMFLOAT4(0, 0, 0, 1),
                       const float scale = 1.f,
-                      const wchar_t * diffuseTexturePath = nullptr);
+                      const wchar_t * diffuseTexPath = nullptr);
 
     void Animate(IRenderingContext &ctx);
     void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout);
@@ -64,8 +64,8 @@ private:
 
     bool CreateDeviceBuffers(IRenderingContext &ctx);
     bool LoadTextures(IRenderingContext &ctx,
-                      const wchar_t * diffuseTexturePath,
-                      const wchar_t * specularityTexturePath = nullptr);
+                      const wchar_t * diffuseTexPath,
+                      const wchar_t * specularityTexPath = nullptr);
 
     void DestroyGeomData();
     void DestroyDeviceBuffers();
@@ -487,7 +487,7 @@ SceneObject::~SceneObject()
 bool SceneObject::CreateCube(IRenderingContext & ctx,
                              const XMFLOAT4 pos,
                              const float scale,
-                             const wchar_t * diffuseTexturePath)
+                             const wchar_t * diffuseTexPath)
 {
     mScale = scale;
     mPos = pos;
@@ -496,7 +496,7 @@ bool SceneObject::CreateCube(IRenderingContext & ctx,
         return false;
     if (!CreateDeviceBuffers(ctx))
         return false;
-    if (!LoadTextures(ctx, diffuseTexturePath))
+    if (!LoadTextures(ctx, diffuseTexPath))
         return false;
 
     return true;
@@ -506,7 +506,7 @@ bool SceneObject::CreateCube(IRenderingContext & ctx,
 bool SceneObject::CreateOctahedron(IRenderingContext & ctx,
                                    const XMFLOAT4 pos,
                                    const float scale,
-                                   const wchar_t * diffuseTexturePath)
+                                   const wchar_t * diffuseTexPath)
 {
     mScale = scale;
     mPos = pos;
@@ -515,7 +515,7 @@ bool SceneObject::CreateOctahedron(IRenderingContext & ctx,
         return false;
     if (!CreateDeviceBuffers(ctx))
         return false;
-    if (!LoadTextures(ctx, diffuseTexturePath))
+    if (!LoadTextures(ctx, diffuseTexPath))
         return false;
 
     return true;
@@ -527,7 +527,7 @@ bool SceneObject::CreateSphere(IRenderingContext & ctx,
                                const WORD stripCount,
                                const XMFLOAT4 pos,
                                const float scale,
-                               const wchar_t * diffuseTexturePath)
+                               const wchar_t * diffuseTexPath)
 {
     mScale = scale;
     mPos = pos;
@@ -536,7 +536,7 @@ bool SceneObject::CreateSphere(IRenderingContext & ctx,
         return false;
     if (!CreateDeviceBuffers(ctx))
         return false;
-    if (!LoadTextures(ctx, diffuseTexturePath))
+    if (!LoadTextures(ctx, diffuseTexPath))
         return false;
 
     return true;
@@ -785,8 +785,8 @@ bool SceneObject::CreateDeviceBuffers(IRenderingContext & ctx)
 
 
 bool SceneObject::LoadTextures(IRenderingContext &ctx,
-                               const wchar_t * diffuseTexturePath,
-                               const wchar_t * specularityTexturePath)
+                               const wchar_t * diffuseTexPath,
+                               const wchar_t * specularityTexPath)
 {
     HRESULT hr = S_OK;
 
@@ -794,16 +794,16 @@ bool SceneObject::LoadTextures(IRenderingContext &ctx,
     if (!device)
         return false;
 
-    if (diffuseTexturePath)
+    if (diffuseTexPath)
     {
-        hr = D3DX11CreateShaderResourceViewFromFile(device, diffuseTexturePath, nullptr, nullptr, &mDiffuseSRV, nullptr);
+        hr = D3DX11CreateShaderResourceViewFromFile(device, diffuseTexPath, nullptr, nullptr, &mDiffuseSRV, nullptr);
         if (FAILED(hr))
             return false;
     }
 
-    if (specularityTexturePath)
+    if (specularityTexPath)
     {
-        hr = D3DX11CreateShaderResourceViewFromFile(device, specularityTexturePath, nullptr, nullptr, &mSpecularitySRV, nullptr);
+        hr = D3DX11CreateShaderResourceViewFromFile(device, specularityTexPath, nullptr, nullptr, &mSpecularitySRV, nullptr);
         if (FAILED(hr))
             return false;
     }
