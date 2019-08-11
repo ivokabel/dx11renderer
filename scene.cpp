@@ -49,7 +49,8 @@ public:
     void Animate(IRenderingContext &ctx);
     void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout);
 
-    ID3D11ShaderResourceView* const* GetDiffuseSRV() const { return &mDiffuseSRV; };
+    ID3D11ShaderResourceView* const* GetDiffuseSRV()     const { return &mDiffuseSRV; };
+    ID3D11ShaderResourceView* const* GetSpecularitySRV() const { return &mSpecularitySRV; };
 
     XMMATRIX GetWorldMtrx() const { return mWorldMtrx; }
 
@@ -62,7 +63,9 @@ private:
     bool GenerateSphereGeometry(const WORD vertSegmCount, const WORD stripCount);
 
     bool CreateDeviceBuffers(IRenderingContext &ctx);
-    bool LoadTextures(IRenderingContext &ctx, const wchar_t * diffuseTexturePath);
+    bool LoadTextures(IRenderingContext &ctx,
+                      const wchar_t * diffuseTexturePath,
+                      const wchar_t * specularityTexturePath = nullptr);
 
     void DestroyGeomData();
     void DestroyDeviceBuffers();
@@ -86,6 +89,8 @@ private:
 
     // Textures
     ID3D11ShaderResourceView*   mDiffuseSRV = nullptr;
+    ID3D11Texture2D*            mSpecularityTex = nullptr;
+    ID3D11ShaderResourceView*   mSpecularitySRV = nullptr;
 };
 
 std::array<SceneObject, 3> sSceneObjects;
@@ -429,6 +434,7 @@ void Scene::Render(IRenderingContext &ctx)
 
         // Draw
         immCtx->PSSetShaderResources(0, 1, object.GetDiffuseSRV());
+        immCtx->PSSetShaderResources(1, 1, object.GetSpecularitySRV());
         object.DrawGeometry(ctx, mVertexLayout);
     }
 
@@ -778,7 +784,9 @@ bool SceneObject::CreateDeviceBuffers(IRenderingContext & ctx)
 }
 
 
-bool SceneObject::LoadTextures(IRenderingContext &ctx, const wchar_t * diffuseTexturePath)
+bool SceneObject::LoadTextures(IRenderingContext &ctx,
+                               const wchar_t * diffuseTexturePath,
+                               const wchar_t * specularityTexturePath)
 {
     HRESULT hr = S_OK;
 
@@ -789,6 +797,45 @@ bool SceneObject::LoadTextures(IRenderingContext &ctx, const wchar_t * diffuseTe
     if (diffuseTexturePath)
     {
         hr = D3DX11CreateShaderResourceViewFromFile(device, diffuseTexturePath, nullptr, nullptr, &mDiffuseSRV, nullptr);
+        if (FAILED(hr))
+            return false;
+    }
+
+    if (specularityTexturePath)
+    {
+        hr = D3DX11CreateShaderResourceViewFromFile(device, specularityTexturePath, nullptr, nullptr, &mSpecularitySRV, nullptr);
+        if (FAILED(hr))
+            return false;
+    }
+    else
+    {
+        // TODO: Wrap into ConstantTexture class
+
+        // Default 1x1 zero-value texture
+        D3D11_TEXTURE2D_DESC descTex;
+        ZeroMemory(&descTex, sizeof(D3D11_TEXTURE2D_DESC));
+        descTex.ArraySize = 1;
+        descTex.Usage = D3D11_USAGE_IMMUTABLE;
+        descTex.Format = DXGI_FORMAT_R32_FLOAT;
+        descTex.Width = 1;
+        descTex.Height = 1;
+        descTex.MipLevels = 1;
+        descTex.SampleDesc.Count = 1;
+        descTex.SampleDesc.Quality = 0;
+        descTex.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+        static const float zeroValue = 0.f;
+        D3D11_SUBRESOURCE_DATA initData = { &zeroValue, sizeof(float), 0 };
+        hr = device->CreateTexture2D(&descTex, &initData, &mSpecularityTex);
+        if (FAILED(hr))
+            return false;
+
+        // Shader resource view
+        D3D11_SHADER_RESOURCE_VIEW_DESC descSRV;
+        descSRV.Format = descTex.Format;
+        descSRV.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+        descSRV.Texture2D.MipLevels = 1;
+        descSRV.Texture2D.MostDetailedMip = 0;
+        hr = device->CreateShaderResourceView(mSpecularityTex, &descSRV, &mSpecularitySRV);
         if (FAILED(hr))
             return false;
     }
@@ -823,6 +870,8 @@ void SceneObject::DestroyDeviceBuffers()
 void SceneObject::DestroyTextures()
 {
     Utils::ReleaseAndMakeNull(mDiffuseSRV);
+    Utils::ReleaseAndMakeNull(mSpecularityTex);
+    Utils::ReleaseAndMakeNull(mSpecularitySRV);
 }
 
 
