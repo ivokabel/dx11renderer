@@ -9,4 +9,4 @@ Simple DirectX 11 pet renderer heavily based on DX11 SDK tutorials.
 
 # Screenshots
 
-![Screenshot 3](/Doc/screenshot3 - specular.jpg)
+![Screenshot 3](/Doc/screenshot3-specular.jpg)
