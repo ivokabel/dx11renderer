@@ -3,9 +3,9 @@
 static const float PI = 3.14159265f;
 
 
-Texture2D txDiffuse     : register(t0);
-Texture2D txSpecular    : register(t1);
-SamplerState samLinear  : register(s0);
+Texture2D DiffuseTexture    : register(t0);
+Texture2D SpecularTexture   : register(t1);
+SamplerState LinearSampler  : register(s0);
 
 cbuffer cbNeverChanges : register(b0)
 {
@@ -182,8 +182,8 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
         lightContribs.Specular += contrib.Specular;
     }
 
-    float4 diffuseColor     = txDiffuse.Sample(samLinear, input.Tex);
-    float4 specularColor    = txSpecular.Sample(samLinear, input.Tex);
+    float4 diffuseColor     = DiffuseTexture.Sample(LinearSampler, input.Tex);
+    float4 specularColor    = SpecularTexture.Sample(LinearSampler, input.Tex);
 
     float4 output =
           lightContribs.Diffuse  * diffuseColor

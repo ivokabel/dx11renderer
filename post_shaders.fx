@@ -16,8 +16,8 @@ struct QUAD_VS_OUTPUT
     float2 Tex : TEXCOORD0;
 };
 
-Texture2D s0 : register(t0);
-Texture2D s1 : register(t1);
+Texture2D Texture0 : register(t0);
+Texture2D Texture1 : register(t1);
 
 QUAD_VS_OUTPUT QuadVS(QUAD_VS_INPUT Input)
 {
@@ -42,7 +42,7 @@ float4 BloomPS(QUAD_VS_OUTPUT Input) : SV_TARGET
     for (int i = 0; i < 15; i++)
     {
         samplePos = Input.Tex + BlurOffsets[i];
-        input = s0.Sample(LinearSampler, samplePos);
+        input = Texture0.Sample(LinearSampler, samplePos);
         convolution += BlurWeights[i] * input;
     }
     return convolution;
@@ -50,8 +50,8 @@ float4 BloomPS(QUAD_VS_OUTPUT Input) : SV_TARGET
 
 float4 FinalPassPS(QUAD_VS_OUTPUT Input) : SV_TARGET
 {
-    float4 render = s0.Sample(PointSampler, Input.Tex);
-    float4 bloom = s1.Sample(LinearSampler, Input.Tex);
+    float4 render = Texture0.Sample(PointSampler, Input.Tex);
+    float4 bloom = Texture1.Sample(LinearSampler, Input.Tex);
 
     const float bloomStrength = 0.010f;
 
