@@ -19,6 +19,15 @@ class Scene : public IScene
 {
 public:
 
+    enum HardwiredSceneId
+    {
+        eSimpleDebugSphere,
+        eEarth,
+        eThreePlanets,
+    };
+
+    Scene(const HardwiredSceneId sceneId);
+    // TODO: Scene(const std::string &sceneFilePath);
     virtual ~Scene();
 
     virtual bool Init(IRenderingContext &ctx) override;
@@ -28,6 +37,13 @@ public:
     virtual bool GetAmbientColor(float(&rgba)[4]) override;
 
 private:
+
+    // Loads the scene specified via constructor
+    bool Load(IRenderingContext &ctx);
+
+private:
+
+    const HardwiredSceneId      mSceneId;
 
     ID3D11VertexShader*         mVertexShader = nullptr;
     ID3D11PixelShader*          mPixelShaderIllum = nullptr;

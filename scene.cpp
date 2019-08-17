@@ -94,7 +94,7 @@ private:
     ID3D11ShaderResourceView*   mSpecularSRV = nullptr;
 };
 
-std::array<SceneObject, 3> sSceneObjects;
+std::vector<SceneObject> sSceneObjects;
 SceneObject sPointLightProxy;
 
 
@@ -111,61 +111,46 @@ struct {
 
 struct AmbientLight
 {
-    const XMFLOAT4 luminance; // omnidirectional luminance: lm * sr-1 * m-2
+    XMFLOAT4 luminance; // omnidirectional luminance: lm * sr-1 * m-2
 
-    AmbientLight() = delete;
-    AmbientLight& operator =(const AmbientLight &a) = delete;
+    AmbientLight() :
+        luminance{}
+    {}
 };
 
 
 // Directional light
 struct DirectLight
 {
-    const XMFLOAT4 dir;
-          XMFLOAT4 dirTransf;
-    const XMFLOAT4 luminance; // lm * sr-1 * m-2
+    XMFLOAT4 dir;
+    XMFLOAT4 dirTransf;
+    XMFLOAT4 luminance; // lm * sr-1 * m-2
 
-    DirectLight() = delete;
-    DirectLight& operator =(const DirectLight &a) = delete;
+    DirectLight() :
+        dir{},
+        dirTransf{},
+        luminance{}
+    {}
 };
 
 
 struct PointLight
 {
-    const XMFLOAT4 pos;
-          XMFLOAT4 posTransf;
-    const XMFLOAT4 intensity; // luminuous intensity [cd = lm * sr-1] = luminuous flux / 4Pi
+    XMFLOAT4 pos;
+    XMFLOAT4 posTransf;
+    XMFLOAT4 intensity; // luminuous intensity [cd = lm * sr-1] = luminuous flux / 4Pi
 
-    PointLight() = delete;
-    PointLight& operator =(const PointLight &a) = delete;
+    PointLight() :
+        pos{},
+        posTransf{},
+        intensity{}
+    {}
 };
 
 
-//AmbientLight sAmbientLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) };
-AmbientLight sAmbientLight{ XMFLOAT4(0.01f, 0.07f, 0.10f, 1.0f) };
-//AmbientLight sAmbientLight{ XMFLOAT4(0.42f, 0.42f, 0.42f, 1.0f) };
-
-std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights =
-{
-    //DirectLight{ XMFLOAT4(0.f, 1.f, 0.f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.f, 0.f, 0.f, 1.0f) },
-    DirectLight{ XMFLOAT4(0.f, 1.f, 0.f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(2.6f, 2.6f, 2.6f, 1.0f) },
-};
-
-
-std::array<PointLight, POINT_LIGHTS_COUNT> sPointLights =
-{
-    // coloured
-    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(4.000f, 1.800f, 1.200f, 1.0f)/*cd = lm * sr-1]*/ }, // red
-    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1.000f, 2.500f, 1.100f, 1.0f)/*cd = lm * sr-1]*/ }, // green
-    PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(1.200f, 1.800f, 4.000f, 1.0f)/*cd = lm * sr-1]*/ }, // blue
-
-    // grayscale
-    //PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.0500f, 0.0500f, 0.0500f, 1.0f)/*cd = lm * sr-1]*/ },
-    //PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.5000f, 0.5000f, 0.5000f, 1.0f)/*cd = lm * sr-1]*/ },
-    //PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(5.0000f, 5.0000f, 5.0000f, 1.0f)/*cd = lm * sr-1]*/ },
-
-    //PointLight{ XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f)/*cd = lm * sr-1]*/ }, // black
-};
+AmbientLight sAmbientLight;
+std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights;
+std::array<PointLight, POINT_LIGHTS_COUNT> sPointLights;
 
 
 struct CbNeverChanged
@@ -194,6 +179,10 @@ struct CbChangedPerObject
     XMMATRIX WorldMtrx;
     XMFLOAT4 MeshColor; // May be eventually replaced by the emmisive component of the standard surface shader
 };
+
+Scene::Scene(const HardwiredSceneId sceneId) :
+    mSceneId(sceneId)
+{}
 
 Scene::~Scene()
 {
@@ -238,43 +227,6 @@ bool Scene::Init(IRenderingContext &ctx)
     if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsEmissiveSurf", "ps_4_0", mPixelShaderSolid))
         return false;
 
-    assert(sSceneObjects.size() == 3);
-
-    for (size_t i = 0; i < sSceneObjects.size(); ++i)
-    {
-        switch (i)
-        {
-        case 0:
-            if (!sSceneObjects[i].CreateSphere(ctx,
-                                               40, 80,
-                                               XMFLOAT4(0.f, 0.f, -1.7f, 1.f),
-                                               2.0f,
-                                               L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
-                                               L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
-                return false;
-            break;
-        case 1:
-            if (!sSceneObjects[i].CreateSphere(ctx,
-                                               40, 80,
-                                               XMFLOAT4(-2.5f, 0.f, 2.0f, 1.f),
-                                               1.2f,
-                                               L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
-                return false;
-            break;
-        case 2:
-            if (!sSceneObjects[i].CreateSphere(ctx,
-                                               40, 80,
-                                               XMFLOAT4(2.5f, 0.f, 2.0f, 1.f),
-                                               1.2f,
-                                               L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
-                return false;
-            break;
-        }
-    }
-
-    if (!sPointLightProxy.CreateSphere(ctx, 8, 16))
-        return false;
-
     // Create constant buffers
     D3D11_BUFFER_DESC bd;
     ZeroMemory(&bd, sizeof(bd));
@@ -315,8 +267,8 @@ bool Scene::Init(IRenderingContext &ctx)
     // Matrices
     mViewMtrx = XMMatrixLookAtLH(sViewData.eye, sViewData.at, sViewData.up);
     mProjectionMtrx = XMMatrixPerspectiveFovLH(XM_PIDIV4,
-                                                 (FLOAT)wndWidth / wndHeight,
-                                                 0.01f, 100.0f);
+                                               (FLOAT)wndWidth / wndHeight,
+                                               0.01f, 100.0f);
 
     // Update constant buffers which can be updated now
 
@@ -329,7 +281,121 @@ bool Scene::Init(IRenderingContext &ctx)
     cbChangedOnResize.ProjectionMtrx = XMMatrixTranspose(mProjectionMtrx);
     immCtx->UpdateSubresource(mCbChangedOnResize, 0, NULL, &cbChangedOnResize, 0, 0);
 
+    // Load scene
+
+    if (!Load(ctx))
+        return false;
+
+    if (!sPointLightProxy.CreateSphere(ctx, 8, 16))
+        return false;
+
     return true;
+}
+
+
+bool Scene::Load(IRenderingContext &ctx)
+{
+    switch (mSceneId)
+    {
+    case eSimpleDebugSphere:
+    {
+        sSceneObjects.resize(1);
+        if (sSceneObjects.size() != 1)
+            return false;
+
+        if (!sSceneObjects[0].CreateSphere(ctx,
+                                           40, 80,
+                                           XMFLOAT4(0.f, 0.f, 0.f, 1.f),
+                                           3.2f,
+                                           L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png"))
+            return false;
+
+        sAmbientLight.luminance     = XMFLOAT4(0.10f, 0.10f, 0.10f, 1.0f);
+
+        sDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        sDirectLights[0].luminance  = XMFLOAT4(2.6f, 2.6f, 2.6f, 1.0f);
+
+        // coloured point lights
+        sPointLights[0].intensity   = XMFLOAT4(4.000f, 1.800f, 1.200f, 1.0f); // red
+        sPointLights[1].intensity   = XMFLOAT4(1.000f, 2.500f, 1.100f, 1.0f); // green
+        sPointLights[2].intensity   = XMFLOAT4(1.200f, 1.800f, 4.000f, 1.0f); // blue
+
+        return true;
+    }
+
+    case eEarth:
+    {
+        sSceneObjects.resize(1);
+        if (sSceneObjects.size() != 1)
+            return false;
+
+        if (!sSceneObjects[0].CreateSphere(ctx,
+                                           40, 80,
+                                           XMFLOAT4(0.f, 0.f, 0.f, 1.f),
+                                           3.2f,
+                                           L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
+                                           L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
+            return false;
+
+        sAmbientLight.luminance     = XMFLOAT4(0.f, 0.f, 0.f, 1.0f);
+
+        const double lum = 3.5f;
+        sDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        sDirectLights[0].luminance  = XMFLOAT4(lum, lum, lum, 1.0f);
+
+        const double ints = 3.5f;
+        sPointLights[0].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
+        sPointLights[1].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
+        sPointLights[2].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
+
+        return true;
+    }
+
+    case eThreePlanets:
+    {
+        sSceneObjects.resize(3);
+        if (sSceneObjects.size() != 3)
+            return false;
+
+        if (!sSceneObjects[0].CreateSphere(ctx,
+                                           40, 80,
+                                           XMFLOAT4(0.f, 0.f, -1.5f, 1.f),
+                                           2.2f,
+                                           L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
+                                           L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
+            return false;
+
+        if (!sSceneObjects[1].CreateSphere(ctx,
+                                           20, 40,
+                                           XMFLOAT4(-2.5f, 0.f, 2.0f, 1.f),
+                                           1.2f,
+                                           L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
+            return false;
+
+        if (!sSceneObjects[2].CreateSphere(ctx,
+                                           20, 40,
+                                           XMFLOAT4(2.5f, 0.f, 2.0f, 1.f),
+                                           1.2f,
+                                           L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
+            return false;
+
+        sAmbientLight.luminance     = XMFLOAT4(0.00f, 0.00f, 0.00f, 1.0f);
+
+        const double lum = 3.0f;
+        sDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        sDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+
+        const double ints = 4.0f;
+        sPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        sPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        sPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+
+        return true;
+    }
+
+    default:
+        return false;
+    }
 }
 
 
@@ -345,8 +411,8 @@ void Scene::Destroy()
     Utils::ReleaseAndMakeNull(mCbChangedPerObject);
     Utils::ReleaseAndMakeNull(mSamplerLinear);
 
-    for (auto &object : sSceneObjects)
-        object.Destroy();
+    sSceneObjects.clear();
+
     sPointLightProxy.Destroy();
 }
 
@@ -359,8 +425,9 @@ void Scene::Animate(IRenderingContext &ctx)
     for (auto &object : sSceneObjects)
         object.Animate(ctx);
 
-    // Directional light is steady
-    sDirectLights[0].dirTransf = sDirectLights[0].dir;
+    // Directional lights are steady (for now)
+    for (auto &dirLight : sDirectLights)
+        dirLight.dirTransf = dirLight.dir;
 
     // Animate point lights
 
@@ -374,9 +441,15 @@ void Scene::Animate(IRenderingContext &ctx)
     {
         const float lightRelOffset = (float)i / pointCount;
 
-        const float orbitRadius = 4.8f;
+        const float orbitRadius =
+            (mSceneId == eThreePlanets)
+            ? 4.8f
+            : 4.4f;
         const float rotationAngle = -2.f * angle - lightRelOffset * XM_2PI;
-        const float orbitInclination = (lightRelOffset - 0.5f) * XM_PI / 2.f;
+        const float orbitInclination =
+            (mSceneId == eThreePlanets)
+            ? (lightRelOffset - 0.5f) * XM_PIDIV2
+            : lightRelOffset * XM_PI;
 
         const XMMATRIX translationMtrx  = XMMatrixTranslation(orbitRadius, 0.f, 0.f);
         const XMMATRIX rotationMtrx     = XMMatrixRotationY(rotationAngle);
@@ -426,6 +499,7 @@ void Scene::Render(IRenderingContext &ctx)
     immCtx->PSSetConstantBuffers(3, 1, &mCbChangedPerObject);
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
 
+    // Draw all scene objects
     for (auto &object : sSceneObjects)
     {
         // Per-object constant buffer
