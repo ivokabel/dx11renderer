@@ -19,6 +19,10 @@ class Scene : public IScene
 {
 public:
 
+    // TODO: enum HardwiredSceneId
+
+    // TODO: Scene(const enum HardwiredSceneId hardwiredSceneId);
+    // TODO: Scene(const std::string &sceneFilePath);
     virtual ~Scene();
 
     virtual bool Init(IRenderingContext &ctx) override;
