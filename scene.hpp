@@ -21,9 +21,9 @@ public:
 
     enum HardwiredSceneId
     {
-        //TODO: eDebugSphere?
-        eThreePlanets
-        //TODO: eEarth?
+        eSimpleDebugSphere,
+        eEarth,
+        eThreePlanets,
     };
 
     Scene(const HardwiredSceneId sceneId);

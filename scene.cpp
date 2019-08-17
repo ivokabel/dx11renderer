@@ -297,6 +297,60 @@ bool Scene::Load(IRenderingContext &ctx)
 {
     switch (mSceneId)
     {
+    case eSimpleDebugSphere:
+    {
+        sSceneObjects.resize(1);
+        if (sSceneObjects.size() != 1)
+            return false;
+
+        if (!sSceneObjects[0].CreateSphere(ctx,
+                                           40, 80,
+                                           XMFLOAT4(0.f, 0.f, 0.f, 1.f),
+                                           3.2f,
+                                           L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png"))
+            return false;
+
+        sAmbientLight.luminance     = XMFLOAT4(0.10f, 0.10f, 0.10f, 1.0f);
+
+        sDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        sDirectLights[0].luminance  = XMFLOAT4(2.6f, 2.6f, 2.6f, 1.0f);
+
+        // coloured point lights
+        sPointLights[0].intensity   = XMFLOAT4(4.000f, 1.800f, 1.200f, 1.0f); // red
+        sPointLights[1].intensity   = XMFLOAT4(1.000f, 2.500f, 1.100f, 1.0f); // green
+        sPointLights[2].intensity   = XMFLOAT4(1.200f, 1.800f, 4.000f, 1.0f); // blue
+
+        return true;
+    }
+
+    case eEarth:
+    {
+        sSceneObjects.resize(1);
+        if (sSceneObjects.size() != 1)
+            return false;
+
+        if (!sSceneObjects[0].CreateSphere(ctx,
+                                           40, 80,
+                                           XMFLOAT4(0.f, 0.f, 0.f, 1.f),
+                                           3.2f,
+                                           L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
+                                           L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
+            return false;
+
+        sAmbientLight.luminance     = XMFLOAT4(0.f, 0.f, 0.f, 1.0f);
+
+        const double lum = 3.5f;
+        sDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        sDirectLights[0].luminance  = XMFLOAT4(lum, lum, lum, 1.0f);
+
+        const double ints = 3.5f;
+        sPointLights[0].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
+        sPointLights[1].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
+        sPointLights[2].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
+
+        return true;
+    }
+
     case eThreePlanets:
     {
         sSceneObjects.resize(3);
@@ -305,21 +359,21 @@ bool Scene::Load(IRenderingContext &ctx)
 
         if (!sSceneObjects[0].CreateSphere(ctx,
                                            40, 80,
-                                           XMFLOAT4(0.f, 0.f, -1.7f, 1.f),
-                                           2.0f,
+                                           XMFLOAT4(0.f, 0.f, -1.5f, 1.f),
+                                           2.2f,
                                            L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
                                            L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
             return false;
 
         if (!sSceneObjects[1].CreateSphere(ctx,
-                                           40, 80,
+                                           20, 40,
                                            XMFLOAT4(-2.5f, 0.f, 2.0f, 1.f),
                                            1.2f,
                                            L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
             return false;
 
         if (!sSceneObjects[2].CreateSphere(ctx,
-                                           40, 80,
+                                           20, 40,
                                            XMFLOAT4(2.5f, 0.f, 2.0f, 1.f),
                                            1.2f,
                                            L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
@@ -327,24 +381,14 @@ bool Scene::Load(IRenderingContext &ctx)
 
         sAmbientLight.luminance     = XMFLOAT4(0.00f, 0.00f, 0.00f, 1.0f);
 
-        sDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
-        sDirectLights[0].luminance  = XMFLOAT4(2.6f, 2.6f, 2.6f, 1.0f);
+        const double lum = 3.0f;
+        sDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        sDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
 
-        // coloured
-        sPointLights[0].pos         = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
-        sPointLights[0].intensity   = XMFLOAT4(4.000f, 1.800f, 1.200f, 1.0f); // red
-        sPointLights[1].pos         = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
-        sPointLights[1].intensity   = XMFLOAT4(1.000f, 2.500f, 1.100f, 1.0f); // green
-        sPointLights[2].pos         = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
-        sPointLights[2].intensity   = XMFLOAT4(1.200f, 1.800f, 4.000f, 1.0f); // blue
-
-        // grayscale
-        //sPointLights[0].pos         = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
-        //sPointLights[0].intensity   = XMFLOAT4(0.0500f, 0.0500f, 0.0500f, 1.0f);
-        //sPointLights[1].pos         = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
-        //sPointLights[1].intensity   = XMFLOAT4(0.5000f, 0.5000f, 0.5000f, 1.0f);
-        //sPointLights[2].pos         = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
-        //sPointLights[2].intensity   = XMFLOAT4(5.0000f, 5.0000f, 5.0000f, 1.0f);
+        const double ints = 4.0f;
+        sPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        sPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        sPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
 
         return true;
     }
@@ -397,9 +441,15 @@ void Scene::Animate(IRenderingContext &ctx)
     {
         const float lightRelOffset = (float)i / pointCount;
 
-        const float orbitRadius = 4.8f;
+        const float orbitRadius =
+            (mSceneId == eThreePlanets)
+            ? 4.8f
+            : 4.4f;
         const float rotationAngle = -2.f * angle - lightRelOffset * XM_2PI;
-        const float orbitInclination = (lightRelOffset - 0.5f) * XM_PI / 2.f;
+        const float orbitInclination =
+            (mSceneId == eThreePlanets)
+            ? (lightRelOffset - 0.5f) * XM_PIDIV2
+            : lightRelOffset * XM_PI;
 
         const XMMATRIX translationMtrx  = XMMatrixTranslation(orbitRadius, 0.f, 0.f);
         const XMMATRIX rotationMtrx     = XMMatrixRotationY(rotationAngle);
