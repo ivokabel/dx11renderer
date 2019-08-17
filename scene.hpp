@@ -19,9 +19,14 @@ class Scene : public IScene
 {
 public:
 
-    // TODO: enum HardwiredSceneId
+    enum HardwiredSceneId
+    {
+        //TODO: eDebugSphere?
+        eThreePlanets
+        //TODO: eEarth?
+    };
 
-    // TODO: Scene(const enum HardwiredSceneId hardwiredSceneId);
+    Scene(const HardwiredSceneId sceneId);
     // TODO: Scene(const std::string &sceneFilePath);
     virtual ~Scene();
 
@@ -37,6 +42,8 @@ private:
     bool Load(IRenderingContext &ctx);
 
 private:
+
+    const HardwiredSceneId      mSceneId;
 
     ID3D11VertexShader*         mVertexShader = nullptr;
     ID3D11PixelShader*          mPixelShaderIllum = nullptr;

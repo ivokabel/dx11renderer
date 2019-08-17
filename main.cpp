@@ -25,7 +25,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
     Log::Debug(L"Entering WinMain: cmd \"%s\", current dir \"%s\"",
                cmdLine, buffer);
 
-    auto scene = std::make_shared<Scene>();
+    auto scene = std::make_shared<Scene>(Scene::eThreePlanets);
     SimpleDX11Renderer renderer(scene);
 
     if (!renderer.Init(instance, cmdShow, 1000u, 750u))

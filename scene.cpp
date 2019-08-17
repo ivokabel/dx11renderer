@@ -94,7 +94,7 @@ private:
     ID3D11ShaderResourceView*   mSpecularSRV = nullptr;
 };
 
-std::array<SceneObject, 3> sSceneObjects;
+std::vector<SceneObject> sSceneObjects;
 SceneObject sPointLightProxy;
 
 
@@ -194,6 +194,10 @@ struct CbChangedPerObject
     XMMATRIX WorldMtrx;
     XMFLOAT4 MeshColor; // May be eventually replaced by the emmisive component of the standard surface shader
 };
+
+Scene::Scene(const HardwiredSceneId sceneId) :
+    mSceneId(sceneId)
+{}
 
 Scene::~Scene()
 {
@@ -306,38 +310,39 @@ bool Scene::Init(IRenderingContext &ctx)
 
 bool Scene::Load(IRenderingContext &ctx)
 {
-    assert(sSceneObjects.size() == 3);
-
-    for (size_t i = 0; i < sSceneObjects.size(); ++i)
+    switch (mSceneId)
     {
-        switch (i)
-        {
-        case 0:
-            if (!sSceneObjects[i].CreateSphere(ctx,
-                                               40, 80,
-                                               XMFLOAT4(0.f, 0.f, -1.7f, 1.f),
-                                               2.0f,
-                                               L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
-                                               L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
-                return false;
-            break;
-        case 1:
-            if (!sSceneObjects[i].CreateSphere(ctx,
-                                               40, 80,
-                                               XMFLOAT4(-2.5f, 0.f, 2.0f, 1.f),
-                                               1.2f,
-                                               L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
-                return false;
-            break;
-        case 2:
-            if (!sSceneObjects[i].CreateSphere(ctx,
-                                               40, 80,
-                                               XMFLOAT4(2.5f, 0.f, 2.0f, 1.f),
-                                               1.2f,
-                                               L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
-                return false;
-            break;
-        }
+    case eThreePlanets:
+    {
+        sSceneObjects.resize(3);
+        if (sSceneObjects.size() != 3)
+            return false;
+
+        if (!sSceneObjects[0].CreateSphere(ctx,
+                                           40, 80,
+                                           XMFLOAT4(0.f, 0.f, -1.7f, 1.f),
+                                           2.0f,
+                                           L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
+                                           L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
+            return false;
+
+        if (!sSceneObjects[1].CreateSphere(ctx,
+                                           40, 80,
+                                           XMFLOAT4(-2.5f, 0.f, 2.0f, 1.f),
+                                           1.2f,
+                                           L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
+            return false;
+
+        if (!sSceneObjects[2].CreateSphere(ctx,
+                                           40, 80,
+                                           XMFLOAT4(2.5f, 0.f, 2.0f, 1.f),
+                                           1.2f,
+                                           L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
+            return false;
+    }
+
+    default:
+        break;
     }
 
     return true;
@@ -356,8 +361,8 @@ void Scene::Destroy()
     Utils::ReleaseAndMakeNull(mCbChangedPerObject);
     Utils::ReleaseAndMakeNull(mSamplerLinear);
 
-    for (auto &object : sSceneObjects)
-        object.Destroy();
+    sSceneObjects.clear();
+
     sPointLightProxy.Destroy();
 }
 
@@ -437,6 +442,7 @@ void Scene::Render(IRenderingContext &ctx)
     immCtx->PSSetConstantBuffers(3, 1, &mCbChangedPerObject);
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
 
+    // Draw all scene objects
     for (auto &object : sSceneObjects)
     {
         // Per-object constant buffer
