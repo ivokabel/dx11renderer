@@ -29,6 +29,11 @@ public:
 
 private:
 
+    // Loads the scene specified via constructor
+    bool Load(IRenderingContext &ctx);
+
+private:
+
     ID3D11VertexShader*         mVertexShader = nullptr;
     ID3D11PixelShader*          mPixelShaderIllum = nullptr;
     ID3D11PixelShader*          mPixelShaderSolid = nullptr;

@@ -238,43 +238,6 @@ bool Scene::Init(IRenderingContext &ctx)
     if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsEmissiveSurf", "ps_4_0", mPixelShaderSolid))
         return false;
 
-    assert(sSceneObjects.size() == 3);
-
-    for (size_t i = 0; i < sSceneObjects.size(); ++i)
-    {
-        switch (i)
-        {
-        case 0:
-            if (!sSceneObjects[i].CreateSphere(ctx,
-                                               40, 80,
-                                               XMFLOAT4(0.f, 0.f, -1.7f, 1.f),
-                                               2.0f,
-                                               L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
-                                               L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
-                return false;
-            break;
-        case 1:
-            if (!sSceneObjects[i].CreateSphere(ctx,
-                                               40, 80,
-                                               XMFLOAT4(-2.5f, 0.f, 2.0f, 1.f),
-                                               1.2f,
-                                               L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
-                return false;
-            break;
-        case 2:
-            if (!sSceneObjects[i].CreateSphere(ctx,
-                                               40, 80,
-                                               XMFLOAT4(2.5f, 0.f, 2.0f, 1.f),
-                                               1.2f,
-                                               L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
-                return false;
-            break;
-        }
-    }
-
-    if (!sPointLightProxy.CreateSphere(ctx, 8, 16))
-        return false;
-
     // Create constant buffers
     D3D11_BUFFER_DESC bd;
     ZeroMemory(&bd, sizeof(bd));
@@ -315,8 +278,8 @@ bool Scene::Init(IRenderingContext &ctx)
     // Matrices
     mViewMtrx = XMMatrixLookAtLH(sViewData.eye, sViewData.at, sViewData.up);
     mProjectionMtrx = XMMatrixPerspectiveFovLH(XM_PIDIV4,
-                                                 (FLOAT)wndWidth / wndHeight,
-                                                 0.01f, 100.0f);
+                                               (FLOAT)wndWidth / wndHeight,
+                                               0.01f, 100.0f);
 
     // Update constant buffers which can be updated now
 
@@ -328,6 +291,54 @@ bool Scene::Init(IRenderingContext &ctx)
     CbChangedOnResize cbChangedOnResize;
     cbChangedOnResize.ProjectionMtrx = XMMatrixTranspose(mProjectionMtrx);
     immCtx->UpdateSubresource(mCbChangedOnResize, 0, NULL, &cbChangedOnResize, 0, 0);
+
+    // Load scene
+
+    if (!Load(ctx))
+        return false;
+
+    if (!sPointLightProxy.CreateSphere(ctx, 8, 16))
+        return false;
+
+    return true;
+}
+
+
+bool Scene::Load(IRenderingContext &ctx)
+{
+    assert(sSceneObjects.size() == 3);
+
+    for (size_t i = 0; i < sSceneObjects.size(); ++i)
+    {
+        switch (i)
+        {
+        case 0:
+            if (!sSceneObjects[i].CreateSphere(ctx,
+                                               40, 80,
+                                               XMFLOAT4(0.f, 0.f, -1.7f, 1.f),
+                                               2.0f,
+                                               L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
+                                               L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
+                return false;
+            break;
+        case 1:
+            if (!sSceneObjects[i].CreateSphere(ctx,
+                                               40, 80,
+                                               XMFLOAT4(-2.5f, 0.f, 2.0f, 1.f),
+                                               1.2f,
+                                               L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
+                return false;
+            break;
+        case 2:
+            if (!sSceneObjects[i].CreateSphere(ctx,
+                                               40, 80,
+                                               XMFLOAT4(2.5f, 0.f, 2.0f, 1.f),
+                                               1.2f,
+                                               L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
+                return false;
+            break;
+        }
+    }
 
     return true;
 }
