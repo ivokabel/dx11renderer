@@ -22,6 +22,14 @@ set(RENDERER_SOURCES
     log.cpp
     utils.hpp
     utils.cpp
+    Libs/tinygltf-2.2.0/stb_image.h
+    Libs/tinygltf-2.2.0/stb_image_write.h
+    Libs/tinygltf-2.2.0/tiny_gltf.h
+    Libs/tinygltf-2.2.0/json.hpp
+
+    #debug
+    Libs/tinygltf-2.2.0/loader_example.h
+    Libs/tinygltf-2.2.0/loader_example.cc
     )
 
 set(CMAKE_CXX_STANDARD 11)
