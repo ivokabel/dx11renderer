@@ -7,31 +7,31 @@
 #include <array>
 #include <vector>
 
-//// debug: wstring->string conversion
-//#include <locale>
-//#include <codecvt>
-//
-//// debug
-//#include "Libs/tinygltf-2.2.0/loader_example.h"
-//
-//// debug: redirecting cout to string
-//// TODO: Move to utils?
-//#include <cstdio>
-//#include <fstream>
-//#include <sstream>
-//#include <iostream>
-//struct cout_redirect {
-//    cout_redirect(std::streambuf * new_buffer) :
-//        old(std::cout.rdbuf(new_buffer))
-//    {}
-//
-//    ~cout_redirect() {
-//        std::cout.rdbuf(old);
-//    }
-//
-//private:
-//    std::streambuf * old;
-//};
+// debug: wstring->string conversion
+#include <locale>
+#include <codecvt>
+
+// debug
+#include "Libs/tinygltf-2.2.0/loader_example.h"
+
+// debug: redirecting cout to string
+// TODO: Move to utils?
+#include <cstdio>
+#include <fstream>
+#include <sstream>
+#include <iostream>
+struct cout_redirect {
+    cout_redirect(std::streambuf * new_buffer) :
+        old(std::cout.rdbuf(new_buffer))
+    {}
+
+    ~cout_redirect() {
+        std::cout.rdbuf(old);
+    }
+
+private:
+    std::streambuf * old;
+};
 
 typedef D3D11_INPUT_ELEMENT_DESC InputElmDesc;
 const std::array<InputElmDesc, 3> sVertexLayout =
@@ -323,24 +323,24 @@ bool Scene::Load(IRenderingContext &ctx)
 {
     switch (mSceneId)
     {
-    //case eHardwiredSimpleDebugSphere:
-    //{
-    //    // debug: tiny glTF test
-    //    {
-    //        // convert to plain string
-    //        using namespace std;
-    //        wstring_convert<codecvt_utf8<wchar_t>, wchar_t> converter;
-    //        string strCmdLine = converter.to_bytes(cmdLine);
+    case eExternal:
+    {
+        // debug: tiny glTF test
+        using namespace std;
 
-    //        std::stringstream strstrm;
-    //        cout_redirect cr(strstrm.rdbuf());
-    //        TinyGltfTest(strCmdLine.c_str());
-    //        Log::Debug(L"TinyGltfTest output:\n%s", converter.from_bytes(strstrm.str()).c_str());
-    //        return 0;
-    //    }
+        // convert to plain string
+        wstring_convert<codecvt_utf8<wchar_t>, wchar_t> converter;
+        //string strCmdLine = converter.to_bytes(cmdLine);
+        string strCmdLine = "../Scenes/glTF-Sample-Models/Triangle/Triangle.gltf";
 
-    //    return false;
-    //}
+        std::stringstream strstrm;
+        cout_redirect cr(strstrm.rdbuf());
+        TinyGltfTest(strCmdLine.c_str());
+
+        Log::Debug(L"TinyGltfTest output:\n%s", converter.from_bytes(strstrm.str()).c_str());
+
+        return false;
+    }
 
     case eHardwiredSimpleDebugSphere:
     {

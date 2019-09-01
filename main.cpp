@@ -25,8 +25,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
                cmdLine, buffer);
 
     auto scene = std::make_shared<Scene>(
+        Scene::eExternal
         //Scene::eHardwiredSimpleDebugSphere
-        Scene::eHardwiredEarth
+        //Scene::eHardwiredEarth
         //Scene::eHardwiredThreePlanets
         );
     SimpleDX11Renderer renderer(scene);
