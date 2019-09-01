@@ -21,6 +21,7 @@ public:
 
     enum SceneId
     {
+        eExternal,
         eHardwiredSimpleDebugSphere,
         eHardwiredEarth,
         eHardwiredThreePlanets,
