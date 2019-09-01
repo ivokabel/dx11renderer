@@ -1679,7 +1679,7 @@ bool LoadImageData(Image *image, const int image_idx, std::string *err,
   (void)user_data;
   (void)warn;
 
-  int w, h, comp, req_comp;
+  int w = 0, h = 0, comp, req_comp;
 
   unsigned char *data = nullptr;
 
