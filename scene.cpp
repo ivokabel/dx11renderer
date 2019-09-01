@@ -206,7 +206,7 @@ struct CbChangedPerObject
     XMFLOAT4 MeshColor; // May be eventually replaced by the emmisive component of the standard surface shader
 };
 
-Scene::Scene(const HardwiredSceneId sceneId) :
+Scene::Scene(const SceneId sceneId) :
     mSceneId(sceneId)
 {}
 
@@ -323,7 +323,7 @@ bool Scene::Load(IRenderingContext &ctx)
 {
     switch (mSceneId)
     {
-    //case eSimpleDebugSphere:
+    //case eHardwiredSimpleDebugSphere:
     //{
     //    // debug: tiny glTF test
     //    {
@@ -342,7 +342,7 @@ bool Scene::Load(IRenderingContext &ctx)
     //    return false;
     //}
 
-    case eSimpleDebugSphere:
+    case eHardwiredSimpleDebugSphere:
     {
         sSceneObjects.resize(1);
         if (sSceneObjects.size() != 1)
@@ -368,7 +368,7 @@ bool Scene::Load(IRenderingContext &ctx)
         return true;
     }
 
-    case eEarth:
+    case eHardwiredEarth:
     {
         sSceneObjects.resize(1);
         if (sSceneObjects.size() != 1)
@@ -396,7 +396,7 @@ bool Scene::Load(IRenderingContext &ctx)
         return true;
     }
 
-    case eThreePlanets:
+    case eHardwiredThreePlanets:
     {
         sSceneObjects.resize(3);
         if (sSceneObjects.size() != 3)
@@ -487,12 +487,12 @@ void Scene::Animate(IRenderingContext &ctx)
         const float lightRelOffset = (float)i / pointCount;
 
         const float orbitRadius =
-            (mSceneId == eThreePlanets)
+            (mSceneId == eHardwiredThreePlanets)
             ? 4.8f
             : 4.4f;
         const float rotationAngle = -2.f * angle - lightRelOffset * XM_2PI;
         const float orbitInclination =
-            (mSceneId == eThreePlanets)
+            (mSceneId == eHardwiredThreePlanets)
             ? (lightRelOffset - 0.5f) * XM_PIDIV2
             : lightRelOffset * XM_PI;
 
