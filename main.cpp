@@ -11,6 +11,30 @@
 #include <windows.h>
 #include <array>
 
+// debug: wstring->string conversion
+#include <locale>
+#include <codecvt>
+
+// debug
+#include "Libs/tinygltf-2.2.0/loader_example.h"
+
+// debug: redirecting cout to string
+#include <cstdio>
+#include <fstream>
+#include <sstream>
+#include <iostream>
+struct cout_redirect {
+    cout_redirect(std::streambuf * new_buffer)
+        : old(std::cout.rdbuf(new_buffer))
+    { }
+
+    ~cout_redirect() {
+        std::cout.rdbuf(old);
+    }
+
+private:
+    std::streambuf * old;
+};
 
 //--------------------------------------------------------------------------------------
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, int cmdShow)
@@ -24,6 +48,20 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
     GetCurrentDirectory(1024, buffer);
     Log::Debug(L"Entering WinMain: cmd \"%s\", current dir \"%s\"",
                cmdLine, buffer);
+
+    // debug: tiny glTF test
+    {
+        // convert to plain string
+        using namespace std;
+        wstring_convert<codecvt_utf8<wchar_t>, wchar_t> converter;
+        string strCmdLine = converter.to_bytes(cmdLine);
+
+        std::stringstream strstrm;
+        cout_redirect cr(strstrm.rdbuf());
+        TinyGltfTest(strCmdLine.c_str());
+        Log::Debug(L"TinyGltfTest output:\n%s", converter.from_bytes(strstrm.str()).c_str());
+        return 0;
+    }
 
     auto scene = std::make_shared<Scene>(
         //Scene::eSimpleDebugSphere
