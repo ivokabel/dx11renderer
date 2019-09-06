@@ -2,6 +2,7 @@
 
 #include <windows.h>
 #include <stdio.h>
+#include <string>
 
 namespace Utils
 {
@@ -14,4 +15,6 @@ namespace Utils
             value = nullptr;
         }
     }
+
+    std::wstring GetFilePathExt(const std::wstring &path);
 }
