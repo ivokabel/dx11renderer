@@ -15,6 +15,8 @@
 #include <xnamath.h>
 #pragma warning(pop)
 
+#include <string>
+
 class Scene : public IScene
 {
 public:
@@ -41,6 +43,8 @@ private:
 
     // Loads the scene specified via constructor
     bool Load(IRenderingContext &ctx);
+    bool LoadExternal(IRenderingContext &ctx, const std::wstring &filePath);
+    bool LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath);
 
 private:
 

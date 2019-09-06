@@ -325,21 +325,7 @@ bool Scene::Load(IRenderingContext &ctx)
     {
     case eExternal:
     {
-        // debug: tiny glTF test
-        using namespace std;
-
-        // convert to plain string
-        wstring_convert<codecvt_utf8<wchar_t>, wchar_t> converter;
-        //string strCmdLine = converter.to_bytes(cmdLine);
-        string strCmdLine = "../Scenes/glTF-Sample-Models/Triangle/Triangle.gltf";
-
-        std::stringstream strstrm;
-        cout_redirect cr(strstrm.rdbuf());
-        TinyGltfTest(strCmdLine.c_str());
-
-        Log::Debug(L"TinyGltfTest output:\n%s", converter.from_bytes(strstrm.str()).c_str());
-
-        return false;
+        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Triangle/Triangle.gltf");
     }
 
     case eHardwiredSimpleDebugSphere:
@@ -441,6 +427,48 @@ bool Scene::Load(IRenderingContext &ctx)
     default:
         return false;
     }
+}
+
+
+bool Scene::LoadExternal(IRenderingContext &ctx,
+                         const std::wstring &filePath)
+{
+    const auto fileExt = Utils::GetFilePathExt(filePath);
+    if ((fileExt.compare(L"glb") == 0) ||
+        (fileExt.compare(L"gltf") == 0))
+    {
+        // glTF
+        return LoadGLTF(ctx, filePath);
+    }
+    else
+    {
+        Log::Error(L"The scene file has an unsupported file format extension (%s)!", fileExt.c_str());
+        return false;
+    }
+}
+
+
+bool Scene::LoadGLTF(IRenderingContext &ctx,
+                     const std::wstring &filePath)
+{
+    using namespace std;
+
+    // Convert to plain string for tinygltf
+    wstring_convert<codecvt_utf8<wchar_t>, wchar_t> converter;
+    string filePathA = converter.to_bytes(filePath);
+
+    // debug: tiny glTF test
+    {
+        std::stringstream ss;
+        cout_redirect cr(ss.rdbuf());
+        TinyGltfTest(filePathA.c_str());
+        Log::Debug(L"TinyGltfTest output:\n\n%s", converter.from_bytes(ss.str()).c_str());
+    }
+
+    // TODO...
+    ctx;
+
+    return false;
 }
 
 
