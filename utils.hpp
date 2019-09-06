@@ -17,4 +17,5 @@ namespace Utils
     }
 
     std::wstring GetFilePathExt(const std::wstring &path);
+    std::string  GetFilePathExt(const std::string  &path);
 }

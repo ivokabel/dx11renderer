@@ -8,3 +8,12 @@ std::wstring Utils::GetFilePathExt(const std::wstring &path)
     else
         return L"";
 }
+
+std::string Utils::GetFilePathExt(const std::string &path)
+{
+    const auto lastDot = path.find_last_of(".");
+    if (lastDot != std::string::npos)
+        return path.substr(lastDot + 1);
+    else
+        return "";
+}
