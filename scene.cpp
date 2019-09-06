@@ -467,7 +467,7 @@ bool LoadGltfModel(tinygltf::Model &model, const std::wstring &filePath)
     //    std::stringstream ss;
     //    cout_redirect cr(ss.rdbuf());
     //    TinyGltfTest(filePathA.c_str());
-    //    Log::Debug(L"LoadGLTF: TinyGltfTest output:\n\n%s", converter.from_bytes(ss.str()).c_str());
+    //    Log::Debug(L"LoadGltfModel: TinyGltfTest output:\n\n%s", converter.from_bytes(ss.str()).c_str());
     //}
 
     tinygltf::TinyGLTF tinyGltf;
@@ -477,25 +477,25 @@ bool LoadGltfModel(tinygltf::Model &model, const std::wstring &filePath)
     bool ret = false;
     if (ext.compare(L"glb") == 0)
     {
-        Log::Debug(L"LoadGLTF: Reading binary glTF from \"%s\"", filePath.c_str());
+        Log::Debug(L"LoadGltfModel: Reading binary glTF from \"%s\"", filePath.c_str());
         ret = tinyGltf.LoadBinaryFromFile(&model, &errA, &warnA, filePathA);
     }
     else
     {
-        Log::Debug(L"LoadGLTF: Reading ASCII glTF from \"%s\"", filePath.c_str());
+        Log::Debug(L"LoadGltfModel: Reading ASCII glTF from \"%s\"", filePath.c_str());
         ret = tinyGltf.LoadASCIIFromFile(&model, &errA, &warnA, filePathA);
     }
 
     if (!errA.empty())
-        Log::Debug(L"LoadGLTF: Error: %s", converter.from_bytes(errA).c_str());
+        Log::Debug(L"LoadGltfModel: Error: %s", converter.from_bytes(errA).c_str());
 
     if (!warnA.empty())
-        Log::Debug(L"LoadGLTF: Warning: %s", converter.from_bytes(warnA).c_str());
+        Log::Debug(L"LoadGltfModel: Warning: %s", converter.from_bytes(warnA).c_str());
 
     if (ret)
-        Log::Debug(L"LoadGLTF: Succesfully loaded model");
+        Log::Debug(L"LoadGltfModel: Succesfully loaded model");
     else
-        Log::Error(L"LoadGLTF: Failed to parse glTF file \"%s\"", filePath.c_str());
+        Log::Error(L"LoadGltfModel: Failed to parse glTF file \"%s\"", filePath.c_str());
 
     return ret;
 }
