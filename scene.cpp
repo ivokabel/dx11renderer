@@ -1,7 +1,14 @@
 #include "scene.hpp"
+
 #include "log.hpp"
 #include "utils.hpp"
 #include "constants.hpp"
+
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#define STBI_MSC_SECURE_CRT
+#include "Libs/tinygltf-2.2.0/tiny_gltf.h"
 
 #include <cassert>
 #include <array>
@@ -12,10 +19,10 @@
 #include <codecvt>
 
 // debug
-#include "Libs/tinygltf-2.2.0/loader_example.h"
+//#include "Libs/tinygltf-2.2.0/loader_example.h"
 
 // debug: redirecting cout to string
-// TODO: Move to utils?
+// TODO: Move to Utils
 #include <cstdio>
 #include <fstream>
 #include <sstream>
@@ -430,8 +437,7 @@ bool Scene::Load(IRenderingContext &ctx)
 }
 
 
-bool Scene::LoadExternal(IRenderingContext &ctx,
-                         const std::wstring &filePath)
+bool Scene::LoadExternal(IRenderingContext &ctx, const std::wstring &filePath)
 {
     const auto fileExt = Utils::GetFilePathExt(filePath);
     if ((fileExt.compare(L"glb") == 0) ||
@@ -448,8 +454,7 @@ bool Scene::LoadExternal(IRenderingContext &ctx,
 }
 
 
-bool Scene::LoadGLTF(IRenderingContext &ctx,
-                     const std::wstring &filePath)
+bool LoadGltfModel(tinygltf::Model &model, const std::wstring &filePath)
 {
     using namespace std;
 
@@ -458,14 +463,51 @@ bool Scene::LoadGLTF(IRenderingContext &ctx,
     string filePathA = converter.to_bytes(filePath);
 
     // debug: tiny glTF test
+    //{
+    //    std::stringstream ss;
+    //    cout_redirect cr(ss.rdbuf());
+    //    TinyGltfTest(filePathA.c_str());
+    //    Log::Debug(L"LoadGLTF: TinyGltfTest output:\n\n%s", converter.from_bytes(ss.str()).c_str());
+    //}
+
+    tinygltf::TinyGLTF tinyGltf;
+    string errA, warnA;
+    wstring ext = Utils::GetFilePathExt(filePath);
+
+    bool ret = false;
+    if (ext.compare(L"glb") == 0)
     {
-        std::stringstream ss;
-        cout_redirect cr(ss.rdbuf());
-        TinyGltfTest(filePathA.c_str());
-        Log::Debug(L"TinyGltfTest output:\n\n%s", converter.from_bytes(ss.str()).c_str());
+        Log::Debug(L"LoadGLTF: Reading binary glTF from \"%s\"", filePath.c_str());
+        ret = tinyGltf.LoadBinaryFromFile(&model, &errA, &warnA, filePathA);
+    }
+    else
+    {
+        Log::Debug(L"LoadGLTF: Reading ASCII glTF from \"%s\"", filePath.c_str());
+        ret = tinyGltf.LoadASCIIFromFile(&model, &errA, &warnA, filePathA);
     }
 
-    // TODO...
+    if (!errA.empty())
+        Log::Debug(L"LoadGLTF: Error: %s", converter.from_bytes(errA).c_str());
+
+    if (!warnA.empty())
+        Log::Debug(L"LoadGLTF: Warning: %s", converter.from_bytes(warnA).c_str());
+
+    if (ret)
+        Log::Debug(L"LoadGLTF: Succesfully loaded model");
+    else
+        Log::Error(L"LoadGLTF: Failed to parse glTF file \"%s\"", filePath.c_str());
+
+    return ret;
+}
+
+
+bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
+{
+    tinygltf::Model model;
+    if (!LoadGltfModel(model, filePath))
+        return false;
+
+    // TODO: Load model
     ctx;
 
     return false;
