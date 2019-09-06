@@ -799,19 +799,19 @@ class Model {
   ~Model() {}
   bool operator==(const Model &) const;
 
+  std::vector<Scene> scenes;
+  std::vector<Node> nodes;
+  std::vector<Mesh> meshes;
   std::vector<Accessor> accessors;
   std::vector<Animation> animations;
   std::vector<Buffer> buffers;
   std::vector<BufferView> bufferViews;
   std::vector<Material> materials;
-  std::vector<Mesh> meshes;
-  std::vector<Node> nodes;
   std::vector<Texture> textures;
   std::vector<Image> images;
   std::vector<Skin> skins;
   std::vector<Sampler> samplers;
   std::vector<Camera> cameras;
-  std::vector<Scene> scenes;
   std::vector<Light> lights;
   ExtensionMap extensions;
 
