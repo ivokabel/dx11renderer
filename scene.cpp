@@ -443,7 +443,6 @@ bool Scene::LoadExternal(IRenderingContext &ctx, const std::wstring &filePath)
     if ((fileExt.compare(L"glb") == 0) ||
         (fileExt.compare(L"gltf") == 0))
     {
-        // glTF
         return LoadGLTF(ctx, filePath);
     }
     else
