@@ -503,12 +503,64 @@ bool LoadGltfModel(tinygltf::Model &model, const std::wstring &filePath)
 
 bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 {
+    using namespace std;
+
+    wstring_convert<codecvt_utf8<wchar_t>, wchar_t> converter;
+
     tinygltf::Model model;
     if (!LoadGltfModel(model, filePath))
         return false;
 
-    // TODO: Load model
-    ctx;
+    // Scene
+    if (model.scenes.size() < 1)
+    {
+        Log::Error(L"LoadGLTF: No scenes present in the model!");
+        return false;
+    }
+    if (model.scenes.size() > 1)
+        Log::Warning(L"LoadGLTF: More scenes present in the model. Loading just the first one.");
+    auto &scene = model.scenes[0];
+
+    Log::Debug(L"LoadGLTF: Scene 0 \"%s\": %d node(s)",
+               converter.from_bytes(scene.name).c_str(),
+               scene.nodes.size());
+
+    // Nodes
+    for (auto nodeIdx : scene.nodes)
+    {
+        if (nodeIdx >= model.nodes.size())
+        {
+            Log::Error(L"LoadGLTF: Invalid node index (%d/%d)!", nodeIdx, model.nodes.size());
+            return false;
+        }
+
+        auto &node = model.nodes[nodeIdx];
+
+        Log::Debug(L"LoadGLTF: Node %d/%d \"%s\": mesh %d",
+                   nodeIdx,
+                   model.nodes.size(),
+                   converter.from_bytes(node.name).c_str(),
+                   node.mesh);
+
+        // Mesh
+        auto meshIdx = node.mesh;
+        if (meshIdx >= model.meshes.size())
+        {
+            Log::Error(L"LoadGLTF: Invalid mesh index (%d/%d)!", meshIdx, model.meshes.size());
+            return false;
+        }
+
+        auto &mesh = model.meshes[meshIdx];
+
+        Log::Debug(L"LoadGLTF: Mesh %d/%d \"%s\": %d primitive(s)",
+                   meshIdx,
+                   model.meshes.size(),
+                   converter.from_bytes(mesh.name).c_str(),
+                   mesh.primitives.size());
+
+        // TODO...
+        ctx;
+    }
 
     return false;
 }
