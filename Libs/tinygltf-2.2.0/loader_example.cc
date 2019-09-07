@@ -376,9 +376,8 @@ static void DumpStringIntMap(const std::map<std::string, int> &m, int indent) {
 }
 
 static void DumpPrimitive(const tinygltf::Primitive &primitive, int indent) {
-    std::cout << Indent(indent) << "material : " << primitive.material
-        << std::endl;
-    std::cout << Indent(indent) << "indices : " << primitive.indices << std::endl;
+    std::cout << Indent(indent) << "material : " << primitive.material << std::endl;
+    std::cout << Indent(indent) << "indices  : " << primitive.indices << std::endl;
     std::cout << Indent(indent) << "mode     : " << PrintMode(primitive.mode)
         << "(" << primitive.mode << ")" << std::endl;
     std::cout << Indent(indent)
@@ -450,17 +449,12 @@ static void Dump(const tinygltf::Model &model) {
         for (size_t i = 0; i < model.accessors.size(); i++) {
             const tinygltf::Accessor &accessor = model.accessors[i];
             std::cout << Indent(1) << "name : " << accessor.name << std::endl;
-            std::cout << Indent(2) << "bufferView   : " << accessor.bufferView
-                << std::endl;
-            std::cout << Indent(2) << "byteOffset   : " << accessor.byteOffset
-                << std::endl;
-            std::cout << Indent(2) << "componentType: "
-                << PrintComponentType(accessor.componentType) << "("
-                << accessor.componentType << ")" << std::endl;
-            std::cout << Indent(2) << "count        : " << accessor.count
-                << std::endl;
-            std::cout << Indent(2) << "type         : " << PrintType(accessor.type)
-                << std::endl;
+            std::cout << Indent(2) << "bufferView   : " << accessor.bufferView << std::endl;
+            std::cout << Indent(2) << "byteOffset   : " << accessor.byteOffset << std::endl;
+            std::cout << Indent(2) << "componentType: " << PrintComponentType(accessor.componentType) << "(" << accessor.componentType << ")" << std::endl;
+            std::cout << Indent(2) << "count        : " << accessor.count << std::endl;
+            std::cout << Indent(2) << "type         : " << PrintType(accessor.type) << std::endl;
+
             if (!accessor.minValues.empty()) {
                 std::cout << Indent(2) << "min          : [";
                 for (size_t k = 0; k < accessor.minValues.size(); k++) {
