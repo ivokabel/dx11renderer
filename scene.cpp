@@ -500,6 +500,93 @@ bool LoadGltfModel(tinygltf::Model &model, const std::wstring &filePath)
 }
 
 
+// debug
+static std::string ModeToString(int mode)
+{
+    if (mode == TINYGLTF_MODE_POINTS)
+        return "POINTS";
+    else if (mode == TINYGLTF_MODE_LINE)
+        return "LINE";
+    else if (mode == TINYGLTF_MODE_LINE_LOOP)
+        return "LINE_LOOP";
+    else if (mode == TINYGLTF_MODE_TRIANGLES)
+        return "TRIANGLES";
+    else if (mode == TINYGLTF_MODE_TRIANGLE_FAN)
+        return "TRIANGLE_FAN";
+    else if (mode == TINYGLTF_MODE_TRIANGLE_STRIP)
+        return "TRIANGLE_STRIP";
+    return "**UNKNOWN**";
+}
+
+
+static std::string StringIntMapToString(const std::map<std::string, int> &m)
+{
+    std::stringstream ss;
+    bool first = true;
+    for (auto item : m)
+    {
+        if (!first)
+            ss << ", ";
+        else
+            first = false;
+        ss << item.first << ": " << item.second;
+    }
+    return ss.str();
+}
+
+static std::string TypeToString(int ty) {
+    if (ty == TINYGLTF_TYPE_SCALAR)
+        return "SCALAR";
+    else if (ty == TINYGLTF_TYPE_VECTOR)
+        return "VECTOR";
+    else if (ty == TINYGLTF_TYPE_VEC2)
+        return "VEC2";
+    else if (ty == TINYGLTF_TYPE_VEC3)
+        return "VEC3";
+    else if (ty == TINYGLTF_TYPE_VEC4)
+        return "VEC4";
+    else if (ty == TINYGLTF_TYPE_MATRIX)
+        return "MATRIX";
+    else if (ty == TINYGLTF_TYPE_MAT2)
+        return "MAT2";
+    else if (ty == TINYGLTF_TYPE_MAT3)
+        return "MAT3";
+    else if (ty == TINYGLTF_TYPE_MAT4)
+        return "MAT4";
+    return "**UNKNOWN**";
+}
+
+static std::string ComponentTypeToString(int ty) {
+    if (ty == TINYGLTF_COMPONENT_TYPE_BYTE)
+        return "BYTE";
+    else if (ty == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
+        return "UNSIGNED_BYTE";
+    else if (ty == TINYGLTF_COMPONENT_TYPE_SHORT)
+        return "SHORT";
+    else if (ty == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
+        return "UNSIGNED_SHORT";
+    else if (ty == TINYGLTF_COMPONENT_TYPE_INT)
+        return "INT";
+    else if (ty == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
+        return "UNSIGNED_INT";
+    else if (ty == TINYGLTF_COMPONENT_TYPE_FLOAT)
+        return "FLOAT";
+    else if (ty == TINYGLTF_COMPONENT_TYPE_DOUBLE)
+        return "DOUBLE";
+
+    return "**UNKNOWN**";
+}
+
+static std::string TargetToString(int target) {
+    if (target == 34962)
+        return "GL_ARRAY_BUFFER";
+    else if (target == 34963)
+        return "GL_ELEMENT_ARRAY_BUFFER";
+    else
+        return "**UNKNOWN**";
+}
+
+
 bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 {
     using namespace std;
@@ -518,14 +605,15 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
     }
     if (model.scenes.size() > 1)
         Log::Warning(L"LoadGLTF: More scenes present in the model. Loading just the first one.");
-    auto &scene = model.scenes[0];
+    const auto &scene = model.scenes[0];
 
     Log::Debug(L"LoadGLTF: Scene 0 \"%s\": %d node(s)",
                converter.from_bytes(scene.name).c_str(),
                scene.nodes.size());
 
     // Nodes
-    for (auto nodeIdx : scene.nodes)
+    // No children so far
+    for (const auto nodeIdx : scene.nodes)
     {
         if (nodeIdx >= model.nodes.size())
         {
@@ -533,23 +621,39 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
             return false;
         }
 
-        auto &node = model.nodes[nodeIdx];
+        const auto &node = model.nodes[nodeIdx];
 
-        Log::Debug(L"LoadGLTF: Node %d/%d \"%s\": mesh %d",
+        Log::Debug(L"LoadGLTF: Node %d/%d \"%s\": mesh %d, %d children",
                    nodeIdx,
                    model.nodes.size(),
                    converter.from_bytes(node.name).c_str(),
-                   node.mesh);
+                   node.mesh,
+                   node.children.size());
+
+        // Children
+        for (const auto childIdx : node.children)
+        {
+            if ((childIdx < 0) || (childIdx >= model.nodes.size()))
+            {
+                Log::Error(L"LoadGLTF: Invalid child node index (%d/%d)!", childIdx, model.nodes.size());
+                return false;
+            }
+
+            Log::Debug(L"LoadGLTF: Child %d/%d \"%s\"",
+                       childIdx,
+                       model.nodes.size(),
+                       converter.from_bytes(model.nodes[childIdx].name).c_str());
+        }
 
         // Mesh
-        auto meshIdx = node.mesh;
+        const auto meshIdx = node.mesh;
         if (meshIdx >= model.meshes.size())
         {
             Log::Error(L"LoadGLTF: Invalid mesh index (%d/%d)!", meshIdx, model.meshes.size());
             return false;
         }
 
-        auto &mesh = model.meshes[meshIdx];
+        const auto &mesh = model.meshes[meshIdx];
 
         Log::Debug(L"LoadGLTF: Mesh %d/%d \"%s\": %d primitive(s)",
                    meshIdx,
@@ -557,8 +661,77 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
                    converter.from_bytes(mesh.name).c_str(),
                    mesh.primitives.size());
 
-        // TODO...
-        ctx;
+        // Primitives
+        for (size_t i = 0; i < mesh.primitives.size(); ++i)
+        {
+            const auto &primitive = mesh.primitives[i];
+
+            Log::Debug(L"LoadGLTF: Primitive %d/%d: mode %s, attributes [%s], indices %d, material %d",
+                       i,
+                       mesh.primitives.size(),
+                       converter.from_bytes(ModeToString(primitive.mode)).c_str(),
+                       converter.from_bytes(StringIntMapToString(primitive.attributes)).c_str(),
+                       primitive.indices,
+                       primitive.material);
+
+            const auto &attrs = primitive.attributes;
+
+            // POSITION accessor
+
+            const auto positionIt = attrs.find("POSITION");
+            if (positionIt == attrs.end())
+            {
+                Log::Error(L"LoadGLTF: No POSITION attribute present in primitive %d!", i);
+                return false;
+            }
+
+            const auto positionIdx = positionIt->second;
+            if ((positionIdx < 0) || (positionIdx > model.accessors.size()))
+            {
+                Log::Error(L"LoadGLTF: Invalid POSITION accessor index (%d/%d)!", positionIdx, model.accessors.size());
+                return false;
+            }
+
+            const auto &positionAccessor = model.accessors[positionIdx];
+
+            Log::Debug(L"LoadGLTF: POSITION accesor: name %s, view %d, offset %d, count %d, type %s, comp type %s",
+                       converter.from_bytes(positionAccessor.name).c_str(),
+                       positionAccessor.bufferView,
+                       positionAccessor.byteOffset,
+                       positionAccessor.count,
+                       converter.from_bytes(TypeToString(positionAccessor.type)).c_str(),
+                       converter.from_bytes(ComponentTypeToString(positionAccessor.componentType)).c_str());
+
+            // POSITION buffer view
+
+            const auto positionViewIdx = positionAccessor.bufferView;
+
+            if ((positionViewIdx < 0) || (positionViewIdx > model.accessors.size()))
+            {
+                Log::Error(L"LoadGLTF: Invalid POSITION view buffer index (%d/%d)!", positionViewIdx, model.bufferViews.size());
+                return false;
+            }
+
+            const auto &positionView = model.bufferViews[positionViewIdx];
+
+            Log::Debug(L"LoadGLTF: POSITION buffer view: name %s, buffer %d, offset %d, length %d, strinde %d, target %s",
+                       converter.from_bytes(positionView.name).c_str(),
+                       positionView.buffer,
+                       positionView.byteOffset,
+                       positionView.byteLength,
+                       positionView.byteStride,
+                       converter.from_bytes(TargetToString(positionView.target)).c_str());
+
+            //// TODO: Indices
+            //if (primitive.indices >= 0)
+            //{
+            //    // TODO: Indexed geometry
+            //}
+            //else
+            //{
+            //    // TODO: Geometry without indices
+            //}
+        }
     }
 
     return false;
