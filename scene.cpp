@@ -666,7 +666,7 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
         {
             const auto &primitive = mesh.primitives[i];
 
-            Log::Debug(L"LoadGLTF: Primitive %d/%d: mode %s, attributes [%s], indices %d, material %d",
+            Log::Debug(L"LoadGLTF: Primitive %d/%d: %s, [%s], indices %d, material %d",
                        i,
                        mesh.primitives.size(),
                        converter.from_bytes(ModeToString(primitive.mode)).c_str(),
@@ -694,7 +694,8 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 
             const auto &positionAccessor = model.accessors[positionIdx];
 
-            Log::Debug(L"LoadGLTF: POSITION accesor: name %s, view %d, offset %d, count %d, type %s, comp type %s",
+            Log::Debug(L"LoadGLTF: POSITION accesor %d \"%s\": view %d, offset %d, count %d, type %s-%s",
+                       positionIdx,
                        converter.from_bytes(positionAccessor.name).c_str(),
                        positionAccessor.bufferView,
                        positionAccessor.byteOffset,
@@ -706,7 +707,7 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 
             const auto positionViewIdx = positionAccessor.bufferView;
 
-            if ((positionViewIdx < 0) || (positionViewIdx > model.accessors.size()))
+            if ((positionViewIdx < 0) || (positionViewIdx > model.bufferViews.size()))
             {
                 Log::Error(L"LoadGLTF: Invalid POSITION view buffer index (%d/%d)!", positionViewIdx, model.bufferViews.size());
                 return false;
@@ -714,13 +715,50 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 
             const auto &positionView = model.bufferViews[positionViewIdx];
 
-            Log::Debug(L"LoadGLTF: POSITION buffer view: name %s, buffer %d, offset %d, length %d, strinde %d, target %s",
+            Log::Debug(L"LoadGLTF: POSITION buffer view %d \"%s\": buffer %d, offset %d, length %d, stride %d, target %s",
+                       positionViewIdx,
                        converter.from_bytes(positionView.name).c_str(),
                        positionView.buffer,
                        positionView.byteOffset,
                        positionView.byteLength,
                        positionView.byteStride,
                        converter.from_bytes(TargetToString(positionView.target)).c_str());
+
+            if (positionView.byteStride != 0)
+            {
+                Log::Error(L"LoadGLTF: Unsupported byte stride (%d) POSITION buffer!", positionView.byteStride);
+                return false;
+            }
+
+            // POSITION buffer
+
+            const auto positionBufferIdx = positionView.buffer;
+
+            if ((positionBufferIdx < 0) || (positionBufferIdx > model.buffers.size()))
+            {
+                Log::Error(L"LoadGLTF: Invalid POSITION buffer index (%d/%d)!", positionBufferIdx, model.buffers.size());
+                return false;
+            }
+
+            const auto &positionBuffer = model.buffers[positionBufferIdx];
+
+            const auto byteEnd = positionView.byteOffset + positionView.byteLength;
+            if (byteEnd > positionBuffer.data.size())
+            {
+                Log::Error(L"LoadGLTF: Accessing data chunk outside POSITION buffer %d!", positionBufferIdx);
+                return false;
+            }
+
+            Log::Debug(L"LoadGLTF: POSITION buffer %d \"%s\": data %x, size %d, uri \"%s\"",
+                       positionBufferIdx,
+                       converter.from_bytes(positionBuffer.name).c_str(),
+                       positionBuffer.data.size(),
+                       positionBuffer.data.data(),
+                       converter.from_bytes(positionBuffer.uri).c_str());
+
+            const auto positionViewData = positionBuffer.data.data() + positionView.byteOffset;
+
+            // TODO: view.stride + accessor.offset + accessor.stride? -> data
 
             //// TODO: Indices
             //if (primitive.indices >= 0)
@@ -733,6 +771,9 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
             //}
         }
     }
+
+    // TODO
+    ctx;
 
     return false;
 }
