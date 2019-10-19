@@ -685,14 +685,14 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
             const auto positionIt = attrs.find("POSITION");
             if (positionIt == attrs.end())
             {
-                Log::Error(L"LoadGLTF:    No POSITION attribute present in primitive %d!", i);
+                Log::Error(L"LoadGLTF:     No POSITION attribute present in primitive %d!", i);
                 return false;
             }
 
             const auto positionIdx = positionIt->second;
             if ((positionIdx < 0) || (positionIdx > model.accessors.size()))
             {
-                Log::Error(L"LoadGLTF:    Invalid POSITION accessor index (%d/%d)!", positionIdx, model.accessors.size());
+                Log::Error(L"LoadGLTF:     Invalid POSITION accessor index (%d/%d)!", positionIdx, model.accessors.size());
                 return false;
             }
 
@@ -719,14 +719,14 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 
             const auto &positionView = model.bufferViews[positionViewIdx];
 
-            Log::Debug(L"LoadGLTF:     POSITION buffer view %d \"%s\": buffer %d, offset %d, length %d, stride %d, target %s",
-                       positionViewIdx,
-                       converter.from_bytes(positionView.name).c_str(),
-                       positionView.buffer,
-                       positionView.byteOffset,
-                       positionView.byteLength,
-                       positionView.byteStride,
-                       converter.from_bytes(TargetToString(positionView.target)).c_str());
+            //Log::Debug(L"LoadGLTF:     POSITION buffer view %d \"%s\": buffer %d, offset %d, length %d, stride %d, target %s",
+            //           positionViewIdx,
+            //           converter.from_bytes(positionView.name).c_str(),
+            //           positionView.buffer,
+            //           positionView.byteOffset,
+            //           positionView.byteLength,
+            //           positionView.byteStride,
+            //           converter.from_bytes(TargetToString(positionView.target)).c_str());
 
             if (positionView.byteStride != 0)
             {
@@ -746,21 +746,20 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 
             const auto &positionBuffer = model.buffers[positionBufferIdx];
 
-            const auto byteEnd = positionView.byteOffset + positionView.byteLength;
-            if (byteEnd > positionBuffer.data.size())
+            const auto positionByteEnd = positionView.byteOffset + positionView.byteLength;
+            if (positionByteEnd > positionBuffer.data.size())
             {
                 Log::Error(L"LoadGLTF:     Accessing data chunk outside POSITION buffer %d!", positionBufferIdx);
                 return false;
             }
 
-            Log::Debug(L"LoadGLTF:     POSITION buffer %d \"%s\": data %x, size %d, uri \"%s\"",
-                       positionBufferIdx,
-                       converter.from_bytes(positionBuffer.name).c_str(),
-                       positionBuffer.data.data(),
-                       positionBuffer.data.size(),
-                       converter.from_bytes(positionBuffer.uri).c_str());
+            //Log::Debug(L"LoadGLTF:     POSITION buffer %d \"%s\": data %x, size %d, uri \"%s\"",
+            //           positionBufferIdx,
+            //           converter.from_bytes(positionBuffer.name).c_str(),
+            //           positionBuffer.data.data(),
+            //           positionBuffer.data.size(),
+            //           converter.from_bytes(positionBuffer.uri).c_str());
 
-            // TODO: Check that buffer is large enough to contain all data for buffer view?
             // TODO: Check that buffer view is large enough to contain all data from accessor?
 
             auto const positionViewData = positionBuffer.data.data() + positionView.byteOffset;
@@ -771,7 +770,8 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
             if ((positionAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT) &&
                 (positionAccessor.type          == TINYGLTF_TYPE_VEC3))
             {
-                const auto componentSize    = sizeof(float);
+                typedef float ComponentType;
+                const auto componentSize    = sizeof(ComponentType);
                 const auto typeSize         = 3 * componentSize;
                 const auto stride           = positionView.byteStride;
                 const auto typeOffset       = (stride == 0) ? typeSize : stride;
@@ -780,33 +780,129 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
                 int posIdx = 0;
                 for (; posIdx < positionAccessor.count; ++posIdx, positionPtr += typeOffset)
                 {
-                    const auto x = *(float*)(positionPtr + 0 * componentSize);
-                    const auto y = *(float*)(positionPtr + 1 * componentSize);
-                    const auto z = *(float*)(positionPtr + 2 * componentSize);
-
                     const XMFLOAT3 pos = *(XMFLOAT3*)positionPtr;
 
-                    Log::Debug(L"LoadGLTF:      Position %d: x %.1f, y %.1f, z %.1f, pos [%.1f, %.1f, %.1f]",
+                    Log::Debug(L"LoadGLTF:      Position %d: pos [%.1f, %.1f, %.1f]",
                                posIdx,
-                               x, y, z,
                                pos.x, pos.y, pos.z);
                 }
             }
             else
             {
-                Log::Error(L"LoadGLTF:    Unsupported POSITION data type!");
+                Log::Error(L"LoadGLTF:     Unsupported POSITION data type!");
                 return false;
             }
 
-            //// TODO: Indices
-            //if (primitive.indices >= 0)
-            //{
-            //    // TODO: Indexed geometry
-            //}
-            //else
-            //{
-            //    // TODO: Geometry without indices
-            //}
+            // Indices accessor
+
+            const auto indicesIdx = primitive.indices;
+
+            if (indicesIdx < 0)
+            {
+                Log::Error(L"LoadGLTF:     Non-indexed geometry is not supported!");
+                return false;
+            }
+
+            if (indicesIdx > model.accessors.size())
+            {
+                Log::Error(L"LoadGLTF:     Invalid indices accessor index (%d/%d)!", indicesIdx, model.accessors.size());
+                return false;
+            }
+
+            const auto &indicesAccessor = model.accessors[indicesIdx];
+
+            Log::Debug(L"LoadGLTF:     Indices accesor %d \"%s\": view %d, offset %d, type %s<%s>, count %d",
+                       indicesIdx,
+                       converter.from_bytes(indicesAccessor.name).c_str(),
+                       indicesAccessor.bufferView,
+                       indicesAccessor.byteOffset,
+                       converter.from_bytes(TypeToString(indicesAccessor.type)).c_str(),
+                       converter.from_bytes(ComponentTypeToString(indicesAccessor.componentType)).c_str(),
+                       indicesAccessor.count);
+
+            // Indices buffer view
+
+            const auto indicesViewIdx = indicesAccessor.bufferView;
+
+            if ((indicesViewIdx < 0) || (indicesViewIdx > model.bufferViews.size()))
+            {
+                Log::Error(L"LoadGLTF:     Invalid indices view buffer index (%d/%d)!", indicesViewIdx, model.bufferViews.size());
+                return false;
+            }
+
+            const auto &indicesView = model.bufferViews[indicesViewIdx];
+
+            //Log::Debug(L"LoadGLTF:     Indices buffer view %d \"%s\": buffer %d, offset %d, length %d, stride %d, target %s",
+            //           indicesViewIdx,
+            //           converter.from_bytes(indicesView.name).c_str(),
+            //           indicesView.buffer,
+            //           indicesView.byteOffset,
+            //           indicesView.byteLength,
+            //           indicesView.byteStride,
+            //           converter.from_bytes(TargetToString(indicesView.target)).c_str());
+
+            if (indicesView.byteStride != 0)
+            {
+                Log::Error(L"LoadGLTF:     Unsupported byte stride (%d) for indices buffer!", indicesView.byteStride);
+                return false;
+            }
+
+            // Indices buffer
+
+            const auto indicesBufferIdx = indicesView.buffer;
+
+            if ((indicesBufferIdx < 0) || (indicesBufferIdx > model.buffers.size()))
+            {
+                Log::Error(L"LoadGLTF:     Invalid indices buffer index (%d/%d)!", indicesBufferIdx, model.buffers.size());
+                return false;
+            }
+
+            const auto &indicesBuffer = model.buffers[indicesBufferIdx];
+
+            const auto indicesByteEnd = indicesView.byteOffset + indicesView.byteLength;
+            if (indicesByteEnd > indicesBuffer.data.size())
+            {
+                Log::Error(L"LoadGLTF:     Accessing data chunk outside indices buffer %d!", indicesBufferIdx);
+                return false;
+            }
+
+            //Log::Debug(L"LoadGLTF:     Indices buffer %d \"%s\": data %x, size %d, uri \"%s\"",
+            //           indicesBufferIdx,
+            //           converter.from_bytes(indicesBuffer.name).c_str(),
+            //           indicesBuffer.data.data(),
+            //           indicesBuffer.data.size(),
+            //           converter.from_bytes(indicesBuffer.uri).c_str());
+
+            // TODO: Check that buffer view is large enough to contain all data from accessor?
+
+            auto const indicesViewData  = indicesBuffer.data.data() + indicesView.byteOffset;
+            auto const firstIndexPtr    = indicesViewData + indicesAccessor.byteOffset;
+
+            // Indices
+
+            if ((indicesAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) &&
+                (indicesAccessor.type          == TINYGLTF_TYPE_SCALAR))
+            {
+                typedef unsigned short ComponentType;
+                const auto componentSize    = sizeof(ComponentType);
+                const auto typeSize         = 1 * componentSize;
+                const auto stride           = indicesView.byteStride;
+                const auto typeOffset       = (stride == 0) ? typeSize : stride;
+
+                auto indexPtr = firstIndexPtr;
+                int idxIdx = 0;
+                for (; idxIdx < indicesAccessor.count; ++idxIdx, indexPtr += typeOffset)
+                {
+                    const auto index = *(ComponentType*)indexPtr;
+
+                    Log::Debug(L"LoadGLTF:      Index %d: %d", idxIdx, index);
+                }
+            }
+            else
+            {
+                Log::Error(L"LoadGLTF:    Unsupported indices data type!");
+                return false;
+            }
         }
     }
 
