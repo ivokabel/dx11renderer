@@ -760,9 +760,43 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
                        positionBuffer.data.size(),
                        converter.from_bytes(positionBuffer.uri).c_str());
 
-            const auto positionViewData = positionBuffer.data.data() + positionView.byteOffset;
+            // TODO: Check that buffer is large enough to contain all data for buffer view?
+            // TODO: Check that buffer view is large enough to contain all data from accessor?
 
-            // TODO: view.stride + accessor.offset + accessor.stride? -> data
+            auto const positionViewData = positionBuffer.data.data() + positionView.byteOffset;
+            auto const firstPositionPtr = positionViewData + positionAccessor.byteOffset;
+
+            // POSITIONs
+
+            if ((positionAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT) &&
+                (positionAccessor.type          == TINYGLTF_TYPE_VEC3))
+            {
+                const auto componentSize    = sizeof(float);
+                const auto typeSize         = 3 * componentSize;
+                const auto stride           = positionView.byteStride;
+                const auto typeOffset       = (stride == 0) ? typeSize : stride;
+
+                auto positionPtr = firstPositionPtr;
+                int posIdx = 0;
+                for (; posIdx < positionAccessor.count; ++posIdx, positionPtr += typeOffset)
+                {
+                    const auto x = *(float*)(positionPtr + 0 * componentSize);
+                    const auto y = *(float*)(positionPtr + 1 * componentSize);
+                    const auto z = *(float*)(positionPtr + 2 * componentSize);
+
+                    const XMFLOAT3 pos = *(XMFLOAT3*)positionPtr;
+
+                    Log::Debug(L"LoadGLTF:      Position %d: x %.1f, y %.1f, z %.1f, pos [%.1f, %.1f, %.1f]",
+                               posIdx,
+                               x, y, z,
+                               pos.x, pos.y, pos.z);
+                }
+            }
+            else
+            {
+                Log::Error(L"LoadGLTF:    Unsupported POSITION data type!");
+                return false;
+            }
 
             //// TODO: Indices
             //if (primitive.indices >= 0)
