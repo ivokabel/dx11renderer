@@ -44,6 +44,8 @@ private:
     // Loads the scene specified via constructor
     bool Load(IRenderingContext &ctx);
     bool LoadExternal(IRenderingContext &ctx, const std::wstring &filePath);
+
+    // glTF loader
     bool LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath);
 
 private:
