@@ -14,10 +14,6 @@
 #include <array>
 #include <vector>
 
-// debug: wstring->string conversion
-#include <locale>
-#include <codecvt>
-
 // debug
 //#include "Libs/tinygltf-2.2.0/loader_example.h"
 
@@ -459,15 +455,14 @@ bool LoadGltfModel(tinygltf::Model &model, const std::wstring &filePath)
     using namespace std;
 
     // Convert to plain string for tinygltf
-    wstring_convert<codecvt_utf8<wchar_t>, wchar_t> converter;
-    string filePathA = converter.to_bytes(filePath);
+    string filePathA = Utils::WideStringToString(filePath);
 
     // debug: tiny glTF test
     //{
     //    std::stringstream ss;
     //    cout_redirect cr(ss.rdbuf());
     //    TinyGltfTest(filePathA.c_str());
-    //    Log::Debug(L"LoadGltfModel: TinyGltfTest output:\n\n%s", converter.from_bytes(ss.str()).c_str());
+    //    Log::Debug(L"LoadGltfModel: TinyGltfTest output:\n\n%s", Utils::StringToWideString(ss.str()).c_str());
     //}
 
     tinygltf::TinyGLTF tinyGltf;
@@ -487,10 +482,10 @@ bool LoadGltfModel(tinygltf::Model &model, const std::wstring &filePath)
     }
 
     if (!errA.empty())
-        Log::Debug(L"LoadGltfModel: Error: %s", converter.from_bytes(errA).c_str());
+        Log::Debug(L"LoadGltfModel: Error: %s", Utils::StringToWideString(errA).c_str());
 
     if (!warnA.empty())
-        Log::Debug(L"LoadGltfModel: Warning: %s", converter.from_bytes(warnA).c_str());
+        Log::Debug(L"LoadGltfModel: Warning: %s", Utils::StringToWideString(warnA).c_str());
 
     if (ret)
         Log::Debug(L"LoadGltfModel: Succesfully loaded model");
@@ -593,8 +588,6 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 {
     using namespace std;
 
-    wstring_convert<codecvt_utf8<wchar_t>, wchar_t> converter;
-
     Log::Debug(L"");
 
     tinygltf::Model model;
@@ -613,7 +606,7 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 
     Log::Debug(L"");
     Log::Debug(L"LoadGLTF: Scene 0 \"%s\": %d node(s)",
-               converter.from_bytes(scene.name).c_str(),
+               Utils::StringToWideString(scene.name).c_str(),
                scene.nodes.size());
 
     // Nodes
@@ -631,7 +624,7 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
         Log::Debug(L"LoadGLTF:  Node %d/%d \"%s\": mesh %d, %d children",
                    nodeIdx,
                    model.nodes.size(),
-                   converter.from_bytes(node.name).c_str(),
+                   Utils::StringToWideString(node.name).c_str(),
                    node.mesh,
                    node.children.size());
 
@@ -647,7 +640,7 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
             Log::Debug(L"LoadGLTF:   Child %d/%d \"%s\"",
                        childIdx,
                        model.nodes.size(),
-                       converter.from_bytes(model.nodes[childIdx].name).c_str());
+                       Utils::StringToWideString(model.nodes[childIdx].name).c_str());
         }
 
         // Mesh
@@ -663,7 +656,7 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
         Log::Debug(L"LoadGLTF:   Mesh %d/%d \"%s\": %d primitive(s)",
                    meshIdx,
                    model.meshes.size(),
-                   converter.from_bytes(mesh.name).c_str(),
+                   Utils::StringToWideString(mesh.name).c_str(),
                    mesh.primitives.size());
 
         // Primitives
@@ -674,8 +667,8 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
             Log::Debug(L"LoadGLTF:    Primitive %d/%d: mode %s, attributes [%s], indices %d, material %d",
                        i,
                        mesh.primitives.size(),
-                       converter.from_bytes(ModeToString(primitive.mode)).c_str(),
-                       converter.from_bytes(StringIntMapToString(primitive.attributes)).c_str(),
+                       Utils::StringToWideString(ModeToString(primitive.mode)).c_str(),
+                       Utils::StringToWideString(StringIntMapToString(primitive.attributes)).c_str(),
                        primitive.indices,
                        primitive.material);
 
@@ -701,11 +694,11 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 
             Log::Debug(L"LoadGLTF:     POSITION accesor %d \"%s\": view %d, offset %d, type %s<%s>, count %d",
                        positionIdx,
-                       converter.from_bytes(positionAccessor.name).c_str(),
+                       Utils::StringToWideString(positionAccessor.name).c_str(),
                        positionAccessor.bufferView,
                        positionAccessor.byteOffset,
-                       converter.from_bytes(TypeToString(positionAccessor.type)).c_str(),
-                       converter.from_bytes(ComponentTypeToString(positionAccessor.componentType)).c_str(),
+                       Utils::StringToWideString(TypeToString(positionAccessor.type)).c_str(),
+                       Utils::StringToWideString(ComponentTypeToString(positionAccessor.componentType)).c_str(),
                        positionAccessor.count);
 
             // POSITION buffer view
@@ -722,12 +715,12 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 
             //Log::Debug(L"LoadGLTF:     POSITION buffer view %d \"%s\": buffer %d, offset %d, length %d, stride %d, target %s",
             //           positionViewIdx,
-            //           converter.from_bytes(positionView.name).c_str(),
+            //           Utils::StringToWideString(positionView.name).c_str(),
             //           positionView.buffer,
             //           positionView.byteOffset,
             //           positionView.byteLength,
             //           positionView.byteStride,
-            //           converter.from_bytes(TargetToString(positionView.target)).c_str());
+            //           Utils::StringToWideString(TargetToString(positionView.target)).c_str());
 
             if (positionView.byteStride != 0)
             {
@@ -756,10 +749,10 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 
             //Log::Debug(L"LoadGLTF:     POSITION buffer %d \"%s\": data %x, size %d, uri \"%s\"",
             //           positionBufferIdx,
-            //           converter.from_bytes(positionBuffer.name).c_str(),
+            //           Utils::StringToWideString(positionBuffer.name).c_str(),
             //           positionBuffer.data.data(),
             //           positionBuffer.data.size(),
-            //           converter.from_bytes(positionBuffer.uri).c_str());
+            //           Utils::StringToWideString(positionBuffer.uri).c_str());
 
             // TODO: Check that buffer view is large enough to contain all data from accessor?
 
@@ -814,11 +807,11 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 
             Log::Debug(L"LoadGLTF:     Indices accesor %d \"%s\": view %d, offset %d, type %s<%s>, count %d",
                        indicesIdx,
-                       converter.from_bytes(indicesAccessor.name).c_str(),
+                       Utils::StringToWideString(indicesAccessor.name).c_str(),
                        indicesAccessor.bufferView,
                        indicesAccessor.byteOffset,
-                       converter.from_bytes(TypeToString(indicesAccessor.type)).c_str(),
-                       converter.from_bytes(ComponentTypeToString(indicesAccessor.componentType)).c_str(),
+                       Utils::StringToWideString(TypeToString(indicesAccessor.type)).c_str(),
+                       Utils::StringToWideString(ComponentTypeToString(indicesAccessor.componentType)).c_str(),
                        indicesAccessor.count);
 
             // Indices buffer view
@@ -835,12 +828,12 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 
             //Log::Debug(L"LoadGLTF:     Indices buffer view %d \"%s\": buffer %d, offset %d, length %d, stride %d, target %s",
             //           indicesViewIdx,
-            //           converter.from_bytes(indicesView.name).c_str(),
+            //           Utils::StringToWideString(indicesView.name).c_str(),
             //           indicesView.buffer,
             //           indicesView.byteOffset,
             //           indicesView.byteLength,
             //           indicesView.byteStride,
-            //           converter.from_bytes(TargetToString(indicesView.target)).c_str());
+            //           Utils::StringToWideString(TargetToString(indicesView.target)).c_str());
 
             if (indicesView.byteStride != 0)
             {
@@ -869,10 +862,10 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 
             //Log::Debug(L"LoadGLTF:     Indices buffer %d \"%s\": data %x, size %d, uri \"%s\"",
             //           indicesBufferIdx,
-            //           converter.from_bytes(indicesBuffer.name).c_str(),
+            //           Utils::StringToWideString(indicesBuffer.name).c_str(),
             //           indicesBuffer.data.data(),
             //           indicesBuffer.data.size(),
-            //           converter.from_bytes(indicesBuffer.uri).c_str());
+            //           Utils::StringToWideString(indicesBuffer.uri).c_str());
 
             // TODO: Check that buffer view is large enough to contain all data from accessor?
 
