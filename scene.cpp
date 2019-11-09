@@ -529,6 +529,28 @@ static std::string ModeToString(int mode)
 }
 
 
+static D3D11_PRIMITIVE_TOPOLOGY GltfModeToTopology(int mode)
+{
+    switch (mode)
+    {
+    case TINYGLTF_MODE_POINTS:
+        return D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
+    case TINYGLTF_MODE_LINE:
+        return D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+    case TINYGLTF_MODE_LINE_STRIP:
+        return D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
+    case TINYGLTF_MODE_TRIANGLES:
+        return D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    case TINYGLTF_MODE_TRIANGLE_STRIP:
+        return D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+    //case TINYGLTF_MODE_LINE_LOOP:
+    //case TINYGLTF_MODE_TRIANGLE_FAN:
+    default:
+        return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    }
+}
+
+
 static std::string StringIntMapToString(const std::map<std::string, int> &m)
 {
     std::stringstream ss;
@@ -1213,6 +1235,10 @@ bool ScenePrimitive::LoadFromGLTF(IRenderingContext & ctx,
                                   const tinygltf::Mesh &mesh,
                                   const int primitiveIdx)
 {
+    // TODO
+    //mScale = scale;
+    //mPos = pos;
+
     if (!LoadGeometryFromGLTF(model, mesh, primitiveIdx))
         return false;
     if (!CreateDeviceBuffers(ctx))
@@ -1342,8 +1368,14 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
                                                    L"Indices"))
         return false;
 
-    // TODO: Topology
-    mTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    // DX primitive topology
+
+    mTopology = GltfModeToTopology(primitive.mode);
+    if (mTopology == D3D_PRIMITIVE_TOPOLOGY_UNDEFINED)
+    {
+        Log::Error(L"LoadGLTF:     Unsupported primitive topology!");
+        return false;
+    }
 
     return true;
 }
