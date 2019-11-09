@@ -53,12 +53,12 @@ struct SceneVertex
 };
 
 
-class SceneObject
+class ScenePrimitive
 {
 public:
 
-    SceneObject();
-    ~SceneObject();
+    ScenePrimitive();
+    ~ScenePrimitive();
 
     bool CreateCube(IRenderingContext & ctx,
                     const XMFLOAT4 pos = XMFLOAT4(0, 0, 0, 1),
@@ -123,8 +123,8 @@ private:
     ID3D11ShaderResourceView*   mSpecularSRV = nullptr;
 };
 
-std::vector<SceneObject> sSceneObjects;
-SceneObject sPointLightProxy;
+std::vector<ScenePrimitive> sSceneObjects;
+ScenePrimitive sPointLightProxy;
 
 
 struct {
@@ -1013,20 +1013,20 @@ bool Scene::GetAmbientColor(float(&rgba)[4])
 }
 
 
-SceneObject::SceneObject() :
+ScenePrimitive::ScenePrimitive() :
     mWorldMtrx(XMMatrixIdentity())
 {}
 
-SceneObject::~SceneObject()
+ScenePrimitive::~ScenePrimitive()
 {
     Destroy();
 }
 
 
-bool SceneObject::CreateCube(IRenderingContext & ctx,
-                             const XMFLOAT4 pos,
-                             const float scale,
-                             const wchar_t * diffuseTexPath)
+bool ScenePrimitive::CreateCube(IRenderingContext & ctx,
+                                const XMFLOAT4 pos,
+                                const float scale,
+                                const wchar_t * diffuseTexPath)
 {
     mScale = scale;
     mPos = pos;
@@ -1042,10 +1042,10 @@ bool SceneObject::CreateCube(IRenderingContext & ctx,
 }
 
 
-bool SceneObject::CreateOctahedron(IRenderingContext & ctx,
-                                   const XMFLOAT4 pos,
-                                   const float scale,
-                                   const wchar_t * diffuseTexPath)
+bool ScenePrimitive::CreateOctahedron(IRenderingContext & ctx,
+                                      const XMFLOAT4 pos,
+                                      const float scale,
+                                      const wchar_t * diffuseTexPath)
 {
     mScale = scale;
     mPos = pos;
@@ -1061,13 +1061,13 @@ bool SceneObject::CreateOctahedron(IRenderingContext & ctx,
 }
 
 
-bool SceneObject::CreateSphere(IRenderingContext & ctx,
-                               const WORD vertSegmCount,
-                               const WORD stripCount,
-                               const XMFLOAT4 pos,
-                               const float scale,
-                               const wchar_t * diffuseTexPath,
-                               const wchar_t * specularTexPath)
+bool ScenePrimitive::CreateSphere(IRenderingContext & ctx,
+                                  const WORD vertSegmCount,
+                                  const WORD stripCount,
+                                  const XMFLOAT4 pos,
+                                  const float scale,
+                                  const wchar_t * diffuseTexPath,
+                                  const wchar_t * specularTexPath)
 {
     mScale = scale;
     mPos = pos;
@@ -1083,7 +1083,7 @@ bool SceneObject::CreateSphere(IRenderingContext & ctx,
 }
 
 
-bool SceneObject::GenerateCubeGeometry()
+bool ScenePrimitive::GenerateCubeGeometry()
 {
     mVertices =
     {
@@ -1157,7 +1157,7 @@ bool SceneObject::GenerateCubeGeometry()
 }
 
 
-bool SceneObject::GenerateOctahedronGeometry()
+bool ScenePrimitive::GenerateOctahedronGeometry()
 {
     mVertices =
     {
@@ -1199,7 +1199,7 @@ bool SceneObject::GenerateOctahedronGeometry()
 }
 
 
-bool SceneObject::GenerateSphereGeometry(const WORD vertSegmCount, const WORD stripCount)
+bool ScenePrimitive::GenerateSphereGeometry(const WORD vertSegmCount, const WORD stripCount)
 {
     if (vertSegmCount < 2)
     {
@@ -1270,7 +1270,7 @@ bool SceneObject::GenerateSphereGeometry(const WORD vertSegmCount, const WORD st
     mTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
     //mTopology = D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP; // debug
 
-    Log::Debug(L"SceneObject::GenerateSphereGeometry: "
+    Log::Debug(L"ScenePrimitive::GenerateSphereGeometry: "
                L"%d segments, %d strips => %d triangles, %d vertices, %d indices",
                vertSegmCount, stripCount,
                stripCount * (2 * horzLineCount),
@@ -1280,7 +1280,7 @@ bool SceneObject::GenerateSphereGeometry(const WORD vertSegmCount, const WORD st
 }
 
 
-bool SceneObject::CreateDeviceBuffers(IRenderingContext & ctx)
+bool ScenePrimitive::CreateDeviceBuffers(IRenderingContext & ctx)
 {
     DestroyDeviceBuffers();
 
@@ -1324,9 +1324,9 @@ bool SceneObject::CreateDeviceBuffers(IRenderingContext & ctx)
 }
 
 
-bool SceneObject::LoadTextures(IRenderingContext &ctx,
-                               const wchar_t * diffuseTexPath,
-                               const wchar_t * specularTexPath)
+bool ScenePrimitive::LoadTextures(IRenderingContext &ctx,
+                                  const wchar_t * diffuseTexPath,
+                                  const wchar_t * specularTexPath)
 {
     HRESULT hr = S_OK;
 
@@ -1382,7 +1382,7 @@ bool SceneObject::LoadTextures(IRenderingContext &ctx,
 }
 
 
-void SceneObject::Destroy()
+void ScenePrimitive::Destroy()
 {
     DestroyGeomData();
     DestroyDeviceBuffers();
@@ -1390,7 +1390,7 @@ void SceneObject::Destroy()
 }
 
 
-void SceneObject::DestroyGeomData()
+void ScenePrimitive::DestroyGeomData()
 {
     mVertices.clear();
     mIndices.clear();
@@ -1398,14 +1398,14 @@ void SceneObject::DestroyGeomData()
 }
 
 
-void SceneObject::DestroyDeviceBuffers()
+void ScenePrimitive::DestroyDeviceBuffers()
 {
     Utils::ReleaseAndMakeNull(mVertexBuffer);
     Utils::ReleaseAndMakeNull(mIndexBuffer);
 }
 
 
-void SceneObject::DestroyTextures()
+void ScenePrimitive::DestroyTextures()
 {
     Utils::ReleaseAndMakeNull(mDiffuseSRV);
     Utils::ReleaseAndMakeNull(mSpecularTex);
@@ -1413,7 +1413,7 @@ void SceneObject::DestroyTextures()
 }
 
 
-void SceneObject::Animate(IRenderingContext &ctx)
+void ScenePrimitive::Animate(IRenderingContext &ctx)
 {
     const float time = ctx.GetCurrentAnimationTime();
     const float period = 15.f; //seconds
@@ -1427,7 +1427,7 @@ void SceneObject::Animate(IRenderingContext &ctx)
 }
 
 
-void SceneObject::DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout)
+void ScenePrimitive::DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout)
 {
     auto immCtx = ctx.GetImmediateContext();
 
