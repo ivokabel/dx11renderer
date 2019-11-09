@@ -123,7 +123,7 @@ private:
     ID3D11ShaderResourceView*   mSpecularSRV = nullptr;
 };
 
-std::vector<ScenePrimitive> sSceneObjects;
+std::vector<ScenePrimitive> sScenePrimitives;
 ScenePrimitive sPointLightProxy;
 
 
@@ -334,15 +334,15 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eHardwiredSimpleDebugSphere:
     {
-        sSceneObjects.resize(1);
-        if (sSceneObjects.size() != 1)
+        sScenePrimitives.resize(1);
+        if (sScenePrimitives.size() != 1)
             return false;
 
-        if (!sSceneObjects[0].CreateSphere(ctx,
-                                           40, 80,
-                                           XMFLOAT4(0.f, 0.f, 0.f, 1.f),
-                                           3.2f,
-                                           L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png"))
+        if (!sScenePrimitives[0].CreateSphere(ctx,
+                                              40, 80,
+                                              XMFLOAT4(0.f, 0.f, 0.f, 1.f),
+                                              3.2f,
+                                              L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png"))
             return false;
 
         sAmbientLight.luminance     = XMFLOAT4(0.10f, 0.10f, 0.10f, 1.0f);
@@ -360,16 +360,16 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eHardwiredEarth:
     {
-        sSceneObjects.resize(1);
-        if (sSceneObjects.size() != 1)
+        sScenePrimitives.resize(1);
+        if (sScenePrimitives.size() != 1)
             return false;
 
-        if (!sSceneObjects[0].CreateSphere(ctx,
-                                           40, 80,
-                                           XMFLOAT4(0.f, 0.f, 0.f, 1.f),
-                                           3.2f,
-                                           L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
-                                           L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
+        if (!sScenePrimitives[0].CreateSphere(ctx,
+                                              40, 80,
+                                              XMFLOAT4(0.f, 0.f, 0.f, 1.f),
+                                              3.2f,
+                                              L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
+                                              L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
             return false;
 
         sAmbientLight.luminance     = XMFLOAT4(0.f, 0.f, 0.f, 1.0f);
@@ -388,30 +388,30 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eHardwiredThreePlanets:
     {
-        sSceneObjects.resize(3);
-        if (sSceneObjects.size() != 3)
+        sScenePrimitives.resize(3);
+        if (sScenePrimitives.size() != 3)
             return false;
 
-        if (!sSceneObjects[0].CreateSphere(ctx,
-                                           40, 80,
-                                           XMFLOAT4(0.f, 0.f, -1.5f, 1.f),
-                                           2.2f,
-                                           L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
-                                           L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
+        if (!sScenePrimitives[0].CreateSphere(ctx,
+                                              40, 80,
+                                              XMFLOAT4(0.f, 0.f, -1.5f, 1.f),
+                                              2.2f,
+                                              L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
+                                              L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
             return false;
 
-        if (!sSceneObjects[1].CreateSphere(ctx,
-                                           20, 40,
-                                           XMFLOAT4(-2.5f, 0.f, 2.0f, 1.f),
-                                           1.2f,
-                                           L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
+        if (!sScenePrimitives[1].CreateSphere(ctx,
+                                              20, 40,
+                                              XMFLOAT4(-2.5f, 0.f, 2.0f, 1.f),
+                                              1.2f,
+                                              L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
             return false;
 
-        if (!sSceneObjects[2].CreateSphere(ctx,
-                                           20, 40,
-                                           XMFLOAT4(2.5f, 0.f, 2.0f, 1.f),
-                                           1.2f,
-                                           L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
+        if (!sScenePrimitives[2].CreateSphere(ctx,
+                                              20, 40,
+                                              XMFLOAT4(2.5f, 0.f, 2.0f, 1.f),
+                                              1.2f,
+                                              L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
             return false;
 
         sAmbientLight.luminance     = XMFLOAT4(0.00f, 0.00f, 0.00f, 1.0f);
@@ -874,7 +874,7 @@ void Scene::Destroy()
     Utils::ReleaseAndMakeNull(mCbChangedPerObject);
     Utils::ReleaseAndMakeNull(mSamplerLinear);
 
-    sSceneObjects.clear();
+    sScenePrimitives.clear();
 
     sPointLightProxy.Destroy();
 }
@@ -885,7 +885,7 @@ void Scene::Animate(IRenderingContext &ctx)
     if (!ctx.IsValid())
         return;
 
-    for (auto &object : sSceneObjects)
+    for (auto &object : sScenePrimitives)
         object.Animate(ctx);
 
     // Directional lights are steady (for now)
@@ -963,7 +963,7 @@ void Scene::Render(IRenderingContext &ctx)
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
 
     // Draw all scene objects
-    for (auto &object : sSceneObjects)
+    for (auto &object : sScenePrimitives)
     {
         // Per-object constant buffer
         CbChangedPerObject cbPerObject;
