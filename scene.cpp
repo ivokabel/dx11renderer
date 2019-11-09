@@ -589,9 +589,9 @@ template <typename ComponentType,
           typename TDataConsumer>
 bool IterateGltfAccesorData(const tinygltf::Model &model,
                             const tinygltf::Accessor &accessor,
+                            TDataConsumer DataConsumer,
                             const wchar_t *logPrefix,
-                            const wchar_t *logDataName,
-                            TDataConsumer DataConsumer)
+                            const wchar_t *logDataName)
 {
     Log::Debug(L"%s%s accesor \"%s\": view %d, offset %d, type %s<%s>, count %d",
                logPrefix,
@@ -809,9 +809,9 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 
             if (!IterateGltfAccesorData<float, 3>(model,
                                                   posAccessor,
+                                                  PositionDataConsumer,
                                                   L"LoadGLTF:     ",
-                                                  L"Position",
-                                                  PositionDataConsumer))
+                                                  L"Position"))
                 return false;
 
             // Indices
@@ -846,9 +846,9 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 
             if (!IterateGltfAccesorData<unsigned short, 1>(model,
                                                            indicesAccessor,
+                                                           IndexDataConsumer,
                                                            L"LoadGLTF:     ",
-                                                           L"Indices",
-                                                           IndexDataConsumer))
+                                                           L"Indices"))
                 return false;
         }
     }
