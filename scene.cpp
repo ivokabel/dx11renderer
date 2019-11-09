@@ -75,6 +75,10 @@ public:
                       const float scale = 1.f,
                       const wchar_t * diffuseTexPath = nullptr,
                       const wchar_t * specularTexPath = nullptr);
+    bool LoadFromGLTF(IRenderingContext & ctx,
+                      const tinygltf::Model &model,
+                      const tinygltf::Mesh &mesh,
+                      const int primitiveIdx);
 
     void Animate(IRenderingContext &ctx);
     void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout);
@@ -758,103 +762,18 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
                    mesh.primitives.size());
 
         // Primitives
-        for (size_t i = 0; i < mesh.primitives.size(); ++i)
+        const auto primitivesCount = mesh.primitives.size();
+        sScenePrimitives.reserve(sScenePrimitives.size() + primitivesCount);
+        for (size_t i = 0; i < primitivesCount; ++i)
         {
-            const auto &primitive = mesh.primitives[i];
-
-            Log::Debug(L"LoadGLTF:    Primitive %d/%d: mode %s, attributes [%s], indices %d, material %d",
-                       i,
-                       mesh.primitives.size(),
-                       Utils::StringToWString(ModeToString(primitive.mode)).c_str(),
-                       Utils::StringToWString(StringIntMapToString(primitive.attributes)).c_str(),
-                       primitive.indices,
-                       primitive.material);
-
-            const auto &attrs = primitive.attributes;
-
-            // Position
-
-            const auto positionIt = attrs.find("POSITION");
-            if (positionIt == attrs.end())
+            sScenePrimitives.push_back(ScenePrimitive());
+            if (!sScenePrimitives.back().LoadFromGLTF(ctx, model, mesh, (int)i))
             {
-                Log::Error(L"LoadGLTF:     No POSITION attribute present in primitive %d!", i);
+                sScenePrimitives.pop_back();
                 return false;
             }
-
-            const auto posAccessorIdx = positionIt->second;
-            if ((posAccessorIdx < 0) || (posAccessorIdx >= model.accessors.size()))
-            {
-                Log::Error(L"LoadGLTF:     Invalid POSITION accessor index (%d/%d)!",
-                           posAccessorIdx, model.accessors.size());
-                return false;
-            }
-
-            const auto &posAccessor = model.accessors[posAccessorIdx];
-
-            if ((posAccessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) ||
-                (posAccessor.type != TINYGLTF_TYPE_VEC3))
-            {
-                Log::Error(L"LoadGLTF:     Unsupported POSITION data type!");
-                return false;
-            }
-
-            auto PositionDataConsumer = [](int itemIdx, const unsigned char *ptr)
-            {
-                auto pos = *reinterpret_cast<const XMFLOAT3*>(ptr);
-
-                Log::Debug(L"LoadGLTF:      %d: pos [%.1f, %.1f, %.1f]",
-                           itemIdx,
-                           pos.x, pos.y, pos.z);
-            };
-
-            if (!IterateGltfAccesorData<float, 3>(model,
-                                                  posAccessor,
-                                                  PositionDataConsumer,
-                                                  L"LoadGLTF:     ",
-                                                  L"Position"))
-                return false;
-
-            // Indices
-
-            const auto indicesAccessorIdx = primitive.indices;
-            if (indicesAccessorIdx >= model.accessors.size())
-            {
-                Log::Error(L"LoadGLTF:     Invalid indices accessor index (%d/%d)!", indicesAccessorIdx, model.accessors.size());
-                return false;
-            }
-            if (indicesAccessorIdx < 0)
-            {
-                Log::Error(L"LoadGLTF:     Non-indexed geometry is not supported!");
-                return false;
-            }
-
-            const auto &indicesAccessor = model.accessors[indicesAccessorIdx];
-
-            if ((indicesAccessor.componentType != TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) ||
-                (indicesAccessor.type != TINYGLTF_TYPE_SCALAR))
-            {
-                Log::Error(L"LoadGLTF:     Unsupported indices data type!");
-                return false;
-            }
-
-            auto IndexDataConsumer = [](int itemIdx, const unsigned char *ptr)
-            {
-                auto index = *reinterpret_cast<const unsigned short*>(ptr);
-
-                Log::Debug(L"LoadGLTF:      %d: %d", itemIdx, index);
-            };
-
-            if (!IterateGltfAccesorData<unsigned short, 1>(model,
-                                                           indicesAccessor,
-                                                           IndexDataConsumer,
-                                                           L"LoadGLTF:     ",
-                                                           L"Indices"))
-                return false;
         }
     }
-
-    // TODO
-    ctx;
 
     Log::Debug(L"");
 
@@ -1275,6 +1194,106 @@ bool ScenePrimitive::GenerateSphereGeometry(const WORD vertSegmCount, const WORD
                vertSegmCount, stripCount,
                stripCount * (2 * horzLineCount),
                vertexCount, indexCount);
+
+    return true;
+}
+
+
+bool ScenePrimitive::LoadFromGLTF(IRenderingContext & ctx,
+                                  const tinygltf::Model &model,
+                                  const tinygltf::Mesh &mesh,
+                                  const int primitiveIdx)
+{
+    const auto &primitive = mesh.primitives[primitiveIdx];
+
+    Log::Debug(L"LoadGLTF:    Primitive %d/%d: mode %s, attributes [%s], indices %d, material %d",
+               primitiveIdx,
+               mesh.primitives.size(),
+               Utils::StringToWString(ModeToString(primitive.mode)).c_str(),
+               Utils::StringToWString(StringIntMapToString(primitive.attributes)).c_str(),
+               primitive.indices,
+               primitive.material);
+
+    const auto &attrs = primitive.attributes;
+
+    // Position
+
+    const auto positionIt = attrs.find("POSITION");
+    if (positionIt == attrs.end())
+    {
+        Log::Error(L"LoadGLTF:     No POSITION attribute present in primitive %d!", primitiveIdx);
+        return false;
+    }
+
+    const auto posAccessorIdx = positionIt->second;
+    if ((posAccessorIdx < 0) || (posAccessorIdx >= model.accessors.size()))
+    {
+        Log::Error(L"LoadGLTF:     Invalid POSITION accessor index (%d/%d)!",
+                   posAccessorIdx, model.accessors.size());
+        return false;
+    }
+
+    const auto &posAccessor = model.accessors[posAccessorIdx];
+
+    if ((posAccessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) ||
+        (posAccessor.type != TINYGLTF_TYPE_VEC3))
+    {
+        Log::Error(L"LoadGLTF:     Unsupported POSITION data type!");
+        return false;
+    }
+
+    auto PositionDataConsumer = [](int itemIdx, const unsigned char *ptr)
+    {
+        auto pos = *reinterpret_cast<const XMFLOAT3*>(ptr);
+
+        Log::Debug(L"LoadGLTF:      %d: pos [%.1f, %.1f, %.1f]",
+                   itemIdx,
+                   pos.x, pos.y, pos.z);
+    };
+
+    if (!IterateGltfAccesorData<float, 3>(model,
+                                          posAccessor,
+                                          PositionDataConsumer,
+                                          L"LoadGLTF:     ",
+                                          L"Position"))
+        return false;
+
+    // Indices
+
+    const auto indicesAccessorIdx = primitive.indices;
+    if (indicesAccessorIdx >= model.accessors.size())
+    {
+        Log::Error(L"LoadGLTF:     Invalid indices accessor index (%d/%d)!", indicesAccessorIdx, model.accessors.size());
+        return false;
+    }
+    if (indicesAccessorIdx < 0)
+    {
+        Log::Error(L"LoadGLTF:     Non-indexed geometry is not supported!");
+        return false;
+    }
+
+    const auto &indicesAccessor = model.accessors[indicesAccessorIdx];
+
+    if ((indicesAccessor.componentType != TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) ||
+        (indicesAccessor.type != TINYGLTF_TYPE_SCALAR))
+    {
+        Log::Error(L"LoadGLTF:     Unsupported indices data type!");
+        return false;
+    }
+
+    auto IndexDataConsumer = [](int itemIdx, const unsigned char *ptr)
+    {
+        auto index = *reinterpret_cast<const unsigned short*>(ptr);
+
+        Log::Debug(L"LoadGLTF:      %d: %d", itemIdx, index);
+    };
+
+    if (!IterateGltfAccesorData<unsigned short, 1>(model,
+                                                   indicesAccessor,
+                                                   IndexDataConsumer,
+                                                   L"LoadGLTF:     ",
+                                                   L"Indices"))
+        return false;
 
     return true;
 }
