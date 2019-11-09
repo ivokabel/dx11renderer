@@ -455,14 +455,14 @@ bool LoadGltfModel(tinygltf::Model &model, const std::wstring &filePath)
     using namespace std;
 
     // Convert to plain string for tinygltf
-    string filePathA = Utils::WideStringToString(filePath);
+    string filePathA = Utils::WStringToString(filePath);
 
     // debug: tiny glTF test
     //{
     //    std::stringstream ss;
     //    cout_redirect cr(ss.rdbuf());
     //    TinyGltfTest(filePathA.c_str());
-    //    Log::Debug(L"LoadGltfModel: TinyGltfTest output:\n\n%s", Utils::StringToWideString(ss.str()).c_str());
+    //    Log::Debug(L"LoadGltfModel: TinyGltfTest output:\n\n%s", Utils::StringToWString(ss.str()).c_str());
     //}
 
     tinygltf::TinyGLTF tinyGltf;
@@ -482,10 +482,10 @@ bool LoadGltfModel(tinygltf::Model &model, const std::wstring &filePath)
     }
 
     if (!errA.empty())
-        Log::Debug(L"LoadGltfModel: Error: %s", Utils::StringToWideString(errA).c_str());
+        Log::Debug(L"LoadGltfModel: Error: %s", Utils::StringToWString(errA).c_str());
 
     if (!warnA.empty())
-        Log::Debug(L"LoadGltfModel: Warning: %s", Utils::StringToWideString(warnA).c_str());
+        Log::Debug(L"LoadGltfModel: Warning: %s", Utils::StringToWString(warnA).c_str());
 
     if (ret)
         Log::Debug(L"LoadGltfModel: Succesfully loaded model");
@@ -596,11 +596,11 @@ bool IterateGltfAccesorData(const tinygltf::Model &model,
     Log::Debug(L"%s%s accesor \"%s\": view %d, offset %d, type %s<%s>, count %d",
                logPrefix,
                logDataName,
-               Utils::StringToWideString(accessor.name).c_str(),
+               Utils::StringToWString(accessor.name).c_str(),
                accessor.bufferView,
                accessor.byteOffset,
-               Utils::StringToWideString(TypeToString(accessor.type)).c_str(),
-               Utils::StringToWideString(ComponentTypeToString(accessor.componentType)).c_str(),
+               Utils::StringToWString(TypeToString(accessor.type)).c_str(),
+               Utils::StringToWString(ComponentTypeToString(accessor.componentType)).c_str(),
                accessor.count);
 
     // Buffer view
@@ -620,12 +620,12 @@ bool IterateGltfAccesorData(const tinygltf::Model &model,
     //           logPrefix,
     //           logDataName,
     //           bufferViewIdx,
-    //           Utils::StringToWideString(bufferView.name).c_str(),
+    //           Utils::StringToWString(bufferView.name).c_str(),
     //           bufferView.buffer,
     //           bufferView.byteOffset,
     //           bufferView.byteLength,
     //           bufferView.byteStride,
-    //           Utils::StringToWideString(TargetToString(bufferView.target)).c_str());
+    //           Utils::StringToWString(TargetToString(bufferView.target)).c_str());
 
     if (bufferView.byteStride != 0)
     {
@@ -659,10 +659,10 @@ bool IterateGltfAccesorData(const tinygltf::Model &model,
     //           logPrefix,
     //           logDataName,
     //           bufferIdx,
-    //           Utils::StringToWideString(buffer.name).c_str(),
+    //           Utils::StringToWString(buffer.name).c_str(),
     //           buffer.data.data(),
     //           buffer.data.size(),
-    //           Utils::StringToWideString(buffer.uri).c_str());
+    //           Utils::StringToWString(buffer.uri).c_str());
 
     // TODO: Check that buffer view is large enough to contain all data from accessor?
 
@@ -704,7 +704,7 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 
     Log::Debug(L"");
     Log::Debug(L"LoadGLTF: Scene 0 \"%s\": %d node(s)",
-               Utils::StringToWideString(scene.name).c_str(),
+               Utils::StringToWString(scene.name).c_str(),
                scene.nodes.size());
 
     // Nodes
@@ -722,7 +722,7 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
         Log::Debug(L"LoadGLTF:  Node %d/%d \"%s\": mesh %d, %d children",
                    nodeIdx,
                    model.nodes.size(),
-                   Utils::StringToWideString(node.name).c_str(),
+                   Utils::StringToWString(node.name).c_str(),
                    node.mesh,
                    node.children.size());
 
@@ -738,7 +738,7 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
             Log::Debug(L"LoadGLTF:   Child %d/%d \"%s\"",
                        childIdx,
                        model.nodes.size(),
-                       Utils::StringToWideString(model.nodes[childIdx].name).c_str());
+                       Utils::StringToWString(model.nodes[childIdx].name).c_str());
         }
 
         // Mesh
@@ -754,7 +754,7 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
         Log::Debug(L"LoadGLTF:   Mesh %d/%d \"%s\": %d primitive(s)",
                    meshIdx,
                    model.meshes.size(),
-                   Utils::StringToWideString(mesh.name).c_str(),
+                   Utils::StringToWString(mesh.name).c_str(),
                    mesh.primitives.size());
 
         // Primitives
@@ -765,8 +765,8 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
             Log::Debug(L"LoadGLTF:    Primitive %d/%d: mode %s, attributes [%s], indices %d, material %d",
                        i,
                        mesh.primitives.size(),
-                       Utils::StringToWideString(ModeToString(primitive.mode)).c_str(),
-                       Utils::StringToWideString(StringIntMapToString(primitive.attributes)).c_str(),
+                       Utils::StringToWString(ModeToString(primitive.mode)).c_str(),
+                       Utils::StringToWString(StringIntMapToString(primitive.attributes)).c_str(),
                        primitive.indices,
                        primitive.material);
 

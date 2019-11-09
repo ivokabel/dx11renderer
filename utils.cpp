@@ -22,14 +22,14 @@ std::string Utils::GetFilePathExt(const std::string &path)
         return "";
 }
 
-std::string Utils::WideStringToString(const std::wstring &wideString)
+std::string Utils::WStringToString(const std::wstring &wideString)
 {
     std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
 
     return converter.to_bytes(wideString);
 }
 
-std::wstring Utils::StringToWideString(const std::string &string)
+std::wstring Utils::StringToWString(const std::string &string)
 {
     std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
 
