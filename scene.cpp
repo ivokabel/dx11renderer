@@ -98,8 +98,12 @@ private:
 
     bool CreateDeviceBuffers(IRenderingContext &ctx);
     bool LoadTextures(IRenderingContext &ctx,
-                      const wchar_t * diffuseTexPath,
+                      const wchar_t * diffuseTexPath = nullptr,
                       const wchar_t * specularTexPath = nullptr);
+    static bool CreateConstantTextureShaderResourceView(IRenderingContext &ctx,
+                                                        ID3D11ShaderResourceView *&srv,
+                                                        XMFLOAT4 color);
+
 
     void DestroyGeomData();
     void DestroyDeviceBuffers();
@@ -123,7 +127,6 @@ private:
 
     // Textures
     ID3D11ShaderResourceView*   mDiffuseSRV = nullptr;
-    ID3D11Texture2D*            mSpecularTex = nullptr;
     ID3D11ShaderResourceView*   mSpecularSRV = nullptr;
 };
 
@@ -1359,6 +1362,11 @@ bool ScenePrimitive::LoadTextures(IRenderingContext &ctx,
         if (FAILED(hr))
             return false;
     }
+    else
+    {
+        static const auto grayColor = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.f);
+        CreateConstantTextureShaderResourceView(ctx, mDiffuseSRV, grayColor);
+    }
 
     if (specularTexPath)
     {
@@ -1368,37 +1376,56 @@ bool ScenePrimitive::LoadTextures(IRenderingContext &ctx,
     }
     else
     {
-        // Default 1x1 zero-value texture
-        D3D11_TEXTURE2D_DESC descTex;
-        ZeroMemory(&descTex, sizeof(D3D11_TEXTURE2D_DESC));
-        descTex.ArraySize = 1;
-        descTex.Usage = D3D11_USAGE_IMMUTABLE;
-        descTex.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-        descTex.Width = 1;
-        descTex.Height = 1;
-        descTex.MipLevels = 1;
-        descTex.SampleDesc.Count = 1;
-        descTex.SampleDesc.Quality = 0;
-        descTex.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-        static const XMFLOAT4 blackColor = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
-        D3D11_SUBRESOURCE_DATA initData = { &blackColor, sizeof(XMFLOAT4), 0 };
-        hr = device->CreateTexture2D(&descTex, &initData, &mSpecularTex);
-        if (FAILED(hr))
-            return false;
-
-        // Shader resource view
-        D3D11_SHADER_RESOURCE_VIEW_DESC descSRV;
-        descSRV.Format = descTex.Format;
-        descSRV.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-        descSRV.Texture2D.MipLevels = 1;
-        descSRV.Texture2D.MostDetailedMip = 0;
-        hr = device->CreateShaderResourceView(mSpecularTex, &descSRV, &mSpecularSRV);
-        if (FAILED(hr))
-            return false;
+        static const auto blackColor = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
+        CreateConstantTextureShaderResourceView(ctx, mSpecularSRV, blackColor);
     }
 
     return true;
 }
+
+
+bool ScenePrimitive::CreateConstantTextureShaderResourceView(IRenderingContext &ctx,
+                                                             ID3D11ShaderResourceView *&srv,
+                                                             XMFLOAT4 color)
+{
+    HRESULT hr = S_OK;
+    ID3D11Texture2D *tex = nullptr;
+
+    auto device = ctx.GetDevice();
+    if (!device)
+        return false;
+
+    // 1x1 constant-valued texture
+    D3D11_TEXTURE2D_DESC descTex;
+    ZeroMemory(&descTex, sizeof(D3D11_TEXTURE2D_DESC));
+    descTex.ArraySize = 1;
+    descTex.Usage = D3D11_USAGE_IMMUTABLE;
+    descTex.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    descTex.Width = 1;
+    descTex.Height = 1;
+    descTex.MipLevels = 1;
+    descTex.SampleDesc.Count = 1;
+    descTex.SampleDesc.Quality = 0;
+    descTex.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    D3D11_SUBRESOURCE_DATA initData = { &color, sizeof(XMFLOAT4), 0 };
+    hr = device->CreateTexture2D(&descTex, &initData, &tex);
+    if (FAILED(hr))
+        return false;
+
+    // Shader resource view
+    D3D11_SHADER_RESOURCE_VIEW_DESC descSRV;
+    descSRV.Format = descTex.Format;
+    descSRV.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    descSRV.Texture2D.MipLevels = 1;
+    descSRV.Texture2D.MostDetailedMip = 0;
+    hr = device->CreateShaderResourceView(tex, &descSRV, &srv);
+    Utils::ReleaseAndMakeNull(tex);
+    if (FAILED(hr))
+        return false;
+
+    return true;
+}
+
 
 
 void ScenePrimitive::Destroy()
@@ -1427,7 +1454,6 @@ void ScenePrimitive::DestroyDeviceBuffers()
 void ScenePrimitive::DestroyTextures()
 {
     Utils::ReleaseAndMakeNull(mDiffuseSRV);
-    Utils::ReleaseAndMakeNull(mSpecularTex);
     Utils::ReleaseAndMakeNull(mSpecularSRV);
 }
 
