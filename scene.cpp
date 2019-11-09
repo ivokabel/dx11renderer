@@ -75,6 +75,7 @@ public:
                       const float scale = 1.f,
                       const wchar_t * diffuseTexPath = nullptr,
                       const wchar_t * specularTexPath = nullptr);
+
     bool LoadFromGLTF(IRenderingContext & ctx,
                       const tinygltf::Model &model,
                       const tinygltf::Mesh &mesh,
@@ -96,10 +97,15 @@ private:
     bool GenerateOctahedronGeometry();
     bool GenerateSphereGeometry(const WORD vertSegmCount, const WORD stripCount);
 
+    bool LoadGeometryFromGLTF(const tinygltf::Model &model,
+                              const tinygltf::Mesh &mesh,
+                              const int primitiveIdx);
+
     bool CreateDeviceBuffers(IRenderingContext &ctx);
     bool LoadTextures(IRenderingContext &ctx,
                       const wchar_t * diffuseTexPath = nullptr,
                       const wchar_t * specularTexPath = nullptr);
+
     static bool CreateConstantTextureShaderResourceView(IRenderingContext &ctx,
                                                         ID3D11ShaderResourceView *&srv,
                                                         XMFLOAT4 color);
@@ -1207,6 +1213,21 @@ bool ScenePrimitive::LoadFromGLTF(IRenderingContext & ctx,
                                   const tinygltf::Mesh &mesh,
                                   const int primitiveIdx)
 {
+    if (!LoadGeometryFromGLTF(model, mesh, primitiveIdx))
+        return false;
+    if (!CreateDeviceBuffers(ctx))
+        return false;
+    if (!LoadTextures(ctx))
+        return false;
+
+    return true;
+}
+
+
+bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
+                                          const tinygltf::Mesh &mesh,
+                                          const int primitiveIdx)
+{
     const auto &primitive = mesh.primitives[primitiveIdx];
 
     Log::Debug(L"LoadGLTF:    Primitive %d/%d: mode %s, attributes [%s], indices %d, material %d",
@@ -1245,13 +1266,26 @@ bool ScenePrimitive::LoadFromGLTF(IRenderingContext & ctx,
         return false;
     }
 
-    auto PositionDataConsumer = [](int itemIdx, const unsigned char *ptr)
+    mVertices.clear();
+    mVertices.reserve(posAccessor.count);
+    if (mVertices.capacity() < posAccessor.count)
+    {
+        Log::Error(L"LoadGLTF:     Unable to allocate %d vertices!", posAccessor.count);
+        return false;
+    }
+
+    auto PositionDataConsumer = [this](int itemIdx, const unsigned char *ptr)
     {
         auto pos = *reinterpret_cast<const XMFLOAT3*>(ptr);
 
         Log::Debug(L"LoadGLTF:      %d: pos [%.1f, %.1f, %.1f]",
                    itemIdx,
                    pos.x, pos.y, pos.z);
+
+        // TODO: Normals, UVs
+        mVertices.push_back(SceneVertex{ XMFLOAT3(pos.x, pos.y, pos.z),
+                                         XMFLOAT3(0.0f, 0.0f, 0.0f),
+                                         XMFLOAT2(0.0f, 0.0f) });
     };
 
     if (!IterateGltfAccesorData<float, 3>(model,
@@ -1284,11 +1318,21 @@ bool ScenePrimitive::LoadFromGLTF(IRenderingContext & ctx,
         return false;
     }
 
-    auto IndexDataConsumer = [](int itemIdx, const unsigned char *ptr)
+    mIndices.clear();
+    mIndices.reserve(indicesAccessor.count);
+    if (mIndices.capacity() < indicesAccessor.count)
+    {
+        Log::Error(L"LoadGLTF:     Unable to allocate %d indices!", indicesAccessor.count);
+        return false;
+    }
+
+    auto IndexDataConsumer = [this](int itemIdx, const unsigned char *ptr)
     {
         auto index = *reinterpret_cast<const unsigned short*>(ptr);
 
         Log::Debug(L"LoadGLTF:      %d: %d", itemIdx, index);
+
+        mIndices.push_back(index);
     };
 
     if (!IterateGltfAccesorData<unsigned short, 1>(model,
@@ -1297,6 +1341,9 @@ bool ScenePrimitive::LoadFromGLTF(IRenderingContext & ctx,
                                                    L"LoadGLTF:     ",
                                                    L"Indices"))
         return false;
+
+    // TODO: Topology
+    mTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
     return true;
 }
