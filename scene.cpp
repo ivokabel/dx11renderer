@@ -808,7 +808,19 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 
     Log::Debug(L"");
 
-    return false;
+    // debug lights
+    const double amb = 0.3f;
+    sAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
+    const double lum = 5.f;
+    sDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+    sDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+    const double ints = 0.5f;
+    sPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+    sPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+    sPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+
+    //return false;
+    return true;
 }
 
 
@@ -1236,7 +1248,7 @@ bool ScenePrimitive::LoadFromGLTF(IRenderingContext & ctx,
                                   const int primitiveIdx)
 {
     // TODO
-    //mScale = scale;
+    mScale = 4.f;
     //mPos = pos;
 
     if (!LoadGeometryFromGLTF(model, mesh, primitiveIdx))
@@ -1310,7 +1322,7 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
 
         // TODO: Normals, UVs
         mVertices.push_back(SceneVertex{ XMFLOAT3(pos.x, pos.y, pos.z),
-                                         XMFLOAT3(0.0f, 0.0f, 0.0f),
+                                         XMFLOAT3(0.0f, 0.0f, 1.0f),
                                          XMFLOAT2(0.0f, 0.0f) });
     };
 
