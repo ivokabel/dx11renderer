@@ -378,11 +378,8 @@ static void DumpStringIntMap(const std::map<std::string, int> &m, int indent) {
 static void DumpPrimitive(const tinygltf::Primitive &primitive, int indent) {
     std::cout << Indent(indent) << "material : " << primitive.material << std::endl;
     std::cout << Indent(indent) << "indices  : " << primitive.indices << std::endl;
-    std::cout << Indent(indent) << "mode     : " << PrintMode(primitive.mode)
-        << "(" << primitive.mode << ")" << std::endl;
-    std::cout << Indent(indent)
-        << "attributes(count=" << primitive.attributes.size() << ")"
-        << std::endl;
+    std::cout << Indent(indent) << "mode     : " << PrintMode(primitive.mode) << "(" << primitive.mode << ")" << std::endl;
+    std::cout << Indent(indent) << "attributes(count=" << primitive.attributes.size() << ")" << std::endl;
     DumpStringIntMap(primitive.attributes, indent + 1);
 
     std::cout << Indent(indent) << "extras :" << std::endl
@@ -432,11 +429,8 @@ static void Dump(const tinygltf::Model &model) {
     {
         std::cout << "meshes(count=" << model.meshes.size() << ")" << std::endl;
         for (size_t i = 0; i < model.meshes.size(); i++) {
-            std::cout << Indent(1) << "name : " << model.meshes[i].name
-                << std::endl;
-            std::cout << Indent(1)
-                << "primitives(count=" << model.meshes[i].primitives.size()
-                << "): " << std::endl;
+            std::cout << Indent(1) << "name : " << model.meshes[i].name << std::endl;
+            std::cout << Indent(1) << "primitives(count=" << model.meshes[i].primitives.size() << "): " << std::endl;
 
             for (size_t k = 0; k < model.meshes[i].primitives.size(); k++) {
                 DumpPrimitive(model.meshes[i].primitives[k], 2);
