@@ -1404,13 +1404,13 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
     // Texture coordinates
 
     auto &texCoord0Accessor = GetPrimitiveAttrAccessor(success, model, attrs, primitiveIdx,
-                                                       "TEX_COORD0", L"LoadGLTF:     ");
+                                                       "TEXCOORD_0", L"LoadGLTF:     ");
     if (success)
     {
         if ((texCoord0Accessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) ||
             (texCoord0Accessor.type != TINYGLTF_TYPE_VEC2))
         {
-            Log::Error(L"LoadGLTF:     Unsupported TEX_COORD0 data type!");
+            Log::Error(L"LoadGLTF:     Unsupported TEXCOORD_0 data type!");
             return false;
         }
 
