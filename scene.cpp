@@ -850,7 +850,7 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
     const double lum = 5.f;
     sDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
     sDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-    const double ints = 0.5f;
+    const double ints = 6.5f;
     sPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
     sPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
     sPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
@@ -1284,7 +1284,7 @@ bool ScenePrimitive::LoadFromGLTF(IRenderingContext & ctx,
                                   const int primitiveIdx)
 {
     // TODO
-    mScale = 4.f;
+    mScale = 3.f;
     //mPos = pos;
 
     if (!LoadGeometryFromGLTF(model, mesh, primitiveIdx))
