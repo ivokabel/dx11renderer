@@ -6,6 +6,14 @@
 
 namespace Utils
 {
+    template<class T, class U = T>
+    T Exchange(T& obj, U&& new_value)
+    {
+        T old_value = std::move(obj);
+        obj = std::forward<U>(new_value);
+        return old_value;
+    }
+
     template <typename T>
     void ReleaseAndMakeNull(T &value)
     {
@@ -14,6 +22,13 @@ namespace Utils
             value->Release();
             value = nullptr;
         }
+    }
+
+    template <typename T>
+    void SaveAddRef(T &value)
+    {
+        if (value)
+            value->AddRef();
     }
 
     std::wstring GetFilePathExt(const std::wstring &path);

@@ -58,7 +58,12 @@ class ScenePrimitive
 public:
 
     ScenePrimitive();
+    ScenePrimitive(const ScenePrimitive &);
+    ScenePrimitive(ScenePrimitive &&);
     ~ScenePrimitive();
+
+    ScenePrimitive& operator = (const ScenePrimitive&);
+    ScenePrimitive& operator = (ScenePrimitive&&);
 
     bool CreateCube(IRenderingContext & ctx,
                     const XMFLOAT4 pos = XMFLOAT4(0, 0, 0, 1),
@@ -1015,6 +1020,76 @@ bool Scene::GetAmbientColor(float(&rgba)[4])
 ScenePrimitive::ScenePrimitive() :
     mWorldMtrx(XMMatrixIdentity())
 {}
+
+ScenePrimitive::ScenePrimitive(const ScenePrimitive &src) :
+    mVertices(src.mVertices),
+    mIndices(src.mIndices),
+    mTopology(src.mTopology),
+    mVertexBuffer(src.mVertexBuffer),
+    mIndexBuffer(src.mIndexBuffer),
+    mScale(src.mScale),
+    mPos(src.mPos),
+    mWorldMtrx(src.mWorldMtrx),
+    mDiffuseSRV(src.mDiffuseSRV),
+    mSpecularSRV(src.mSpecularSRV)
+{
+    // We are creating new references of device resources
+    Utils::SaveAddRef(mVertexBuffer);
+    Utils::SaveAddRef(mIndexBuffer);
+    Utils::SaveAddRef(mDiffuseSRV);
+    Utils::SaveAddRef(mSpecularSRV);
+}
+
+ScenePrimitive::ScenePrimitive(ScenePrimitive &&src) :
+    mVertices(std::move(src.mVertices)),
+    mIndices(std::move(src.mIndices)),
+    mTopology(Utils::Exchange(src.mTopology, D3D_PRIMITIVE_TOPOLOGY_UNDEFINED)),
+    mVertexBuffer(Utils::Exchange(src.mVertexBuffer, nullptr)),
+    mIndexBuffer(Utils::Exchange(src.mIndexBuffer, nullptr)),
+    mScale(Utils::Exchange(src.mScale, 1.f)),
+    mPos(std::move(src.mPos)),
+    mWorldMtrx(std::move(src.mWorldMtrx)),
+    mDiffuseSRV(Utils::Exchange(src.mDiffuseSRV, nullptr)),
+    mSpecularSRV(Utils::Exchange(src.mSpecularSRV, nullptr))
+{}
+
+ScenePrimitive& ScenePrimitive::operator =(const ScenePrimitive &src)
+{
+    mVertices = src.mVertices;
+    mIndices = src.mIndices;
+    mTopology = src.mTopology;
+    mVertexBuffer = src.mVertexBuffer;
+    mIndexBuffer = src.mIndexBuffer;
+    mScale = src.mScale;
+    mPos = src.mPos;
+    mWorldMtrx = src.mWorldMtrx;
+    mDiffuseSRV = src.mDiffuseSRV;
+    mSpecularSRV = src.mSpecularSRV;
+
+    // We are creating new references of device resources
+    Utils::SaveAddRef(mVertexBuffer);
+    Utils::SaveAddRef(mIndexBuffer);
+    Utils::SaveAddRef(mDiffuseSRV);
+    Utils::SaveAddRef(mSpecularSRV);
+
+    return *this;
+}
+
+ScenePrimitive& ScenePrimitive::operator =(ScenePrimitive &&src)
+{
+    mVertices = std::move(src.mVertices);
+    mIndices = std::move(src.mIndices);
+    mTopology = Utils::Exchange(src.mTopology, D3D_PRIMITIVE_TOPOLOGY_UNDEFINED);
+    mVertexBuffer = Utils::Exchange(src.mVertexBuffer, nullptr);
+    mIndexBuffer = Utils::Exchange(src.mIndexBuffer, nullptr);
+    mScale = Utils::Exchange(src.mScale, 1.f);
+    mPos = std::move(src.mPos);
+    mWorldMtrx = std::move(src.mWorldMtrx);
+    mDiffuseSRV = Utils::Exchange(src.mDiffuseSRV, nullptr);
+    mSpecularSRV = Utils::Exchange(src.mSpecularSRV, nullptr);
+
+    return *this;
+}
 
 ScenePrimitive::~ScenePrimitive()
 {
