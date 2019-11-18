@@ -619,6 +619,42 @@ static std::string TargetToString(int target) {
 }
 
 
+const tinygltf::Accessor& GetPrimitiveAttrAccessor(bool &accessorLoaded,
+                                                   const tinygltf::Model &model,
+                                                   const std::map<std::string, int> &attributes,
+                                                   const int primitiveIdx,
+                                                   const std::string &attrName,
+                                                   const std::wstring &logPrefix)
+{
+    static tinygltf::Accessor dummyAccessor;
+
+    const auto attrIt = attributes.find(attrName);
+    if (attrIt == attributes.end())
+    {
+        Log::Error(L"%sNo %s attribute present in primitive %d!",
+                   logPrefix.c_str(),
+                   Utils::StringToWString(attrName).c_str(),
+                   primitiveIdx);
+        accessorLoaded = false;
+        return dummyAccessor;
+    }
+
+    const auto accessorIdx = attrIt->second;
+    if ((accessorIdx < 0) || (accessorIdx >= model.accessors.size()))
+    {
+        Log::Error(L"%sInvalid %s accessor index (%d/%d)!",
+                   logPrefix.c_str(),
+                   Utils::StringToWString(attrName).c_str(),
+                   accessorIdx,
+                   model.accessors.size());
+        accessorLoaded = false;
+        return dummyAccessor;
+    }
+
+    accessorLoaded = true;
+    return model.accessors[accessorIdx];
+}
+
 template <typename ComponentType,
           size_t ComponentCount,
           typename TDataConsumer>
@@ -1266,6 +1302,8 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
                                           const tinygltf::Mesh &mesh,
                                           const int primitiveIdx)
 {
+    bool success = false;
+
     const auto &primitive = mesh.primitives[primitiveIdx];
 
     Log::Debug(L"LoadGLTF:    Primitive %d/%d: mode %s, attributes [%s], indices %d, material %d",
@@ -1278,24 +1316,12 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
 
     const auto &attrs = primitive.attributes;
 
-    // Position
+    // Positions
 
-    const auto positionIt = attrs.find("POSITION");
-    if (positionIt == attrs.end())
-    {
-        Log::Error(L"LoadGLTF:     No POSITION attribute present in primitive %d!", primitiveIdx);
+    auto &posAccessor = GetPrimitiveAttrAccessor(success, model, attrs, primitiveIdx,
+                                                 "POSITION", L"LoadGLTF:     ");
+    if (!success)
         return false;
-    }
-
-    const auto posAccessorIdx = positionIt->second;
-    if ((posAccessorIdx < 0) || (posAccessorIdx >= model.accessors.size()))
-    {
-        Log::Error(L"LoadGLTF:     Invalid POSITION accessor index (%d/%d)!",
-                   posAccessorIdx, model.accessors.size());
-        return false;
-    }
-
-    const auto &posAccessor = model.accessors[posAccessorIdx];
 
     if ((posAccessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) ||
         (posAccessor.type != TINYGLTF_TYPE_VEC3))
@@ -1322,7 +1348,7 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
 
         // TODO: Normals, UVs
         mVertices.push_back(SceneVertex{ XMFLOAT3(pos.x, pos.y, pos.z),
-                                         XMFLOAT3(0.0f, 0.0f, 1.0f),
+                                         XMFLOAT3(0.0f, 0.0f, 1.0f), // TODO: Leave invalid?
                                          XMFLOAT2(0.0f, 0.0f) });
     };
 
@@ -1332,6 +1358,54 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
                                           L"LoadGLTF:     ",
                                           L"Position"))
         return false;
+
+    // Normals
+
+    auto &normalAccessor = GetPrimitiveAttrAccessor(success, model, attrs, primitiveIdx,
+                                                    "NORMAL", L"LoadGLTF:     ");
+    if (success)
+    {
+        if ((normalAccessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) ||
+            (normalAccessor.type != TINYGLTF_TYPE_VEC3))
+        {
+            Log::Error(L"LoadGLTF:     Unsupported NORMAL data type!");
+            return false;
+        }
+
+        if (normalAccessor.count != posAccessor.count)
+        {
+            Log::Error(L"LoadGLTF:     Normals count (%d) is different from position count (%d)!",
+                       normalAccessor.count, posAccessor.count);
+            return false;
+        }
+
+        auto NormalDataConsumer = [this](int itemIdx, const unsigned char *ptr)
+        {
+            auto normal = *reinterpret_cast<const XMFLOAT3*>(ptr);
+
+            Log::Debug(L"LoadGLTF:      %d: normal [%.1f, %.1f, %.1f]",
+                       itemIdx,
+                       normal.x, normal.y, normal.z);
+
+            mVertices[itemIdx].Normal = XMFLOAT3(normal.x, normal.y, normal.z);
+        };
+
+        if (!IterateGltfAccesorData<float, 3>(model,
+                                              normalAccessor,
+                                              NormalDataConsumer,
+                                              L"LoadGLTF:     ",
+                                              L"Normal"))
+            return false;
+    }
+    //else
+    //{
+    //    // No normals provided
+    //    // TODO: Generate if unavailable?
+    //    return false;
+    //}
+
+    // UVs
+    // TODO: Load if available
 
     // Indices
 
