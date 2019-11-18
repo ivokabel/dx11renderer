@@ -704,13 +704,6 @@ bool IterateGltfAccesorData(const tinygltf::Model &model,
     //           bufferView.byteStride,
     //           Utils::StringToWString(TargetToString(bufferView.target)).c_str());
 
-    if (bufferView.byteStride != 0)
-    {
-        Log::Error(L"%sUnsupported byte stride (%d) for %s buffer!",
-                   logPrefix, bufferView.byteStride, logDataName);
-        return false;
-    }
-
     // Buffer
 
     const auto bufferIdx = bufferView.buffer;
@@ -861,7 +854,6 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
     sPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
     sPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
 
-    //return false;
     return true;
 }
 
