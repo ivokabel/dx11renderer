@@ -1346,7 +1346,6 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
                    itemIdx,
                    pos.x, pos.y, pos.z);
 
-        // TODO: Normals, UVs
         mVertices.push_back(SceneVertex{ XMFLOAT3(pos.x, pos.y, pos.z),
                                          XMFLOAT3(0.0f, 0.0f, 1.0f), // TODO: Leave invalid?
                                          XMFLOAT2(0.0f, 0.0f) });
@@ -1384,10 +1383,9 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
             auto normal = *reinterpret_cast<const XMFLOAT3*>(ptr);
 
             Log::Debug(L"LoadGLTF:      %d: normal [%.1f, %.1f, %.1f]",
-                       itemIdx,
-                       normal.x, normal.y, normal.z);
+                       itemIdx, normal.x, normal.y, normal.z);
 
-            mVertices[itemIdx].Normal = XMFLOAT3(normal.x, normal.y, normal.z);
+            mVertices[itemIdx].Normal = normal;
         };
 
         if (!IterateGltfAccesorData<float, 3>(model,
@@ -1400,12 +1398,46 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
     //else
     //{
     //    // No normals provided
-    //    // TODO: Generate if unavailable?
-    //    return false;
+    //    // TODO: Generate?
     //}
 
-    // UVs
-    // TODO: Load if available
+    // Texture coordinates
+
+    auto &texCoord0Accessor = GetPrimitiveAttrAccessor(success, model, attrs, primitiveIdx,
+                                                       "TEX_COORD0", L"LoadGLTF:     ");
+    if (success)
+    {
+        if ((texCoord0Accessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) ||
+            (texCoord0Accessor.type != TINYGLTF_TYPE_VEC2))
+        {
+            Log::Error(L"LoadGLTF:     Unsupported TEX_COORD0 data type!");
+            return false;
+        }
+
+        if (texCoord0Accessor.count != posAccessor.count)
+        {
+            Log::Error(L"LoadGLTF:     Texture coords count (%d) is different from position count (%d)!",
+                       texCoord0Accessor.count, posAccessor.count);
+            return false;
+        }
+
+        auto TexCoord0DataConsumer = [this](int itemIdx, const unsigned char *ptr)
+        {
+            auto texCoord0 = *reinterpret_cast<const XMFLOAT2*>(ptr);
+
+            Log::Debug(L"LoadGLTF:      %d: texCoord0 [%.1f, %.1f]",
+                       itemIdx, texCoord0.x, texCoord0.y);
+
+            mVertices[itemIdx].Tex = texCoord0;
+        };
+
+        if (!IterateGltfAccesorData<float, 2>(model,
+                                              texCoord0Accessor,
+                                              TexCoord0DataConsumer,
+                                              L"LoadGLTF:     ",
+                                              L"Texture coordinates"))
+            return false;
+    }
 
     // Indices
 
