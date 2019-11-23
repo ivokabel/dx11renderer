@@ -87,7 +87,7 @@ public:
                       const int primitiveIdx);
 
     void Animate(IRenderingContext &ctx);
-    void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout);
+    void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout *vertexLayout);
 
     ID3D11ShaderResourceView* const* GetDiffuseSRV()  const { return &mDiffuseSRV; };
     ID3D11ShaderResourceView* const* GetSpecularSRV() const { return &mSpecularSRV; };
@@ -141,7 +141,26 @@ private:
     ID3D11ShaderResourceView*   mSpecularSRV = nullptr;
 };
 
-std::vector<ScenePrimitive> sScenePrimitives;
+
+class SceneNode
+{
+public:
+    ScenePrimitive* CreateEmptyPrimitive();
+
+    bool LoadFromGLTF(IRenderingContext & ctx,
+                      const tinygltf::Model &model,
+                      int nodeIdx);
+
+    void Animate(IRenderingContext &ctx);
+
+//private:
+    // Exposed for now because Render() needs access to it.
+    // Might get encapsulated later when transformations/animations architecture is resolved.
+    std::vector<ScenePrimitive> primitives;
+};
+
+
+std::vector<SceneNode> sSceneNodes;
 ScenePrimitive sPointLightProxy;
 
 
@@ -353,15 +372,20 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eHardwiredSimpleDebugSphere:
     {
-        sScenePrimitives.resize(1);
-        if (sScenePrimitives.size() != 1)
+        sSceneNodes.clear();
+        sSceneNodes.resize(1);
+        if (sSceneNodes.size() != 1)
             return false;
 
-        if (!sScenePrimitives[0].CreateSphere(ctx,
-                                              40, 80,
-                                              XMFLOAT4(0.f, 0.f, 0.f, 1.f),
-                                              3.2f,
-                                              L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png"))
+        auto primitive = sSceneNodes[0].CreateEmptyPrimitive();
+        if (!primitive)
+            return false;
+
+        if (!primitive->CreateSphere(ctx,
+                                     40, 80,
+                                     XMFLOAT4(0.f, 0.f, 0.f, 1.f),
+                                     3.2f,
+                                     L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png"))
             return false;
 
         sAmbientLight.luminance     = XMFLOAT4(0.10f, 0.10f, 0.10f, 1.0f);
@@ -379,16 +403,21 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eHardwiredEarth:
     {
-        sScenePrimitives.resize(1);
-        if (sScenePrimitives.size() != 1)
+        sSceneNodes.clear();
+        sSceneNodes.resize(1);
+        if (sSceneNodes.size() != 1)
             return false;
 
-        if (!sScenePrimitives[0].CreateSphere(ctx,
-                                              40, 80,
-                                              XMFLOAT4(0.f, 0.f, 0.f, 1.f),
-                                              3.2f,
-                                              L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
-                                              L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
+        auto primitive = sSceneNodes[0].CreateEmptyPrimitive();
+        if (!primitive)
+            return false;
+
+        if (!primitive->CreateSphere(ctx,
+                                     40, 80,
+                                     XMFLOAT4(0.f, 0.f, 0.f, 1.f),
+                                     3.2f,
+                                     L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
+                                     L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
             return false;
 
         sAmbientLight.luminance     = XMFLOAT4(0.f, 0.f, 0.f, 1.0f);
@@ -407,30 +436,40 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eHardwiredThreePlanets:
     {
-        sScenePrimitives.resize(3);
-        if (sScenePrimitives.size() != 3)
+        sSceneNodes.clear();
+        sSceneNodes.resize(3);
+        if (sSceneNodes.size() != 3)
             return false;
 
-        if (!sScenePrimitives[0].CreateSphere(ctx,
-                                              40, 80,
-                                              XMFLOAT4(0.f, 0.f, -1.5f, 1.f),
-                                              2.2f,
-                                              L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
-                                              L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
+        auto primitive0 = sSceneNodes[0].CreateEmptyPrimitive();
+        if (!primitive0)
+            return false;
+        if (!primitive0->CreateSphere(ctx,
+                                      40, 80,
+                                      XMFLOAT4(0.f, 0.f, -1.5f, 1.f),
+                                      2.2f,
+                                      L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
+                                      L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
             return false;
 
-        if (!sScenePrimitives[1].CreateSphere(ctx,
-                                              20, 40,
-                                              XMFLOAT4(-2.5f, 0.f, 2.0f, 1.f),
-                                              1.2f,
-                                              L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
+        auto primitive1 = sSceneNodes[1].CreateEmptyPrimitive();
+        if (!primitive1)
+            return false;
+        if (!primitive1->CreateSphere(ctx,
+                                      20, 40,
+                                      XMFLOAT4(-2.5f, 0.f, 2.0f, 1.f),
+                                      1.2f,
+                                      L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
             return false;
 
-        if (!sScenePrimitives[2].CreateSphere(ctx,
-                                              20, 40,
-                                              XMFLOAT4(2.5f, 0.f, 2.0f, 1.f),
-                                              1.2f,
-                                              L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
+        auto primitive2 = sSceneNodes[2].CreateEmptyPrimitive();
+        if (!primitive2)
+            return false;
+        if (!primitive2->CreateSphere(ctx,
+                                      20, 40,
+                                      XMFLOAT4(2.5f, 0.f, 2.0f, 1.f),
+                                      1.2f,
+                                      L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
             return false;
 
         sAmbientLight.luminance     = XMFLOAT4(0.00f, 0.00f, 0.00f, 1.0f);
@@ -779,65 +818,15 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 
     // Nodes
     // No children so far
+    sSceneNodes.clear();
+    sSceneNodes.reserve(model.nodes.size());
     for (const auto nodeIdx : scene.nodes)
     {
-        if (nodeIdx >= model.nodes.size())
+        sSceneNodes.push_back(SceneNode());
+        if (!sSceneNodes.back().LoadFromGLTF(ctx, model, nodeIdx))
         {
-            Log::Error(L"LoadGLTF:  Invalid node index (%d/%d)!", nodeIdx, model.nodes.size());
+            sSceneNodes.pop_back();
             return false;
-        }
-
-        const auto &node = model.nodes[nodeIdx];
-
-        Log::Debug(L"LoadGLTF:  Node %d/%d \"%s\": mesh %d, %d children",
-                   nodeIdx,
-                   model.nodes.size(),
-                   Utils::StringToWString(node.name).c_str(),
-                   node.mesh,
-                   node.children.size());
-
-        // Children
-        for (const auto childIdx : node.children)
-        {
-            if ((childIdx < 0) || (childIdx >= model.nodes.size()))
-            {
-                Log::Error(L"LoadGLTF:   Invalid child node index (%d/%d)!", childIdx, model.nodes.size());
-                return false;
-            }
-
-            Log::Debug(L"LoadGLTF:   Child %d/%d \"%s\"",
-                       childIdx,
-                       model.nodes.size(),
-                       Utils::StringToWString(model.nodes[childIdx].name).c_str());
-        }
-
-        // Mesh
-        const auto meshIdx = node.mesh;
-        if (meshIdx >= model.meshes.size())
-        {
-            Log::Error(L"LoadGLTF:   Invalid mesh index (%d/%d)!", meshIdx, model.meshes.size());
-            return false;
-        }
-
-        const auto &mesh = model.meshes[meshIdx];
-
-        Log::Debug(L"LoadGLTF:   Mesh %d/%d \"%s\": %d primitive(s)",
-                   meshIdx,
-                   model.meshes.size(),
-                   Utils::StringToWString(mesh.name).c_str(),
-                   mesh.primitives.size());
-
-        // Primitives
-        const auto primitivesCount = mesh.primitives.size();
-        sScenePrimitives.reserve(sScenePrimitives.size() + primitivesCount);
-        for (size_t i = 0; i < primitivesCount; ++i)
-        {
-            sScenePrimitives.push_back(ScenePrimitive());
-            if (!sScenePrimitives.back().LoadFromGLTF(ctx, model, mesh, (int)i))
-            {
-                sScenePrimitives.pop_back();
-                return false;
-            }
         }
     }
 
@@ -870,8 +859,7 @@ void Scene::Destroy()
     Utils::ReleaseAndMakeNull(mCbChangedPerObject);
     Utils::ReleaseAndMakeNull(mSamplerLinear);
 
-    sScenePrimitives.clear();
-
+    sSceneNodes.clear();
     sPointLightProxy.Destroy();
 }
 
@@ -881,8 +869,8 @@ void Scene::Animate(IRenderingContext &ctx)
     if (!ctx.IsValid())
         return;
 
-    for (auto &object : sScenePrimitives)
-        object.Animate(ctx);
+    for (auto &node : sSceneNodes)
+        node.Animate(ctx);
 
     // Directional lights are steady (for now)
     for (auto &dirLight : sDirectLights)
@@ -958,19 +946,22 @@ void Scene::Render(IRenderingContext &ctx)
     immCtx->PSSetConstantBuffers(3, 1, &mCbChangedPerObject);
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
 
-    // Draw all scene objects
-    for (auto &object : sScenePrimitives)
+    // Draw all scene nodes
+    for (auto &node : sSceneNodes)
     {
-        // Per-object constant buffer
-        CbChangedPerObject cbPerObject;
-        cbPerObject.WorldMtrx = XMMatrixTranspose(object.GetWorldMtrx());
-        cbPerObject.MeshColor = { 0.f, 1.f, 0.f, 1.f, };
-        immCtx->UpdateSubresource(mCbChangedPerObject, 0, nullptr, &cbPerObject, 0, 0);
+        for (auto &primitive : node.primitives)
+        {
+            // Per-object constant buffer
+            CbChangedPerObject cbPerObject;
+            cbPerObject.WorldMtrx = XMMatrixTranspose(primitive.GetWorldMtrx());
+            cbPerObject.MeshColor = { 0.f, 1.f, 0.f, 1.f, };
+            immCtx->UpdateSubresource(mCbChangedPerObject, 0, nullptr, &cbPerObject, 0, 0);
 
-        // Draw
-        immCtx->PSSetShaderResources(0, 1, object.GetDiffuseSRV());
-        immCtx->PSSetShaderResources(1, 1, object.GetSpecularSRV());
-        object.DrawGeometry(ctx, mVertexLayout);
+            // Draw
+            immCtx->PSSetShaderResources(0, 1, primitive.GetDiffuseSRV());
+            immCtx->PSSetShaderResources(1, 1, primitive.GetSpecularSRV());
+            primitive.DrawGeometry(ctx, mVertexLayout);
+        }
     }
 
     // Proxy geometry for point lights
@@ -1750,3 +1741,89 @@ void ScenePrimitive::DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* ver
 
     immCtx->DrawIndexed((UINT)mIndices.size(), 0, 0);
 }
+
+
+ScenePrimitive* SceneNode::CreateEmptyPrimitive()
+{
+    primitives.clear();
+    primitives.resize(1);
+    if (primitives.size() != 1)
+        return nullptr;
+
+    return &primitives[0];
+}
+
+
+bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
+                             const tinygltf::Model &model,
+                             int nodeIdx)
+{
+    if (nodeIdx >= model.nodes.size())
+    {
+        Log::Error(L"LoadGLTF:  Invalid node index (%d/%d)!", nodeIdx, model.nodes.size());
+        return false;
+    }
+
+    const auto &node = model.nodes[nodeIdx];
+
+    Log::Debug(L"LoadGLTF:  Node %d/%d \"%s\": mesh %d, %d children",
+               nodeIdx,
+               model.nodes.size(),
+               Utils::StringToWString(node.name).c_str(),
+               node.mesh,
+               node.children.size());
+
+    // Children
+    for (const auto childIdx : node.children)
+    {
+        if ((childIdx < 0) || (childIdx >= model.nodes.size()))
+        {
+            Log::Error(L"LoadGLTF:   Invalid child node index (%d/%d)!", childIdx, model.nodes.size());
+            return false;
+        }
+
+        Log::Debug(L"LoadGLTF:   Ignoring child %d/%d \"%s\"",
+                   childIdx,
+                   model.nodes.size(),
+                   Utils::StringToWString(model.nodes[childIdx].name).c_str());
+    }
+
+    // Mesh
+    const auto meshIdx = node.mesh;
+    if (meshIdx >= model.meshes.size())
+    {
+        Log::Error(L"LoadGLTF:   Invalid mesh index (%d/%d)!", meshIdx, model.meshes.size());
+        return false;
+    }
+
+    const auto &mesh = model.meshes[meshIdx];
+
+    Log::Debug(L"LoadGLTF:   Mesh %d/%d \"%s\": %d primitive(s)",
+               meshIdx,
+               model.meshes.size(),
+               Utils::StringToWString(mesh.name).c_str(),
+               mesh.primitives.size());
+
+    // Primitives
+    const auto primitivesCount = mesh.primitives.size();
+    primitives.reserve(primitivesCount);
+    for (size_t i = 0; i < primitivesCount; ++i)
+    {
+        primitives.push_back(ScenePrimitive());
+        if (!primitives.back().LoadFromGLTF(ctx, model, mesh, (int)i))
+        {
+            primitives.pop_back();
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
+void SceneNode::Animate(IRenderingContext &ctx)
+{
+    for (auto &primitive : primitives)
+        primitive.Animate(ctx);
+}
+
