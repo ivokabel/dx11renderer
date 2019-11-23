@@ -66,18 +66,12 @@ public:
     ScenePrimitive& operator = (ScenePrimitive&&);
 
     bool CreateCube(IRenderingContext & ctx,
-                    const XMFLOAT4 pos = XMFLOAT4(0, 0, 0, 1),
-                    const float scale = 1.f,
                     const wchar_t * diffuseTexPath = nullptr);
     bool CreateOctahedron(IRenderingContext & ctx,
-                          const XMFLOAT4 pos = XMFLOAT4(0, 0, 0, 1),
-                          const float scale = 1.f,
                           const wchar_t * diffuseTexPath = nullptr);
     bool CreateSphere(IRenderingContext & ctx,
                       const WORD vertSegmCount = 40,
                       const WORD stripCount = 80,
-                      const XMFLOAT4 pos = XMFLOAT4(0, 0, 0, 1),
-                      const float scale = 1.f,
                       const wchar_t * diffuseTexPath = nullptr,
                       const wchar_t * specularTexPath = nullptr);
 
@@ -86,13 +80,10 @@ public:
                       const tinygltf::Mesh &mesh,
                       const int primitiveIdx);
 
-    void Animate(IRenderingContext &ctx);
     void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout *vertexLayout);
 
     ID3D11ShaderResourceView* const* GetDiffuseSRV()  const { return &mDiffuseSRV; };
     ID3D11ShaderResourceView* const* GetSpecularSRV() const { return &mSpecularSRV; };
-
-    XMMATRIX GetWorldMtrx() const { return mWorldMtrx; }
 
     void Destroy();
 
@@ -131,11 +122,6 @@ private:
     ID3D11Buffer*               mVertexBuffer = nullptr;
     ID3D11Buffer*               mIndexBuffer = nullptr;
 
-    // Animation
-    float                       mScale = 1.f;
-    XMFLOAT4                    mPos = XMFLOAT4(0, 0, 0, 1);
-    XMMATRIX                    mWorldMtrx;
-
     // Textures
     ID3D11ShaderResourceView*   mDiffuseSRV = nullptr;
     ID3D11ShaderResourceView*   mSpecularSRV = nullptr;
@@ -145,7 +131,14 @@ private:
 class SceneNode
 {
 public:
+    SceneNode();
+
     ScenePrimitive* CreateEmptyPrimitive();
+
+    void SetIdentity();
+    void AddScale(float x, float y, float z);
+    void AddRotationQuaternion(float a, float b, float c, float d);
+    void AddTranslation(float x, float y, float z);
 
     bool LoadFromGLTF(IRenderingContext & ctx,
                       const tinygltf::Model &model,
@@ -153,10 +146,16 @@ public:
 
     void Animate(IRenderingContext &ctx);
 
-//private:
+    XMMATRIX GetWorldMtrx() const { return mWorldMtrx; }
+
+public://private:
     // Exposed for now because Render() needs access to it.
     // Might get encapsulated later when transformations/animations architecture is resolved.
     std::vector<ScenePrimitive> primitives;
+
+private:
+    XMMATRIX    mLocalMtrx;
+    XMMATRIX    mWorldMtrx;
 };
 
 
@@ -377,16 +376,15 @@ bool Scene::Load(IRenderingContext &ctx)
         if (sSceneNodes.size() != 1)
             return false;
 
-        auto primitive = sSceneNodes[0].CreateEmptyPrimitive();
+        auto &node0 = sSceneNodes[0];
+        auto primitive = node0.CreateEmptyPrimitive();
         if (!primitive)
             return false;
 
-        if (!primitive->CreateSphere(ctx,
-                                     40, 80,
-                                     XMFLOAT4(0.f, 0.f, 0.f, 1.f),
-                                     3.2f,
+        if (!primitive->CreateSphere(ctx, 40, 80,
                                      L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png"))
             return false;
+        node0.AddScale(3.2f, 3.2f, 3.2f);
 
         sAmbientLight.luminance     = XMFLOAT4(0.10f, 0.10f, 0.10f, 1.0f);
 
@@ -408,17 +406,16 @@ bool Scene::Load(IRenderingContext &ctx)
         if (sSceneNodes.size() != 1)
             return false;
 
-        auto primitive = sSceneNodes[0].CreateEmptyPrimitive();
+        auto &node0 = sSceneNodes[0];
+        auto primitive = node0.CreateEmptyPrimitive();
         if (!primitive)
             return false;
 
-        if (!primitive->CreateSphere(ctx,
-                                     40, 80,
-                                     XMFLOAT4(0.f, 0.f, 0.f, 1.f),
-                                     3.2f,
+        if (!primitive->CreateSphere(ctx, 40, 80,
                                      L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
                                      L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
             return false;
+        node0.AddScale(3.2f, 3.2f, 3.2f);
 
         sAmbientLight.luminance     = XMFLOAT4(0.f, 0.f, 0.f, 1.0f);
 
@@ -441,36 +438,36 @@ bool Scene::Load(IRenderingContext &ctx)
         if (sSceneNodes.size() != 3)
             return false;
 
+        auto &node0 = sSceneNodes[0];
         auto primitive0 = sSceneNodes[0].CreateEmptyPrimitive();
         if (!primitive0)
             return false;
-        if (!primitive0->CreateSphere(ctx,
-                                      40, 80,
-                                      XMFLOAT4(0.f, 0.f, -1.5f, 1.f),
-                                      2.2f,
+        if (!primitive0->CreateSphere(ctx, 40, 80,
                                       L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
                                       L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
             return false;
+        node0.AddScale(2.2f, 2.2f, 2.2f);
+        node0.AddTranslation(0.f, 0.f, -1.5f);
 
+        auto &node1 = sSceneNodes[1];
         auto primitive1 = sSceneNodes[1].CreateEmptyPrimitive();
         if (!primitive1)
             return false;
-        if (!primitive1->CreateSphere(ctx,
-                                      20, 40,
-                                      XMFLOAT4(-2.5f, 0.f, 2.0f, 1.f),
-                                      1.2f,
+        if (!primitive1->CreateSphere(ctx, 20, 40,
                                       L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
             return false;
+        node1.AddScale(1.2f, 1.2f, 1.2f);
+        node1.AddTranslation(-2.5f, 0.f, 2.0f);
 
+        auto &node2 = sSceneNodes[2];
         auto primitive2 = sSceneNodes[2].CreateEmptyPrimitive();
         if (!primitive2)
             return false;
-        if (!primitive2->CreateSphere(ctx,
-                                      20, 40,
-                                      XMFLOAT4(2.5f, 0.f, 2.0f, 1.f),
-                                      1.2f,
+        if (!primitive2->CreateSphere(ctx, 20, 40,
                                       L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
             return false;
+        node2.AddScale(1.2f, 1.2f, 1.2f);
+        node2.AddTranslation(2.5f, 0.f, 2.0f);
 
         sAmbientLight.luminance     = XMFLOAT4(0.00f, 0.00f, 0.00f, 1.0f);
 
@@ -949,15 +946,15 @@ void Scene::Render(IRenderingContext &ctx)
     // Draw all scene nodes
     for (auto &node : sSceneNodes)
     {
+        // Per-object constant buffer
+        CbChangedPerObject cbPerObject;
+        cbPerObject.WorldMtrx = XMMatrixTranspose(node.GetWorldMtrx());
+        cbPerObject.MeshColor = { 0.f, 1.f, 0.f, 1.f, };
+        immCtx->UpdateSubresource(mCbChangedPerObject, 0, nullptr, &cbPerObject, 0, 0);
+
+        // Draw
         for (auto &primitive : node.primitives)
         {
-            // Per-object constant buffer
-            CbChangedPerObject cbPerObject;
-            cbPerObject.WorldMtrx = XMMatrixTranspose(primitive.GetWorldMtrx());
-            cbPerObject.MeshColor = { 0.f, 1.f, 0.f, 1.f, };
-            immCtx->UpdateSubresource(mCbChangedPerObject, 0, nullptr, &cbPerObject, 0, 0);
-
-            // Draw
             immCtx->PSSetShaderResources(0, 1, primitive.GetDiffuseSRV());
             immCtx->PSSetShaderResources(1, 1, primitive.GetSpecularSRV());
             primitive.DrawGeometry(ctx, mVertexLayout);
@@ -1000,8 +997,7 @@ bool Scene::GetAmbientColor(float(&rgba)[4])
 }
 
 
-ScenePrimitive::ScenePrimitive() :
-    mWorldMtrx(XMMatrixIdentity())
+ScenePrimitive::ScenePrimitive()
 {}
 
 ScenePrimitive::ScenePrimitive(const ScenePrimitive &src) :
@@ -1010,9 +1006,6 @@ ScenePrimitive::ScenePrimitive(const ScenePrimitive &src) :
     mTopology(src.mTopology),
     mVertexBuffer(src.mVertexBuffer),
     mIndexBuffer(src.mIndexBuffer),
-    mScale(src.mScale),
-    mPos(src.mPos),
-    mWorldMtrx(src.mWorldMtrx),
     mDiffuseSRV(src.mDiffuseSRV),
     mSpecularSRV(src.mSpecularSRV)
 {
@@ -1029,9 +1022,6 @@ ScenePrimitive::ScenePrimitive(ScenePrimitive &&src) :
     mTopology(Utils::Exchange(src.mTopology, D3D_PRIMITIVE_TOPOLOGY_UNDEFINED)),
     mVertexBuffer(Utils::Exchange(src.mVertexBuffer, nullptr)),
     mIndexBuffer(Utils::Exchange(src.mIndexBuffer, nullptr)),
-    mScale(Utils::Exchange(src.mScale, 1.f)),
-    mPos(std::move(src.mPos)),
-    mWorldMtrx(std::move(src.mWorldMtrx)),
     mDiffuseSRV(Utils::Exchange(src.mDiffuseSRV, nullptr)),
     mSpecularSRV(Utils::Exchange(src.mSpecularSRV, nullptr))
 {}
@@ -1043,9 +1033,6 @@ ScenePrimitive& ScenePrimitive::operator =(const ScenePrimitive &src)
     mTopology = src.mTopology;
     mVertexBuffer = src.mVertexBuffer;
     mIndexBuffer = src.mIndexBuffer;
-    mScale = src.mScale;
-    mPos = src.mPos;
-    mWorldMtrx = src.mWorldMtrx;
     mDiffuseSRV = src.mDiffuseSRV;
     mSpecularSRV = src.mSpecularSRV;
 
@@ -1065,9 +1052,6 @@ ScenePrimitive& ScenePrimitive::operator =(ScenePrimitive &&src)
     mTopology = Utils::Exchange(src.mTopology, D3D_PRIMITIVE_TOPOLOGY_UNDEFINED);
     mVertexBuffer = Utils::Exchange(src.mVertexBuffer, nullptr);
     mIndexBuffer = Utils::Exchange(src.mIndexBuffer, nullptr);
-    mScale = Utils::Exchange(src.mScale, 1.f);
-    mPos = std::move(src.mPos);
-    mWorldMtrx = std::move(src.mWorldMtrx);
     mDiffuseSRV = Utils::Exchange(src.mDiffuseSRV, nullptr);
     mSpecularSRV = Utils::Exchange(src.mSpecularSRV, nullptr);
 
@@ -1081,13 +1065,8 @@ ScenePrimitive::~ScenePrimitive()
 
 
 bool ScenePrimitive::CreateCube(IRenderingContext & ctx,
-                                const XMFLOAT4 pos,
-                                const float scale,
                                 const wchar_t * diffuseTexPath)
 {
-    mScale = scale;
-    mPos = pos;
-
     if (!GenerateCubeGeometry())
         return false;
     if (!CreateDeviceBuffers(ctx))
@@ -1100,13 +1079,8 @@ bool ScenePrimitive::CreateCube(IRenderingContext & ctx,
 
 
 bool ScenePrimitive::CreateOctahedron(IRenderingContext & ctx,
-                                      const XMFLOAT4 pos,
-                                      const float scale,
                                       const wchar_t * diffuseTexPath)
 {
-    mScale = scale;
-    mPos = pos;
-
     if (!GenerateOctahedronGeometry())
         return false;
     if (!CreateDeviceBuffers(ctx))
@@ -1121,14 +1095,9 @@ bool ScenePrimitive::CreateOctahedron(IRenderingContext & ctx,
 bool ScenePrimitive::CreateSphere(IRenderingContext & ctx,
                                   const WORD vertSegmCount,
                                   const WORD stripCount,
-                                  const XMFLOAT4 pos,
-                                  const float scale,
                                   const wchar_t * diffuseTexPath,
                                   const wchar_t * specularTexPath)
 {
-    mScale = scale;
-    mPos = pos;
-
     if (!GenerateSphereGeometry(vertSegmCount, stripCount))
         return false;
     if (!CreateDeviceBuffers(ctx))
@@ -1342,10 +1311,6 @@ bool ScenePrimitive::LoadFromGLTF(IRenderingContext & ctx,
                                   const tinygltf::Mesh &mesh,
                                   const int primitiveIdx)
 {
-    // TODO
-    mScale = 3.f;
-    //mPos = pos;
-
     if (!LoadGeometryFromGLTF(model, mesh, primitiveIdx))
         return false;
     if (!CreateDeviceBuffers(ctx))
@@ -1714,20 +1679,6 @@ void ScenePrimitive::DestroyTextures()
 }
 
 
-void ScenePrimitive::Animate(IRenderingContext &ctx)
-{
-    const float time = ctx.GetCurrentAnimationTime();
-    const float period = 15.f; //seconds
-    const float totalAnimPos = time / period;
-    const float angle = totalAnimPos * XM_2PI;
-
-    XMMATRIX shiftMtrx = XMMatrixTranslationFromVector(XMLoadFloat4(&mPos));
-    XMMATRIX scaleMtrx = XMMatrixScaling(mScale, mScale, mScale);
-    XMMATRIX rotMtrx = XMMatrixRotationY(angle);
-    mWorldMtrx = scaleMtrx * rotMtrx * shiftMtrx;
-}
-
-
 void ScenePrimitive::DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout)
 {
     auto immCtx = ctx.GetImmediateContext();
@@ -1743,6 +1694,11 @@ void ScenePrimitive::DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* ver
 }
 
 
+SceneNode::SceneNode() : 
+    mLocalMtrx(XMMatrixIdentity()),
+    mWorldMtrx(XMMatrixIdentity())
+{}
+
 ScenePrimitive* SceneNode::CreateEmptyPrimitive()
 {
     primitives.clear();
@@ -1753,6 +1709,29 @@ ScenePrimitive* SceneNode::CreateEmptyPrimitive()
     return &primitives[0];
 }
 
+void SceneNode::SetIdentity()
+{
+    mLocalMtrx = XMMatrixIdentity();
+}
+
+void SceneNode::AddScale(float x, float y, float z)
+{
+    const auto scaleMtrx = XMMatrixScaling(x, y, z);
+    mLocalMtrx = mLocalMtrx * scaleMtrx;
+}
+
+void SceneNode::AddRotationQuaternion(float a, float b, float c, float d)
+{
+    const XMFLOAT4 quaternion(a, b, c, d);
+    const auto rotMtrx = XMMatrixRotationQuaternion(XMLoadFloat4(&quaternion));
+    mLocalMtrx = mLocalMtrx * rotMtrx;
+}
+
+void SceneNode::AddTranslation(float x, float y, float z)
+{
+    const auto translMtrx = XMMatrixTranslation(x, y, z);
+    mLocalMtrx = mLocalMtrx * translMtrx;
+}
 
 bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
                              const tinygltf::Model &model,
@@ -1766,12 +1745,47 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
 
     const auto &node = model.nodes[nodeIdx];
 
-    Log::Debug(L"LoadGLTF:  Node %d/%d \"%s\": mesh %d, %d children",
+    std::wstring transforms;
+    if (!node.rotation.empty())
+        transforms += L"rotation ";
+    if (!node.scale.empty())
+        transforms += L"scale ";
+    if (!node.translation.empty())
+        transforms += L"translation ";
+    if (!node.matrix.empty())
+        transforms += L"matrix ";
+    if (transforms.empty())
+        transforms = L"none";
+    Log::Debug(L"LoadGLTF:  Node %d/%d \"%s\": mesh %d, %d children, transform: %s",
                nodeIdx,
                model.nodes.size(),
                Utils::StringToWString(node.name).c_str(),
                node.mesh,
-               node.children.size());
+               node.children.size(),
+               transforms.c_str());
+
+    // Local transformation
+    if (node.matrix.size() == 4)
+    {
+        // TODO
+
+        Log::Error(L"LoadGLTF:   Local transformation given by matrix is not yet supported!");
+        return false;
+    }
+    else
+    {
+        auto &rot = node.rotation;
+        auto &scale = node.scale;
+        auto &trans = node.translation;
+
+        SetIdentity();
+        if (scale.size() == 3)
+            AddScale((float)scale[0], (float)scale[1], (float)scale[2]);
+        if (rot.size() == 3)
+            AddRotationQuaternion((float)rot[0], (float)rot[1], (float)rot[2], (float)rot[3]);
+        if (trans.size() == 3)
+            AddTranslation((float)trans[0], (float)trans[1], (float)trans[2]);
+    }
 
     // Children
     for (const auto childIdx : node.children)
@@ -1823,7 +1837,12 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
 
 void SceneNode::Animate(IRenderingContext &ctx)
 {
-    for (auto &primitive : primitives)
-        primitive.Animate(ctx);
-}
+    const float time = ctx.GetCurrentAnimationTime();
+    const float period = 15.f; //seconds
+    const float totalAnimPos = time / period;
+    const float angle = totalAnimPos * XM_2PI;
 
+    XMMATRIX rotMtrx = XMMatrixRotationY(angle);
+
+    mWorldMtrx = rotMtrx * mLocalMtrx;
+}
