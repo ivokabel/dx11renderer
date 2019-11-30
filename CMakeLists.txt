@@ -28,8 +28,8 @@ set(RENDERER_SOURCES
     Libs/tinygltf-2.2.0/json.hpp
 
     #debug
-    Libs/tinygltf-2.2.0/loader_example.h
-    Libs/tinygltf-2.2.0/loader_example.cc
+    #Libs/tinygltf-2.2.0/loader_example.h
+    #Libs/tinygltf-2.2.0/loader_example.cc
     )
 
 set(CMAKE_CXX_STANDARD 11)

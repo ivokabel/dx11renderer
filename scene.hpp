@@ -15,18 +15,24 @@
 #include <xnamath.h>
 #pragma warning(pop)
 
+#include <string>
+
 class Scene : public IScene
 {
 public:
 
-    enum HardwiredSceneId
+    enum SceneId
     {
-        eSimpleDebugSphere,
-        eEarth,
-        eThreePlanets,
+        eHardwiredSimpleDebugSphere,
+        eHardwiredEarth,
+        eHardwiredThreePlanets,
+        eExternalDebugTriangleWithoutIndices, // Non-indexed geometry not yet supported!
+        eExternalDebugTriangle,
+        eExternalDebugSimpleMeshes,
+        eExternalDebugBox,
     };
 
-    Scene(const HardwiredSceneId sceneId);
+    Scene(const SceneId sceneId);
     // TODO: Scene(const std::string &sceneFilePath);
     virtual ~Scene();
 
@@ -40,10 +46,14 @@ private:
 
     // Loads the scene specified via constructor
     bool Load(IRenderingContext &ctx);
+    bool LoadExternal(IRenderingContext &ctx, const std::wstring &filePath);
+
+    // glTF loader
+    bool LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath);
 
 private:
 
-    const HardwiredSceneId      mSceneId;
+    const SceneId               mSceneId;
 
     ID3D11VertexShader*         mVertexShader = nullptr;
     ID3D11PixelShader*          mPixelShaderIllum = nullptr;
@@ -53,7 +63,7 @@ private:
     ID3D11Buffer*               mCbNeverChanged = nullptr;
     ID3D11Buffer*               mCbChangedOnResize = nullptr;
     ID3D11Buffer*               mCbChangedEachFrame = nullptr;
-    ID3D11Buffer*               mCbChangedPerObject = nullptr;
+    ID3D11Buffer*               mCbChangedPerSceneNode = nullptr;
 
     ID3D11SamplerState*         mSamplerLinear = nullptr;
 

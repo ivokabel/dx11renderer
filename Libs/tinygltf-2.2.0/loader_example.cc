@@ -340,30 +340,30 @@ static std::string PrintValue(const std::string &name,
 }
 
 static void DumpNode(const tinygltf::Node &node, int indent) {
-    std::cout << Indent(indent) << "name        : " << node.name << std::endl;
-    std::cout << Indent(indent) << "camera      : " << node.camera << std::endl;
-    std::cout << Indent(indent) << "mesh        : " << node.mesh << std::endl;
+    std::cout << Indent(indent) << "name : " << node.name << std::endl;
+    std::cout << Indent(indent+1) << "camera      : " << node.camera << std::endl;
+    std::cout << Indent(indent+1) << "mesh        : " << node.mesh << std::endl;
     if (!node.rotation.empty()) {
-        std::cout << Indent(indent)
+        std::cout << Indent(indent+1)
             << "rotation    : " << PrintFloatArray(node.rotation)
             << std::endl;
     }
     if (!node.scale.empty()) {
-        std::cout << Indent(indent)
+        std::cout << Indent(indent+1)
             << "scale       : " << PrintFloatArray(node.scale) << std::endl;
     }
     if (!node.translation.empty()) {
-        std::cout << Indent(indent)
+        std::cout << Indent(indent+1)
             << "translation : " << PrintFloatArray(node.translation)
             << std::endl;
     }
 
     if (!node.matrix.empty()) {
-        std::cout << Indent(indent)
+        std::cout << Indent(indent+1)
             << "matrix      : " << PrintFloatArray(node.matrix) << std::endl;
     }
 
-    std::cout << Indent(indent)
+    std::cout << Indent(indent+1)
         << "children    : " << PrintIntArray(node.children) << std::endl;
 }
 
@@ -376,14 +376,10 @@ static void DumpStringIntMap(const std::map<std::string, int> &m, int indent) {
 }
 
 static void DumpPrimitive(const tinygltf::Primitive &primitive, int indent) {
-    std::cout << Indent(indent) << "material : " << primitive.material
-        << std::endl;
-    std::cout << Indent(indent) << "indices : " << primitive.indices << std::endl;
-    std::cout << Indent(indent) << "mode     : " << PrintMode(primitive.mode)
-        << "(" << primitive.mode << ")" << std::endl;
-    std::cout << Indent(indent)
-        << "attributes(items=" << primitive.attributes.size() << ")"
-        << std::endl;
+    std::cout << Indent(indent) << "material : " << primitive.material << std::endl;
+    std::cout << Indent(indent) << "indices  : " << primitive.indices << std::endl;
+    std::cout << Indent(indent) << "mode     : " << PrintMode(primitive.mode) << "(" << primitive.mode << ")" << std::endl;
+    std::cout << Indent(indent) << "attributes(count=" << primitive.attributes.size() << ")" << std::endl;
     DumpStringIntMap(primitive.attributes, indent + 1);
 
     std::cout << Indent(indent) << "extras :" << std::endl
@@ -415,22 +411,26 @@ static void Dump(const tinygltf::Model &model) {
     std::cout << "defaultScene: " << model.defaultScene << std::endl;
 
     {
-        std::cout << "scenes(items=" << model.scenes.size() << ")" << std::endl;
+        std::cout << "scenes(count=" << model.scenes.size() << ")" << std::endl;
         for (size_t i = 0; i < model.scenes.size(); i++) {
             std::cout << Indent(1) << "scene[" << i
-                << "] name  : " << model.scenes[i].name << std::endl;
+                << "] name : " << model.scenes[i].name << std::endl;
             DumpExtensions(model.scenes[i].extensions, 1);
         }
     }
 
     {
-        std::cout << "meshes(item=" << model.meshes.size() << ")" << std::endl;
+        std::cout << "nodes(count=" << model.nodes.size() << ")" << std::endl;
+        for (size_t i = 0; i < model.nodes.size(); i++) {
+            DumpNode(model.nodes[i], 1);
+        }
+    }
+
+    {
+        std::cout << "meshes(count=" << model.meshes.size() << ")" << std::endl;
         for (size_t i = 0; i < model.meshes.size(); i++) {
-            std::cout << Indent(1) << "name     : " << model.meshes[i].name
-                << std::endl;
-            std::cout << Indent(1)
-                << "primitives(items=" << model.meshes[i].primitives.size()
-                << "): " << std::endl;
+            std::cout << Indent(1) << "name : " << model.meshes[i].name << std::endl;
+            std::cout << Indent(1) << "primitives(count=" << model.meshes[i].primitives.size() << "): " << std::endl;
 
             for (size_t k = 0; k < model.meshes[i].primitives.size(); k++) {
                 DumpPrimitive(model.meshes[i].primitives[k], 2);
@@ -439,20 +439,16 @@ static void Dump(const tinygltf::Model &model) {
     }
 
     {
+        std::cout << "accessors(count=" << model.accessors.size() << ")" << std::endl;
         for (size_t i = 0; i < model.accessors.size(); i++) {
             const tinygltf::Accessor &accessor = model.accessors[i];
-            std::cout << Indent(1) << "name         : " << accessor.name << std::endl;
-            std::cout << Indent(2) << "bufferView   : " << accessor.bufferView
-                << std::endl;
-            std::cout << Indent(2) << "byteOffset   : " << accessor.byteOffset
-                << std::endl;
-            std::cout << Indent(2) << "componentType: "
-                << PrintComponentType(accessor.componentType) << "("
-                << accessor.componentType << ")" << std::endl;
-            std::cout << Indent(2) << "count        : " << accessor.count
-                << std::endl;
-            std::cout << Indent(2) << "type         : " << PrintType(accessor.type)
-                << std::endl;
+            std::cout << Indent(1) << "name : " << accessor.name << std::endl;
+            std::cout << Indent(2) << "bufferView   : " << accessor.bufferView << std::endl;
+            std::cout << Indent(2) << "byteOffset   : " << accessor.byteOffset << std::endl;
+            std::cout << Indent(2) << "componentType: " << PrintComponentType(accessor.componentType) << "(" << accessor.componentType << ")" << std::endl;
+            std::cout << Indent(2) << "count        : " << accessor.count << std::endl;
+            std::cout << Indent(2) << "type         : " << PrintType(accessor.type) << std::endl;
+
             if (!accessor.minValues.empty()) {
                 std::cout << Indent(2) << "min          : [";
                 for (size_t k = 0; k < accessor.minValues.size(); k++) {
@@ -497,11 +493,11 @@ static void Dump(const tinygltf::Model &model) {
     }
 
     {
-        std::cout << "animations(items=" << model.animations.size() << ")"
+        std::cout << "animations(count=" << model.animations.size() << ")"
             << std::endl;
         for (size_t i = 0; i < model.animations.size(); i++) {
             const tinygltf::Animation &animation = model.animations[i];
-            std::cout << Indent(1) << "name         : " << animation.name
+            std::cout << Indent(1) << "name : " << animation.name
                 << std::endl;
 
             std::cout << Indent(1) << "channels : [ " << std::endl;
@@ -519,7 +515,7 @@ static void Dump(const tinygltf::Model &model) {
             }
             std::cout << "  ]" << std::endl;
 
-            std::cout << Indent(1) << "samplers(items=" << animation.samplers.size()
+            std::cout << Indent(1) << "samplers(count=" << animation.samplers.size()
                 << ")" << std::endl;
             for (size_t j = 0; j < animation.samplers.size(); j++) {
                 const tinygltf::AnimationSampler &sampler = animation.samplers[j];
@@ -534,11 +530,11 @@ static void Dump(const tinygltf::Model &model) {
     }
 
     {
-        std::cout << "bufferViews(items=" << model.bufferViews.size() << ")"
+        std::cout << "bufferViews(count=" << model.bufferViews.size() << ")"
             << std::endl;
         for (size_t i = 0; i < model.bufferViews.size(); i++) {
             const tinygltf::BufferView &bufferView = model.bufferViews[i];
-            std::cout << Indent(1) << "name         : " << bufferView.name
+            std::cout << Indent(1) << "name : " << bufferView.name
                 << std::endl;
             std::cout << Indent(2) << "buffer       : " << bufferView.buffer
                 << std::endl;
@@ -555,22 +551,22 @@ static void Dump(const tinygltf::Model &model) {
     }
 
     {
-        std::cout << "buffers(items=" << model.buffers.size() << ")" << std::endl;
+        std::cout << "buffers(count=" << model.buffers.size() << ")" << std::endl;
         for (size_t i = 0; i < model.buffers.size(); i++) {
             const tinygltf::Buffer &buffer = model.buffers[i];
-            std::cout << Indent(1) << "name         : " << buffer.name << std::endl;
+            std::cout << Indent(1) << "name : " << buffer.name << std::endl;
             std::cout << Indent(2) << "byteLength   : " << buffer.data.size()
                 << std::endl;
         }
     }
 
     {
-        std::cout << "materials(items=" << model.materials.size() << ")"
+        std::cout << "materials(count=" << model.materials.size() << ")"
             << std::endl;
         for (size_t i = 0; i < model.materials.size(); i++) {
             const tinygltf::Material &material = model.materials[i];
-            std::cout << Indent(1) << "name         : " << material.name << std::endl;
-            std::cout << Indent(1) << "values(items=" << material.values.size() << ")"
+            std::cout << Indent(1) << "name : " << material.name << std::endl;
+            std::cout << Indent(1) << "values(count=" << material.values.size() << ")"
                 << std::endl;
 
             tinygltf::ParameterMap::const_iterator p(material.values.begin());
@@ -583,20 +579,10 @@ static void Dump(const tinygltf::Model &model) {
     }
 
     {
-        std::cout << "nodes(items=" << model.nodes.size() << ")" << std::endl;
-        for (size_t i = 0; i < model.nodes.size(); i++) {
-            const tinygltf::Node &node = model.nodes[i];
-            std::cout << Indent(1) << "name         : " << node.name << std::endl;
-
-            DumpNode(node, 2);
-        }
-    }
-
-    {
-        std::cout << "images(items=" << model.images.size() << ")" << std::endl;
+        std::cout << "images(count=" << model.images.size() << ")" << std::endl;
         for (size_t i = 0; i < model.images.size(); i++) {
             const tinygltf::Image &image = model.images[i];
-            std::cout << Indent(1) << "name         : " << image.name << std::endl;
+            std::cout << Indent(1) << "name : " << image.name << std::endl;
 
             std::cout << Indent(2) << "width     : " << image.width << std::endl;
             std::cout << Indent(2) << "height    : " << image.height << std::endl;
@@ -606,7 +592,7 @@ static void Dump(const tinygltf::Model &model) {
     }
 
     {
-        std::cout << "textures(items=" << model.textures.size() << ")" << std::endl;
+        std::cout << "textures(count=" << model.textures.size() << ")" << std::endl;
         for (size_t i = 0; i < model.textures.size(); i++) {
             const tinygltf::Texture &texture = model.textures[i];
             std::cout << Indent(1) << "sampler        : " << texture.sampler
@@ -618,7 +604,7 @@ static void Dump(const tinygltf::Model &model) {
     }
 
     {
-        std::cout << "samplers(items=" << model.samplers.size() << ")" << std::endl;
+        std::cout << "samplers(count=" << model.samplers.size() << ")" << std::endl;
 
         for (size_t i = 0; i < model.samplers.size(); i++) {
             const tinygltf::Sampler &sampler = model.samplers[i];
@@ -639,7 +625,7 @@ static void Dump(const tinygltf::Model &model) {
     }
 
     {
-        std::cout << "cameras(items=" << model.cameras.size() << ")" << std::endl;
+        std::cout << "cameras(count=" << model.cameras.size() << ")" << std::endl;
 
         for (size_t i = 0; i < model.cameras.size(); i++) {
             const tinygltf::Camera &camera = model.cameras[i];
@@ -673,7 +659,7 @@ static void Dump(const tinygltf::Model &model) {
 
     // toplevel extensions
     {
-        std::cout << "extensions(items=" << model.extensions.size() << ")"
+        std::cout << "extensions(count=" << model.extensions.size() << ")"
             << std::endl;
         DumpExtensions(model.extensions, 1);
     }
