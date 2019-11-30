@@ -23,10 +23,13 @@ public:
 
     enum SceneId
     {
-        eExternal,
         eHardwiredSimpleDebugSphere,
         eHardwiredEarth,
         eHardwiredThreePlanets,
+        eExternalDebugTriangleWithoutIndices, // Non-indexed geometry not yet supported!
+        eExternalDebugTriangle,
+        eExternalDebugSimpleMeshes,
+        eExternalDebugBox,
     };
 
     Scene(const SceneId sceneId);

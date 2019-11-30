@@ -362,12 +362,17 @@ bool Scene::Load(IRenderingContext &ctx)
 {
     switch (mSceneId)
     {
-    case eExternal:
-    {
-        //return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/TriangleWithoutIndices/TriangleWithoutIndices.gltf"); // not supported for now
-        //return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Triangle/Triangle.gltf");
+    case eExternalDebugTriangleWithoutIndices:
+        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/TriangleWithoutIndices/TriangleWithoutIndices.gltf");
+
+    case eExternalDebugTriangle:
+        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Triangle/Triangle.gltf");
+
+    case eExternalDebugSimpleMeshes:
         return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/SimpleMeshes/SimpleMeshes.gltf");
-    }
+
+    case eExternalDebugBox:
+        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Box/Box.gltf");
 
     case eHardwiredSimpleDebugSphere:
     {
