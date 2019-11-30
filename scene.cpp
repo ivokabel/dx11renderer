@@ -45,120 +45,6 @@ const std::array<InputElmDesc, 3> sVertexLayout =
 };
 
 
-struct SceneVertex
-{
-    XMFLOAT3 Pos;
-    XMFLOAT3 Normal;
-    XMFLOAT2 Tex;
-};
-
-
-class ScenePrimitive
-{
-public:
-
-    ScenePrimitive();
-    ScenePrimitive(const ScenePrimitive &);
-    ScenePrimitive(ScenePrimitive &&);
-    ~ScenePrimitive();
-
-    ScenePrimitive& operator = (const ScenePrimitive&);
-    ScenePrimitive& operator = (ScenePrimitive&&);
-
-    bool CreateCube(IRenderingContext & ctx,
-                    const wchar_t * diffuseTexPath = nullptr);
-    bool CreateOctahedron(IRenderingContext & ctx,
-                          const wchar_t * diffuseTexPath = nullptr);
-    bool CreateSphere(IRenderingContext & ctx,
-                      const WORD vertSegmCount = 40,
-                      const WORD stripCount = 80,
-                      const wchar_t * diffuseTexPath = nullptr,
-                      const wchar_t * specularTexPath = nullptr);
-
-    bool LoadFromGLTF(IRenderingContext & ctx,
-                      const tinygltf::Model &model,
-                      const tinygltf::Mesh &mesh,
-                      const int primitiveIdx);
-
-    void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout *vertexLayout);
-
-    ID3D11ShaderResourceView* const* GetDiffuseSRV()  const { return &mDiffuseSRV; };
-    ID3D11ShaderResourceView* const* GetSpecularSRV() const { return &mSpecularSRV; };
-
-    void Destroy();
-
-private:
-
-    bool GenerateCubeGeometry();
-    bool GenerateOctahedronGeometry();
-    bool GenerateSphereGeometry(const WORD vertSegmCount, const WORD stripCount);
-
-    bool LoadGeometryFromGLTF(const tinygltf::Model &model,
-                              const tinygltf::Mesh &mesh,
-                              const int primitiveIdx);
-
-    bool CreateDeviceBuffers(IRenderingContext &ctx);
-    bool LoadTextures(IRenderingContext &ctx,
-                      const wchar_t * diffuseTexPath = nullptr,
-                      const wchar_t * specularTexPath = nullptr);
-
-    static bool CreateConstantTextureShaderResourceView(IRenderingContext &ctx,
-                                                        ID3D11ShaderResourceView *&srv,
-                                                        XMFLOAT4 color);
-
-
-    void DestroyGeomData();
-    void DestroyDeviceBuffers();
-    void DestroyTextures();
-
-private:
-
-    // Geometry data
-    std::vector<SceneVertex>    mVertices;
-    std::vector<WORD>           mIndices;
-    D3D11_PRIMITIVE_TOPOLOGY    mTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-
-    // Device geometry data
-    ID3D11Buffer*               mVertexBuffer = nullptr;
-    ID3D11Buffer*               mIndexBuffer = nullptr;
-
-    // Textures
-    ID3D11ShaderResourceView*   mDiffuseSRV = nullptr;
-    ID3D11ShaderResourceView*   mSpecularSRV = nullptr;
-};
-
-
-class SceneNode
-{
-public:
-    SceneNode();
-
-    ScenePrimitive* CreateEmptyPrimitive();
-
-    void SetIdentity();
-    void AddScale(const std::vector<double> &vec);
-    void AddRotationQuaternion(const std::vector<double> &vec);
-    void AddTranslation(const std::vector<double> &vec);
-
-    bool LoadFromGLTF(IRenderingContext & ctx,
-                      const tinygltf::Model &model,
-                      int nodeIdx);
-
-    void Animate(IRenderingContext &ctx);
-
-    XMMATRIX GetWorldMtrx() const { return mWorldMtrx; }
-
-public://private:
-    // Exposed for now because Render() needs access to it.
-    // Might get encapsulated later when transformations/animations architecture is resolved.
-    std::vector<ScenePrimitive> primitives;
-
-private:
-    XMMATRIX    mLocalMtrx;
-    XMMATRIX    mWorldMtrx;
-};
-
-
 std::vector<SceneNode> sSceneNodes;
 ScenePrimitive sPointLightProxy;
 
@@ -818,18 +704,15 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
                Utils::StringToWString(scene.name).c_str(),
                scene.nodes.size());
 
-    // Nodes
-    // No children so far
+    // Nodes hierarchy
     sSceneNodes.clear();
     sSceneNodes.reserve(model.nodes.size());
     for (const auto nodeIdx : scene.nodes)
     {
-        sSceneNodes.push_back(SceneNode());
-        if (!sSceneNodes.back().LoadFromGLTF(ctx, model, nodeIdx))
-        {
-            sSceneNodes.pop_back();
+        SceneNode sceneNode;
+        if (!LoadSceneNodeFromGLTF(ctx, sceneNode, model, nodeIdx))
             return false;
-        }
+        sSceneNodes.push_back(std::move(sceneNode));
     }
 
     Log::Debug(L"");
@@ -844,6 +727,41 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
     sPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
     sPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
     sPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+
+    return true;
+}
+
+bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
+                                  SceneNode &sceneNode,
+                                  const tinygltf::Model &model,
+                                  int nodeIdx)
+{
+    if (nodeIdx >= model.nodes.size())
+    {
+        Log::Error(L"LoadGLTF:  Invalid node index (%d/%d)!", nodeIdx, model.nodes.size());
+        return false;
+    }
+
+    const auto &node = model.nodes[nodeIdx];
+
+    // Node itself
+    if (!sceneNode.LoadFromGLTF(ctx, model, node, nodeIdx))
+        return false;
+
+    // Children
+    for (const auto childIdx : node.children)
+    {
+        if ((childIdx < 0) || (childIdx >= model.nodes.size()))
+        {
+            Log::Error(L"LoadGLTF:   Invalid child node index (%d/%d)!", childIdx, model.nodes.size());
+            return false;
+        }
+
+        Log::Debug(L"LoadGLTF:   Ignoring child %d/%d \"%s\"",
+                   childIdx,
+                   model.nodes.size(),
+                   Utils::StringToWString(model.nodes[childIdx].name).c_str());
+    }
 
     return true;
 }
@@ -1749,16 +1667,9 @@ void SceneNode::AddTranslation(const std::vector<double> &vec)
 
 bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
                              const tinygltf::Model &model,
+                             const tinygltf::Node &node,
                              int nodeIdx)
 {
-    if (nodeIdx >= model.nodes.size())
-    {
-        Log::Error(L"LoadGLTF:  Invalid node index (%d/%d)!", nodeIdx, model.nodes.size());
-        return false;
-    }
-
-    const auto &node = model.nodes[nodeIdx];
-
     // debug
     if (Log::sLoggingLevel >= Log::eDebug)
     {
@@ -1798,22 +1709,8 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
         AddTranslation(node.translation);
     }
 
-    // Children
-    for (const auto childIdx : node.children)
-    {
-        if ((childIdx < 0) || (childIdx >= model.nodes.size()))
-        {
-            Log::Error(L"LoadGLTF:   Invalid child node index (%d/%d)!", childIdx, model.nodes.size());
-            return false;
-        }
-
-        Log::Debug(L"LoadGLTF:   Ignoring child %d/%d \"%s\"",
-                   childIdx,
-                   model.nodes.size(),
-                   Utils::StringToWString(model.nodes[childIdx].name).c_str());
-    }
-
     // Mesh
+
     const auto meshIdx = node.mesh;
     if (meshIdx >= (int)model.meshes.size())
     {
