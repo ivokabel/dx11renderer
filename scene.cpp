@@ -1759,24 +1759,28 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
 
     const auto &node = model.nodes[nodeIdx];
 
-    std::wstring transforms;
-    if (!node.rotation.empty())
-        transforms += L"rotation ";
-    if (!node.scale.empty())
-        transforms += L"scale ";
-    if (!node.translation.empty())
-        transforms += L"translation ";
-    if (!node.matrix.empty())
-        transforms += L"matrix ";
-    if (transforms.empty())
-        transforms = L"none";
-    Log::Debug(L"LoadGLTF:  Node %d/%d \"%s\": mesh %d, %d children, transform: %s",
-               nodeIdx,
-               model.nodes.size(),
-               Utils::StringToWString(node.name).c_str(),
-               node.mesh,
-               node.children.size(),
-               transforms.c_str());
+    // debug
+    if (Log::sLoggingLevel >= Log::eDebug)
+    {
+        std::wstring transforms;
+        if (!node.rotation.empty())
+            transforms += L"rotation ";
+        if (!node.scale.empty())
+            transforms += L"scale ";
+        if (!node.translation.empty())
+            transforms += L"translation ";
+        if (!node.matrix.empty())
+            transforms += L"matrix ";
+        if (transforms.empty())
+            transforms = L"none";
+        Log::Debug(L"LoadGLTF:  Node %d/%d \"%s\": mesh %d, %d children, transform: %s",
+                   nodeIdx,
+                   model.nodes.size(),
+                   Utils::StringToWString(node.name).c_str(),
+                   node.mesh,
+                   node.children.size(),
+                   transforms.c_str());
+    }
 
     // Local transformation
     if (node.matrix.size() == 4)
