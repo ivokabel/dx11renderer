@@ -30,8 +30,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eHardwiredThreePlanets
         //Scene::eExternalDebugTriangleWithoutIndices
         //Scene::eExternalDebugTriangle
-        Scene::eExternalDebugSimpleMeshes
-        //Scene::eExternalDebugBox
+        //Scene::eExternalDebugSimpleMeshes
+        Scene::eExternalDebugBox
         );
     SimpleDX11Renderer renderer(scene);
 
