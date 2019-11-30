@@ -130,6 +130,10 @@ public://private:
     std::vector<ScenePrimitive> primitives;
 
 private:
+    std::vector<SceneNode> children;
+    friend class Scene;
+
+private:
     XMMATRIX    mLocalMtrx;
     XMMATRIX    mWorldMtrx;
 };

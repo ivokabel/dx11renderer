@@ -749,6 +749,8 @@ bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
         return false;
 
     // Children
+    sceneNode.children.clear();
+    sceneNode.children.reserve(node.children.size());
     for (const auto childIdx : node.children)
     {
         if ((childIdx < 0) || (childIdx >= model.nodes.size()))
@@ -757,10 +759,14 @@ bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
             return false;
         }
 
-        Log::Debug(L"LoadGLTF:   Ignoring child %d/%d \"%s\"",
+        Log::Debug(L"LoadGLTF:   Loading child %d \"%s\"",
                    childIdx,
-                   model.nodes.size(),
                    Utils::StringToWString(model.nodes[childIdx].name).c_str());
+
+        SceneNode childNode;
+        if (!LoadSceneNodeFromGLTF(ctx, childNode, model, childIdx))
+            return false;
+        sceneNode.children.push_back(std::move(childNode));
     }
 
     return true;
@@ -1684,13 +1690,13 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
             transforms += L"matrix ";
         if (transforms.empty())
             transforms = L"none";
-        Log::Debug(L"LoadGLTF:  Node %d/%d \"%s\": mesh %d, %d children, transform: %s",
+        Log::Debug(L"LoadGLTF:  Node %d/%d \"%s\": mesh %d, transform: %s, children %d",
                    nodeIdx,
                    model.nodes.size(),
                    Utils::StringToWString(node.name).c_str(),
                    node.mesh,
-                   node.children.size(),
-                   transforms.c_str());
+                   transforms.c_str(),
+                   node.children.size());
     }
 
     // Local transformation
