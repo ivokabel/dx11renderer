@@ -1815,30 +1815,33 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
 
     // Mesh
     const auto meshIdx = node.mesh;
-    if (meshIdx >= model.meshes.size())
+    if (meshIdx >= (int)model.meshes.size())
     {
         Log::Error(L"LoadGLTF:   Invalid mesh index (%d/%d)!", meshIdx, model.meshes.size());
         return false;
     }
 
-    const auto &mesh = model.meshes[meshIdx];
-
-    Log::Debug(L"LoadGLTF:   Mesh %d/%d \"%s\": %d primitive(s)",
-               meshIdx,
-               model.meshes.size(),
-               Utils::StringToWString(mesh.name).c_str(),
-               mesh.primitives.size());
-
-    // Primitives
-    const auto primitivesCount = mesh.primitives.size();
-    primitives.reserve(primitivesCount);
-    for (size_t i = 0; i < primitivesCount; ++i)
+    if (meshIdx >= 0)
     {
-        primitives.push_back(ScenePrimitive());
-        if (!primitives.back().LoadFromGLTF(ctx, model, mesh, (int)i))
+        const auto &mesh = model.meshes[meshIdx];
+
+        Log::Debug(L"LoadGLTF:   Mesh %d/%d \"%s\": %d primitive(s)",
+                   meshIdx,
+                   model.meshes.size(),
+                   Utils::StringToWString(mesh.name).c_str(),
+                   mesh.primitives.size());
+
+        // Primitives
+        const auto primitivesCount = mesh.primitives.size();
+        primitives.reserve(primitivesCount);
+        for (size_t i = 0; i < primitivesCount; ++i)
         {
-            primitives.pop_back();
-            return false;
+            primitives.push_back(ScenePrimitive());
+            if (!primitives.back().LoadFromGLTF(ctx, model, mesh, (int)i))
+            {
+                primitives.pop_back();
+                return false;
+            }
         }
     }
 
