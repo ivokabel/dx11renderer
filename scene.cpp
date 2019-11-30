@@ -136,9 +136,9 @@ public:
     ScenePrimitive* CreateEmptyPrimitive();
 
     void SetIdentity();
-    void AddScale(float x, float y, float z);
-    void AddRotationQuaternion(float a, float b, float c, float d);
-    void AddTranslation(float x, float y, float z);
+    void AddScale(const std::vector<double> &vec);
+    void AddRotationQuaternion(const std::vector<double> &vec);
+    void AddTranslation(const std::vector<double> &vec);
 
     bool LoadFromGLTF(IRenderingContext & ctx,
                       const tinygltf::Model &model,
@@ -384,7 +384,7 @@ bool Scene::Load(IRenderingContext &ctx)
         if (!primitive->CreateSphere(ctx, 40, 80,
                                      L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png"))
             return false;
-        node0.AddScale(3.2f, 3.2f, 3.2f);
+        node0.AddScale({ 3.2f, 3.2f, 3.2f });
 
         sAmbientLight.luminance     = XMFLOAT4(0.10f, 0.10f, 0.10f, 1.0f);
 
@@ -415,7 +415,7 @@ bool Scene::Load(IRenderingContext &ctx)
                                      L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
                                      L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
             return false;
-        node0.AddScale(3.2f, 3.2f, 3.2f);
+        node0.AddScale({ 3.2f, 3.2f, 3.2f });
 
         sAmbientLight.luminance     = XMFLOAT4(0.f, 0.f, 0.f, 1.0f);
 
@@ -446,8 +446,8 @@ bool Scene::Load(IRenderingContext &ctx)
                                       L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
                                       L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
             return false;
-        node0.AddScale(2.2f, 2.2f, 2.2f);
-        node0.AddTranslation(0.f, 0.f, -1.5f);
+        node0.AddScale({ 2.2f, 2.2f, 2.2f });
+        node0.AddTranslation({ 0.f, 0.f, -1.5f });
 
         auto &node1 = sSceneNodes[1];
         auto primitive1 = sSceneNodes[1].CreateEmptyPrimitive();
@@ -456,8 +456,8 @@ bool Scene::Load(IRenderingContext &ctx)
         if (!primitive1->CreateSphere(ctx, 20, 40,
                                       L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
             return false;
-        node1.AddScale(1.2f, 1.2f, 1.2f);
-        node1.AddTranslation(-2.5f, 0.f, 2.0f);
+        node1.AddScale({ 1.2f, 1.2f, 1.2f });
+        node1.AddTranslation({ -2.5f, 0.f, 2.0f });
 
         auto &node2 = sSceneNodes[2];
         auto primitive2 = sSceneNodes[2].CreateEmptyPrimitive();
@@ -466,8 +466,8 @@ bool Scene::Load(IRenderingContext &ctx)
         if (!primitive2->CreateSphere(ctx, 20, 40,
                                       L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
             return false;
-        node2.AddScale(1.2f, 1.2f, 1.2f);
-        node2.AddTranslation(2.5f, 0.f, 2.0f);
+        node2.AddScale({ 1.2f, 1.2f, 1.2f });
+        node2.AddTranslation({ 2.5f, 0.f, 2.0f });
 
         sAmbientLight.luminance     = XMFLOAT4(0.00f, 0.00f, 0.00f, 1.0f);
 
@@ -1714,22 +1714,31 @@ void SceneNode::SetIdentity()
     mLocalMtrx = XMMatrixIdentity();
 }
 
-void SceneNode::AddScale(float x, float y, float z)
+void SceneNode::AddScale(const std::vector<double> &vec)
 {
-    const auto scaleMtrx = XMMatrixScaling(x, y, z);
+    if (vec.size() != 3)
+        return;
+
+    const auto scaleMtrx = XMMatrixScaling((float)vec[0], (float)vec[1], (float)vec[2]);
     mLocalMtrx = mLocalMtrx * scaleMtrx;
 }
 
-void SceneNode::AddRotationQuaternion(float a, float b, float c, float d)
+void SceneNode::AddRotationQuaternion(const std::vector<double> &vec)
 {
-    const XMFLOAT4 quaternion(a, b, c, d);
+    if (vec.size() != 4)
+        return;
+
+    const XMFLOAT4 quaternion((float)vec[0], (float)vec[1], (float)vec[2], (float)vec[3]);
     const auto rotMtrx = XMMatrixRotationQuaternion(XMLoadFloat4(&quaternion));
     mLocalMtrx = mLocalMtrx * rotMtrx;
 }
 
-void SceneNode::AddTranslation(float x, float y, float z)
+void SceneNode::AddTranslation(const std::vector<double> &vec)
 {
-    const auto translMtrx = XMMatrixTranslation(x, y, z);
+    if (vec.size() != 3)
+        return;
+
+    const auto translMtrx = XMMatrixTranslation((float)vec[0], (float)vec[1], (float)vec[2]);
     mLocalMtrx = mLocalMtrx * translMtrx;
 }
 
@@ -1774,17 +1783,10 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
     }
     else
     {
-        auto &rot = node.rotation;
-        auto &scale = node.scale;
-        auto &trans = node.translation;
-
         SetIdentity();
-        if (scale.size() == 3)
-            AddScale((float)scale[0], (float)scale[1], (float)scale[2]);
-        if (rot.size() == 3)
-            AddRotationQuaternion((float)rot[0], (float)rot[1], (float)rot[2], (float)rot[3]);
-        if (trans.size() == 3)
-            AddTranslation((float)trans[0], (float)trans[1], (float)trans[2]);
+        AddScale(node.scale);
+        AddRotationQuaternion(node.rotation);
+        AddTranslation(node.translation);
     }
 
     // Children
