@@ -28,7 +28,7 @@ cbuffer cbChangesEachFrame : register(b2)
     float4 PointLightIntensities[POINT_LIGHTS_COUNT];
 };
 
-cbuffer cbChangesPerObject : register(b3)
+cbuffer cbChangesPerSceneNode : register(b3)
 {
     matrix WorldMtrx;
     float4 MeshColor;

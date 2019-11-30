@@ -60,7 +60,7 @@ private:
     ID3D11Buffer*               mCbNeverChanged = nullptr;
     ID3D11Buffer*               mCbChangedOnResize = nullptr;
     ID3D11Buffer*               mCbChangedEachFrame = nullptr;
-    ID3D11Buffer*               mCbChangedPerObject = nullptr;
+    ID3D11Buffer*               mCbChangedPerSceneNode = nullptr;
 
     ID3D11SamplerState*         mSamplerLinear = nullptr;
 
