@@ -53,7 +53,8 @@ public:
     bool LoadFromGLTF(IRenderingContext & ctx,
                       const tinygltf::Model &model,
                       const tinygltf::Mesh &mesh,
-                      const int primitiveIdx);
+                      const int primitiveIdx,
+                      const std::wstring &logPrefix);
 
     void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout *vertexLayout);
 
@@ -70,7 +71,8 @@ private:
 
     bool LoadGeometryFromGLTF(const tinygltf::Model &model,
                               const tinygltf::Mesh &mesh,
-                              const int primitiveIdx);
+                              const int primitiveIdx,
+                              const std::wstring &logPrefix);
 
     bool CreateDeviceBuffers(IRenderingContext &ctx);
     bool LoadTextures(IRenderingContext &ctx,
@@ -118,7 +120,8 @@ public:
     bool LoadFromGLTF(IRenderingContext & ctx,
                       const tinygltf::Model &model,
                       const tinygltf::Node &node,
-                      int nodeIdx);
+                      int nodeIdx,
+                      const std::wstring &logPrefix);
 
     void Animate(IRenderingContext &ctx);
 
@@ -177,7 +180,8 @@ private:
     bool LoadSceneNodeFromGLTF(IRenderingContext &ctx,
                                SceneNode &sceneNode,
                                const tinygltf::Model &model,
-                               int nodeIdx);
+                               int nodeIdx,
+                               const std::wstring &logPrefix);
 
 private:
 

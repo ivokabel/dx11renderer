@@ -556,6 +556,7 @@ const tinygltf::Accessor& GetPrimitiveAttrAccessor(bool &accessorLoaded,
                                                    const tinygltf::Model &model,
                                                    const std::map<std::string, int> &attributes,
                                                    const int primitiveIdx,
+                                                   bool requiredData,
                                                    const std::string &attrName,
                                                    const std::wstring &logPrefix)
 {
@@ -564,7 +565,8 @@ const tinygltf::Accessor& GetPrimitiveAttrAccessor(bool &accessorLoaded,
     const auto attrIt = attributes.find(attrName);
     if (attrIt == attributes.end())
     {
-        Log::Error(L"%sNo %s attribute present in primitive %d!",
+        Log::Write(requiredData ? Log::eError : Log::eDebug,
+                   L"%sNo %s attribute present in primitive %d!",
                    logPrefix.c_str(),
                    Utils::StringToWString(attrName).c_str(),
                    primitiveIdx);
@@ -684,6 +686,7 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
     using namespace std;
 
     Log::Debug(L"");
+    const std::wstring logPrefix = L"LoadGLTF: ";
 
     tinygltf::Model model;
     if (!LoadGltfModel(model, filePath))
@@ -692,15 +695,16 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
     // Scene
     if (model.scenes.size() < 1)
     {
-        Log::Error(L"LoadGLTF: No scenes present in the model!");
+        Log::Error(L"%sNo scenes present in the model!", logPrefix.c_str());
         return false;
     }
     if (model.scenes.size() > 1)
-        Log::Warning(L"LoadGLTF: More scenes present in the model. Loading just the first one.");
+        Log::Warning(L"%sMore scenes present in the model. Loading just the first one.", logPrefix.c_str());
     const auto &scene = model.scenes[0];
 
     Log::Debug(L"");
-    Log::Debug(L"LoadGLTF: Scene 0 \"%s\": %d node(s)",
+    Log::Debug(L"%sScene 0 \"%s\": %d node(s)",
+               logPrefix.c_str(),
                Utils::StringToWString(scene.name).c_str(),
                scene.nodes.size());
 
@@ -710,7 +714,7 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
     for (const auto nodeIdx : scene.nodes)
     {
         SceneNode sceneNode(true);
-        if (!LoadSceneNodeFromGLTF(ctx, sceneNode, model, nodeIdx))
+        if (!LoadSceneNodeFromGLTF(ctx, sceneNode, model, nodeIdx, logPrefix + L"   "))
             return false;
         sSceneNodes.push_back(std::move(sceneNode));
     }
@@ -734,37 +738,40 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
                                   SceneNode &sceneNode,
                                   const tinygltf::Model &model,
-                                  int nodeIdx)
+                                  int nodeIdx,
+                                  const std::wstring &logPrefix)
 {
     if (nodeIdx >= model.nodes.size())
     {
-        Log::Error(L"LoadGLTF:  Invalid node index (%d/%d)!", nodeIdx, model.nodes.size());
+        Log::Error(L"%sInvalid node index (%d/%d)!", logPrefix.c_str(), nodeIdx, model.nodes.size());
         return false;
     }
 
     const auto &node = model.nodes[nodeIdx];
 
     // Node itself
-    if (!sceneNode.LoadFromGLTF(ctx, model, node, nodeIdx))
+    if (!sceneNode.LoadFromGLTF(ctx, model, node, nodeIdx, logPrefix))
         return false;
 
     // Children
     sceneNode.children.clear();
     sceneNode.children.reserve(node.children.size());
+    const std::wstring &childLogPrefix = logPrefix + L"   ";
     for (const auto childIdx : node.children)
     {
         if ((childIdx < 0) || (childIdx >= model.nodes.size()))
         {
-            Log::Error(L"LoadGLTF:   Invalid child node index (%d/%d)!", childIdx, model.nodes.size());
+            Log::Error(L"%sInvalid child node index (%d/%d)!", childLogPrefix.c_str(), childIdx, model.nodes.size());
             return false;
         }
 
-        Log::Debug(L"LoadGLTF:   Loading child %d \"%s\"",
+        Log::Debug(L"%sLoading child %d \"%s\"",
+                   childLogPrefix.c_str(),
                    childIdx,
                    Utils::StringToWString(model.nodes[childIdx].name).c_str());
 
         SceneNode childNode;
-        if (!LoadSceneNodeFromGLTF(ctx, childNode, model, childIdx))
+        if (!LoadSceneNodeFromGLTF(ctx, childNode, model, childIdx, childLogPrefix + L"   "))
             return false;
         sceneNode.children.push_back(std::move(childNode));
     }
@@ -1241,9 +1248,10 @@ bool ScenePrimitive::GenerateSphereGeometry(const WORD vertSegmCount, const WORD
 bool ScenePrimitive::LoadFromGLTF(IRenderingContext & ctx,
                                   const tinygltf::Model &model,
                                   const tinygltf::Mesh &mesh,
-                                  const int primitiveIdx)
+                                  const int primitiveIdx,
+                                  const std::wstring &logPrefix)
 {
-    if (!LoadGeometryFromGLTF(model, mesh, primitiveIdx))
+    if (!LoadGeometryFromGLTF(model, mesh, primitiveIdx, logPrefix))
         return false;
     if (!CreateDeviceBuffers(ctx))
         return false;
@@ -1256,13 +1264,15 @@ bool ScenePrimitive::LoadFromGLTF(IRenderingContext & ctx,
 
 bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
                                           const tinygltf::Mesh &mesh,
-                                          const int primitiveIdx)
+                                          const int primitiveIdx,
+                                          const std::wstring &logPrefix)
 {
     bool success = false;
 
     const auto &primitive = mesh.primitives[primitiveIdx];
 
-    Log::Debug(L"LoadGLTF:    Primitive %d/%d: mode %s, attributes [%s], indices %d, material %d",
+    Log::Debug(L"%sPrimitive %d/%d: mode %s, attributes [%s], indices %d, material %d",
+               logPrefix.c_str(),
                primitiveIdx,
                mesh.primitives.size(),
                Utils::StringToWString(ModeToString(primitive.mode)).c_str(),
@@ -1272,17 +1282,20 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
 
     const auto &attrs = primitive.attributes;
 
+    const std::wstring &subItemsLogPrefix = logPrefix + L"   ";
+    const std::wstring &dataConsumerLogPrefix = subItemsLogPrefix + L"   ";
+
     // Positions
 
     auto &posAccessor = GetPrimitiveAttrAccessor(success, model, attrs, primitiveIdx,
-                                                 "POSITION", L"LoadGLTF:     ");
+                                                 true, "POSITION", subItemsLogPrefix.c_str());
     if (!success)
         return false;
 
     if ((posAccessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) ||
         (posAccessor.type != TINYGLTF_TYPE_VEC3))
     {
-        Log::Error(L"LoadGLTF:     Unsupported POSITION data type!");
+        Log::Error(L"%sUnsupported POSITION data type!", subItemsLogPrefix.c_str());
         return false;
     }
 
@@ -1290,17 +1303,19 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
     mVertices.reserve(posAccessor.count);
     if (mVertices.capacity() < posAccessor.count)
     {
-        Log::Error(L"LoadGLTF:     Unable to allocate %d vertices!", posAccessor.count);
+        Log::Error(L"%sUnable to allocate %d vertices!", subItemsLogPrefix.c_str(), posAccessor.count);
         return false;
     }
 
-    auto PositionDataConsumer = [this](int itemIdx, const unsigned char *ptr)
+    auto PositionDataConsumer = [this, &dataConsumerLogPrefix](int itemIdx, const unsigned char *ptr)
     {
         auto pos = *reinterpret_cast<const XMFLOAT3*>(ptr);
 
-        Log::Debug(L"LoadGLTF:      %d: pos [%.1f, %.1f, %.1f]",
-                   itemIdx,
-                   pos.x, pos.y, pos.z);
+        itemIdx; // unused param
+        //Log::Debug(L"%s%d: pos [%.1f, %.1f, %.1f]",
+        //           dataConsumerLogPrefix.c_str(),
+        //           itemIdx,
+        //           pos.x, pos.y, pos.z);
 
         mVertices.push_back(SceneVertex{ XMFLOAT3(pos.x, pos.y, pos.z),
                                          XMFLOAT3(0.0f, 0.0f, 1.0f), // TODO: Leave invalid?
@@ -1310,36 +1325,37 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
     if (!IterateGltfAccesorData<float, 3>(model,
                                           posAccessor,
                                           PositionDataConsumer,
-                                          L"LoadGLTF:     ",
+                                          subItemsLogPrefix.c_str(),
                                           L"Position"))
         return false;
 
     // Normals
 
     auto &normalAccessor = GetPrimitiveAttrAccessor(success, model, attrs, primitiveIdx,
-                                                    "NORMAL", L"LoadGLTF:     ");
+                                                    false, "NORMAL", subItemsLogPrefix.c_str());
     if (success)
     {
         if ((normalAccessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) ||
             (normalAccessor.type != TINYGLTF_TYPE_VEC3))
         {
-            Log::Error(L"LoadGLTF:     Unsupported NORMAL data type!");
+            Log::Error(L"%sUnsupported NORMAL data type!", subItemsLogPrefix.c_str());
             return false;
         }
 
         if (normalAccessor.count != posAccessor.count)
         {
-            Log::Error(L"LoadGLTF:     Normals count (%d) is different from position count (%d)!",
-                       normalAccessor.count, posAccessor.count);
+            Log::Error(L"%sNormals count (%d) is different from position count (%d)!",
+                       subItemsLogPrefix.c_str(), normalAccessor.count, posAccessor.count);
             return false;
         }
 
-        auto NormalDataConsumer = [this](int itemIdx, const unsigned char *ptr)
+        auto NormalDataConsumer = [this, &dataConsumerLogPrefix](int itemIdx, const unsigned char *ptr)
         {
             auto normal = *reinterpret_cast<const XMFLOAT3*>(ptr);
 
-            Log::Debug(L"LoadGLTF:      %d: normal [%.1f, %.1f, %.1f]",
-                       itemIdx, normal.x, normal.y, normal.z);
+            //Log::Debug(L"%s%d: normal [%.1f, %.1f, %.1f]",
+            //           dataConsumerLogPrefix.c_str(),
+            //           itemIdx, normal.x, normal.y, normal.z);
 
             mVertices[itemIdx].Normal = normal;
         };
@@ -1347,7 +1363,7 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
         if (!IterateGltfAccesorData<float, 3>(model,
                                               normalAccessor,
                                               NormalDataConsumer,
-                                              L"LoadGLTF:     ",
+                                              subItemsLogPrefix.c_str(),
                                               L"Normal"))
             return false;
     }
@@ -1360,29 +1376,29 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
     // Texture coordinates
 
     auto &texCoord0Accessor = GetPrimitiveAttrAccessor(success, model, attrs, primitiveIdx,
-                                                       "TEXCOORD_0", L"LoadGLTF:     ");
+                                                       false, "TEXCOORD_0", subItemsLogPrefix.c_str());
     if (success)
     {
         if ((texCoord0Accessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) ||
             (texCoord0Accessor.type != TINYGLTF_TYPE_VEC2))
         {
-            Log::Error(L"LoadGLTF:     Unsupported TEXCOORD_0 data type!");
+            Log::Error(L"%sUnsupported TEXCOORD_0 data type!", subItemsLogPrefix.c_str());
             return false;
         }
 
         if (texCoord0Accessor.count != posAccessor.count)
         {
-            Log::Error(L"LoadGLTF:     Texture coords count (%d) is different from position count (%d)!",
-                       texCoord0Accessor.count, posAccessor.count);
+            Log::Error(L"%sTexture coords count (%d) is different from position count (%d)!",
+                       subItemsLogPrefix.c_str(), texCoord0Accessor.count, posAccessor.count);
             return false;
         }
 
-        auto TexCoord0DataConsumer = [this](int itemIdx, const unsigned char *ptr)
+        auto TexCoord0DataConsumer = [this, &dataConsumerLogPrefix](int itemIdx, const unsigned char *ptr)
         {
             auto texCoord0 = *reinterpret_cast<const XMFLOAT2*>(ptr);
 
-            Log::Debug(L"LoadGLTF:      %d: texCoord0 [%.1f, %.1f]",
-                       itemIdx, texCoord0.x, texCoord0.y);
+            Log::Debug(L"%s%d: texCoord0 [%.1f, %.1f]",
+                       dataConsumerLogPrefix.c_str(), itemIdx, texCoord0.x, texCoord0.y);
 
             mVertices[itemIdx].Tex = texCoord0;
         };
@@ -1390,7 +1406,7 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
         if (!IterateGltfAccesorData<float, 2>(model,
                                               texCoord0Accessor,
                                               TexCoord0DataConsumer,
-                                              L"LoadGLTF:     ",
+                                              subItemsLogPrefix.c_str(),
                                               L"Texture coordinates"))
             return false;
     }
@@ -1400,12 +1416,13 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
     const auto indicesAccessorIdx = primitive.indices;
     if (indicesAccessorIdx >= model.accessors.size())
     {
-        Log::Error(L"LoadGLTF:     Invalid indices accessor index (%d/%d)!", indicesAccessorIdx, model.accessors.size());
+        Log::Error(L"%sInvalid indices accessor index (%d/%d)!",
+                   subItemsLogPrefix.c_str(), indicesAccessorIdx, model.accessors.size());
         return false;
     }
     if (indicesAccessorIdx < 0)
     {
-        Log::Error(L"LoadGLTF:     Non-indexed geometry is not supported!");
+        Log::Error(L"%sNon-indexed geometry is not supported!", subItemsLogPrefix.c_str());
         return false;
     }
 
@@ -1414,7 +1431,7 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
     if ((indicesAccessor.componentType != TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) ||
         (indicesAccessor.type != TINYGLTF_TYPE_SCALAR))
     {
-        Log::Error(L"LoadGLTF:     Unsupported indices data type!");
+        Log::Error(L"%sUnsupported indices data type!", subItemsLogPrefix.c_str());
         return false;
     }
 
@@ -1422,15 +1439,16 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
     mIndices.reserve(indicesAccessor.count);
     if (mIndices.capacity() < indicesAccessor.count)
     {
-        Log::Error(L"LoadGLTF:     Unable to allocate %d indices!", indicesAccessor.count);
+        Log::Error(L"%sUnable to allocate %d indices!", subItemsLogPrefix.c_str(), indicesAccessor.count);
         return false;
     }
 
-    auto IndexDataConsumer = [this](int itemIdx, const unsigned char *ptr)
+    auto IndexDataConsumer = [this, &dataConsumerLogPrefix](int itemIdx, const unsigned char *ptr)
     {
         auto index = *reinterpret_cast<const unsigned short*>(ptr);
 
-        Log::Debug(L"LoadGLTF:      %d: %d", itemIdx, index);
+        itemIdx; // unused param
+        //Log::Debug(L"%s%d: %d", dataConsumerLogPrefix.c_str(), itemIdx, index);
 
         mIndices.push_back(index);
     };
@@ -1438,7 +1456,7 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
     if (!IterateGltfAccesorData<unsigned short, 1>(model,
                                                    indicesAccessor,
                                                    IndexDataConsumer,
-                                                   L"LoadGLTF:     ",
+                                                   subItemsLogPrefix.c_str(),
                                                    L"Indices"))
         return false;
 
@@ -1447,7 +1465,7 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
     mTopology = GltfModeToTopology(primitive.mode);
     if (mTopology == D3D_PRIMITIVE_TOPOLOGY_UNDEFINED)
     {
-        Log::Error(L"LoadGLTF:     Unsupported primitive topology!");
+        Log::Error(L"%sUnsupported primitive topology!", subItemsLogPrefix.c_str());
         return false;
     }
 
@@ -1678,7 +1696,8 @@ void SceneNode::AddTranslation(const std::vector<double> &vec)
 bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
                              const tinygltf::Model &model,
                              const tinygltf::Node &node,
-                             int nodeIdx)
+                             int nodeIdx,
+                             const std::wstring &logPrefix)
 {
     // debug
     if (Log::sLoggingLevel >= Log::eDebug)
@@ -1694,7 +1713,8 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
             transforms += L"matrix ";
         if (transforms.empty())
             transforms = L"none";
-        Log::Debug(L"LoadGLTF:  Node %d/%d \"%s\": mesh %d, transform: %s, children %d",
+        Log::Debug(L"%sNode %d/%d \"%s\": mesh %d, transform %s, children %d",
+                   logPrefix.c_str(), 
                    nodeIdx,
                    model.nodes.size(),
                    Utils::StringToWString(node.name).c_str(),
@@ -1703,12 +1723,14 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
                    node.children.size());
     }
 
+    const std::wstring &subItemsLogPrefix = logPrefix + L"   ";
+
     // Local transformation
     if (node.matrix.size() == 4)
     {
         // TODO
 
-        Log::Error(L"LoadGLTF:   Local transformation given by matrix is not yet supported!");
+        Log::Error(L"%sLocal transformation given by matrix is not yet supported!", subItemsLogPrefix.c_str());
         return false;
     }
     else
@@ -1724,7 +1746,7 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
     const auto meshIdx = node.mesh;
     if (meshIdx >= (int)model.meshes.size())
     {
-        Log::Error(L"LoadGLTF:   Invalid mesh index (%d/%d)!", meshIdx, model.meshes.size());
+        Log::Error(L"%sInvalid mesh index (%d/%d)!", subItemsLogPrefix.c_str(), meshIdx, model.meshes.size());
         return false;
     }
 
@@ -1732,7 +1754,8 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
     {
         const auto &mesh = model.meshes[meshIdx];
 
-        Log::Debug(L"LoadGLTF:   Mesh %d/%d \"%s\": %d primitive(s)",
+        Log::Debug(L"%sMesh %d/%d \"%s\": %d primitive(s)",
+                   subItemsLogPrefix.c_str(),
                    meshIdx,
                    model.meshes.size(),
                    Utils::StringToWString(mesh.name).c_str(),
@@ -1744,7 +1767,7 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
         for (size_t i = 0; i < primitivesCount; ++i)
         {
             primitives.push_back(ScenePrimitive());
-            if (!primitives.back().LoadFromGLTF(ctx, model, mesh, (int)i))
+            if (!primitives.back().LoadFromGLTF(ctx, model, mesh, (int)i, subItemsLogPrefix + L"   "))
             {
                 primitives.pop_back();
                 return false;
