@@ -882,23 +882,7 @@ void Scene::Render(IRenderingContext &ctx)
 
     // Draw all scene nodes
     for (auto &node : sSceneNodes)
-    {
-        // Update per-node constant buffer
-        CbChangedPerSceneNode cbPerSceneNode;
-        cbPerSceneNode.WorldMtrx = XMMatrixTranspose(node.GetWorldMtrx());
-        cbPerSceneNode.MeshColor = { 0.f, 1.f, 0.f, 1.f, };
-        immCtx->UpdateSubresource(mCbChangedPerSceneNode, 0, nullptr, &cbPerSceneNode, 0, 0);
-
-        // Draw
-        for (auto &primitive : node.primitives)
-        {
-            immCtx->PSSetShaderResources(0, 1, primitive.GetDiffuseSRV());
-            immCtx->PSSetShaderResources(1, 1, primitive.GetSpecularSRV());
-            primitive.DrawGeometry(ctx, mVertexLayout);
-        }
-
-        // TODO: children
-    }
+        RenderNodeGeometry(ctx, node, XMMatrixIdentity());
 
     // Proxy geometry for point lights
     for (int i = 0; i < sPointLights.size(); i++)
@@ -924,6 +908,36 @@ void Scene::Render(IRenderingContext &ctx)
         immCtx->PSSetShader(mPixelShaderSolid, nullptr, 0);
         sPointLightProxy.DrawGeometry(ctx, mVertexLayout);
     }
+}
+
+void Scene::RenderNodeGeometry(IRenderingContext &ctx,
+                               const SceneNode &node,
+                               const XMMATRIX &parentWorldMtrx)
+{
+    if (!ctx.IsValid())
+        return;
+
+    auto immCtx = ctx.GetImmediateContext();
+
+    const auto worldMtrx = parentWorldMtrx * node.GetWorldMtrx();
+
+    // Update per-node constant buffer
+    CbChangedPerSceneNode cbPerSceneNode;
+    cbPerSceneNode.WorldMtrx = XMMatrixTranspose(worldMtrx);
+    cbPerSceneNode.MeshColor = { 0.f, 1.f, 0.f, 1.f, };
+    immCtx->UpdateSubresource(mCbChangedPerSceneNode, 0, nullptr, &cbPerSceneNode, 0, 0);
+
+    // Draw current node
+    for (auto &primitive : node.primitives)
+    {
+        immCtx->PSSetShaderResources(0, 1, primitive.GetDiffuseSRV());
+        immCtx->PSSetShaderResources(1, 1, primitive.GetSpecularSRV());
+        primitive.DrawGeometry(ctx, mVertexLayout);
+    }
+
+    // Children
+    for (auto &child : node.children)
+        RenderNodeGeometry(ctx, child, worldMtrx);
 }
 
 bool Scene::GetAmbientColor(float(&rgba)[4])
@@ -1629,7 +1643,7 @@ void ScenePrimitive::DestroyTextures()
 }
 
 
-void ScenePrimitive::DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout)
+void ScenePrimitive::DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout) const
 {
     auto immCtx = ctx.GetImmediateContext();
 

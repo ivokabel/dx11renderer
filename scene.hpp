@@ -56,7 +56,7 @@ public:
                       const int primitiveIdx,
                       const std::wstring &logPrefix);
 
-    void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout *vertexLayout);
+    void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout *vertexLayout) const;
 
     ID3D11ShaderResourceView* const* GetDiffuseSRV()  const { return &mDiffuseSRV; };
     ID3D11ShaderResourceView* const* GetSpecularSRV() const { return &mSpecularSRV; };
@@ -127,14 +127,10 @@ public:
 
     XMMATRIX GetWorldMtrx() const { return mWorldMtrx; }
 
-public://private:
-    // Exposed for now because Render() needs access to it.
-    // Might get encapsulated later when transformations/animations architecture is resolved.
-    std::vector<ScenePrimitive> primitives;
-
 private:
-    std::vector<SceneNode> children;
     friend class Scene;
+    std::vector<ScenePrimitive> primitives;
+    std::vector<SceneNode>      children;
 
 private:
     bool        mUseDebugAnimation;
@@ -182,6 +178,10 @@ private:
                                const tinygltf::Model &model,
                                int nodeIdx,
                                const std::wstring &logPrefix);
+
+    void RenderNodeGeometry(IRenderingContext &ctx,
+                            const SceneNode &node,
+                            const XMMATRIX &parentWorldMtrx);
 
 private:
 
