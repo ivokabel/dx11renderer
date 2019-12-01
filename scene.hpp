@@ -133,7 +133,7 @@ private:
     std::vector<SceneNode>      children;
 
 private:
-    bool        mUseDebugAnimation;
+    bool        mIsRootNode;
     XMMATRIX    mLocalMtrx;
     XMMATRIX    mWorldMtrx;
 };

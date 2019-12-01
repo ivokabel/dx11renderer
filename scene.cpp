@@ -1658,8 +1658,8 @@ void ScenePrimitive::DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* ver
 }
 
 
-SceneNode::SceneNode(bool useDebugAnimation) :
-    mUseDebugAnimation(useDebugAnimation),
+SceneNode::SceneNode(bool isRootNode) :
+    mIsRootNode(isRootNode),
     mLocalMtrx(XMMatrixIdentity()),
     mWorldMtrx(XMMatrixIdentity())
 {}
@@ -1750,6 +1750,8 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
     else
     {
         SetIdentity();
+        if (mIsRootNode)
+            AddScale({ 3., 3., 3. }); // debug
         AddScale(node.scale);
         AddRotationQuaternion(node.rotation);
         AddTranslation(node.translation);
@@ -1795,7 +1797,7 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
 
 void SceneNode::Animate(IRenderingContext &ctx)
 {
-    if (mUseDebugAnimation)
+    if (mIsRootNode)
     {
         const float time = ctx.GetCurrentAnimationTime();
         const float period = 15.f; //seconds
