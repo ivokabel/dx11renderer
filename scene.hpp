@@ -106,7 +106,7 @@ private:
 class SceneNode
 {
 public:
-    SceneNode();
+    SceneNode(bool useDebugAnimation = false);
 
     ScenePrimitive* CreateEmptyPrimitive();
 
@@ -134,6 +134,7 @@ private:
     friend class Scene;
 
 private:
+    bool        mUseDebugAnimation;
     XMMATRIX    mLocalMtrx;
     XMMATRIX    mWorldMtrx;
 };

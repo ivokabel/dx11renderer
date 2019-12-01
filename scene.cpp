@@ -709,7 +709,7 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
     sSceneNodes.reserve(model.nodes.size());
     for (const auto nodeIdx : scene.nodes)
     {
-        SceneNode sceneNode;
+        SceneNode sceneNode(true);
         if (!LoadSceneNodeFromGLTF(ctx, sceneNode, model, nodeIdx))
             return false;
         sSceneNodes.push_back(std::move(sceneNode));
@@ -795,10 +795,11 @@ void Scene::Animate(IRenderingContext &ctx)
     if (!ctx.IsValid())
         return;
 
+    // Scene geometry
     for (auto &node : sSceneNodes)
         node.Animate(ctx);
 
-    // Directional lights are steady (for now)
+    // Directional lights (are steady for now)
     for (auto &dirLight : sDirectLights)
         dirLight.dirTransf = dirLight.dir;
 
@@ -888,6 +889,8 @@ void Scene::Render(IRenderingContext &ctx)
             immCtx->PSSetShaderResources(1, 1, primitive.GetSpecularSRV());
             primitive.DrawGeometry(ctx, mVertexLayout);
         }
+
+        // TODO: children
     }
 
     // Proxy geometry for point lights
@@ -1623,7 +1626,8 @@ void ScenePrimitive::DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* ver
 }
 
 
-SceneNode::SceneNode() : 
+SceneNode::SceneNode(bool useDebugAnimation) :
+    mUseDebugAnimation(useDebugAnimation),
     mLocalMtrx(XMMatrixIdentity()),
     mWorldMtrx(XMMatrixIdentity())
 {}
@@ -1754,12 +1758,20 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
 
 void SceneNode::Animate(IRenderingContext &ctx)
 {
-    const float time = ctx.GetCurrentAnimationTime();
-    const float period = 15.f; //seconds
-    const float totalAnimPos = time / period;
-    const float angle = totalAnimPos * XM_2PI;
+    if (mUseDebugAnimation)
+    {
+        const float time = ctx.GetCurrentAnimationTime();
+        const float period = 15.f; //seconds
+        const float totalAnimPos = time / period;
+        const float angle = totalAnimPos * XM_2PI;
 
-    XMMATRIX rotMtrx = XMMatrixRotationY(angle);
+        const XMMATRIX rotMtrx = XMMatrixRotationY(angle);
 
-    mWorldMtrx = rotMtrx * mLocalMtrx;
+        mWorldMtrx = rotMtrx * mLocalMtrx;
+    }
+    else
+        mWorldMtrx = mLocalMtrx;
+
+    for (auto &child : children)
+        child.Animate(ctx);
 }
