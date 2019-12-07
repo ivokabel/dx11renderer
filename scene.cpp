@@ -499,14 +499,14 @@ static std::string ComponentTypeToString(int ty) {
     return "**UNKNOWN**";
 }
 
-static std::string TargetToString(int target) {
-    if (target == 34962)
-        return "GL_ARRAY_BUFFER";
-    else if (target == 34963)
-        return "GL_ELEMENT_ARRAY_BUFFER";
-    else
-        return "**UNKNOWN**";
-}
+//static std::string TargetToString(int target) {
+//    if (target == 34962)
+//        return "GL_ARRAY_BUFFER";
+//    else if (target == 34963)
+//        return "GL_ELEMENT_ARRAY_BUFFER";
+//    else
+//        return "**UNKNOWN**";
+//}
 
 
 const tinygltf::Accessor& GetPrimitiveAttrAccessor(bool &accessorLoaded,
