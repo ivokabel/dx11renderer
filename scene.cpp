@@ -802,7 +802,15 @@ bool Scene::LoadMaterials(const tinygltf::Model &model,
 
         for (const auto &value : material.values)
         {
-            Log::Debug(L"%s\"%s\": %s",
+            Log::Debug(L"%sValue \"%s\": %s",
+                       valueLogPrefix.c_str(),
+                       Utils::StringToWString(value.first).c_str(),
+                       ParameterValueToWstring(value.second).c_str());
+        }
+
+        for (const auto &value : material.additionalValues)
+        {
+            Log::Debug(L"%sAdditional value \"%s\": %s",
                        valueLogPrefix.c_str(),
                        Utils::StringToWString(value.first).c_str(),
                        ParameterValueToWstring(value.second).c_str());
