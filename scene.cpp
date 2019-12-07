@@ -508,6 +508,35 @@ static std::string ComponentTypeToString(int ty) {
 //        return "**UNKNOWN**";
 //}
 
+static std::string FloatArrayToWstring(const std::vector<double> &arr)
+{
+    if (arr.size() == 0)
+        return "";
+
+    std::stringstream ss;
+    ss << "[ ";
+    for (size_t i = 0; i < arr.size(); i++) {
+        ss << arr[i] << ((i != arr.size() - 1) ? ", " : "");
+    }
+    ss << " ]";
+
+    return ss.str();
+}
+
+static std::wstring ParameterValueToWstring(const tinygltf::Parameter &param)
+{
+    if (!param.number_array.empty())
+        return Utils::StringToWString(FloatArrayToWstring(param.number_array));
+    else if (param.has_number_value)
+    {
+        std::wstringstream ss;
+        ss << param.number_value;
+        return ss.str();
+    }
+    else
+        return Utils::StringToWString(param.string_value);
+}
+
 
 const tinygltf::Accessor& GetPrimitiveAttrAccessor(bool &accessorLoaded,
                                                    const tinygltf::Model &model,
@@ -649,32 +678,13 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
     if (!LoadGltfModel(model, filePath))
         return false;
 
-    // Scene
-    if (model.scenes.size() < 1)
-    {
-        Log::Error(L"%sNo scenes present in the model!", logPrefix.c_str());
-        return false;
-    }
-    if (model.scenes.size() > 1)
-        Log::Warning(L"%sMore scenes present in the model. Loading just the first one.", logPrefix.c_str());
-    const auto &scene = model.scenes[0];
-
     Log::Debug(L"");
-    Log::Debug(L"%sScene 0 \"%s\": %d node(s)",
-               logPrefix.c_str(),
-               Utils::StringToWString(scene.name).c_str(),
-               scene.nodes.size());
 
-    // Nodes hierarchy
-    mRootNodes.clear();
-    mRootNodes.reserve(scene.nodes.size());
-    for (const auto nodeIdx : scene.nodes)
-    {
-        SceneNode sceneNode(true);
-        if (!LoadSceneNodeFromGLTF(ctx, sceneNode, model, nodeIdx, logPrefix + L"   "))
-            return false;
-        mRootNodes.push_back(std::move(sceneNode));
-    }
+    if (!LoadScene(ctx, model, logPrefix))
+        return false;
+
+    if (!LoadMaterials(model, logPrefix))
+        return false;
 
     Log::Debug(L"");
 
@@ -688,6 +698,39 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
     mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
     mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
     mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+
+    return true;
+}
+
+bool Scene::LoadScene(IRenderingContext &ctx,
+                          const tinygltf::Model &model,
+                          const std::wstring &logPrefix)
+{
+    // Choose one scene
+    if (model.scenes.size() < 1)
+    {
+        Log::Error(L"%sNo scenes present in the model!", logPrefix.c_str());
+        return false;
+    }
+    if (model.scenes.size() > 1)
+        Log::Warning(L"%sMore scenes present in the model. Loading just the first one.", logPrefix.c_str());
+    const auto &scene = model.scenes[0];
+
+    Log::Debug(L"%sScene 0 \"%s\": %d node(s)",
+                logPrefix.c_str(),
+                Utils::StringToWString(scene.name).c_str(),
+                scene.nodes.size());
+
+    // Nodes hierarchy
+    mRootNodes.clear();
+    mRootNodes.reserve(scene.nodes.size());
+    for (const auto nodeIdx : scene.nodes)
+    {
+        SceneNode sceneNode(true);
+        if (!LoadSceneNodeFromGLTF(ctx, sceneNode, model, nodeIdx, logPrefix + L"   "))
+            return false;
+        mRootNodes.push_back(std::move(sceneNode));
+    }
 
     return true;
 }
@@ -731,6 +774,41 @@ bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
         if (!LoadSceneNodeFromGLTF(ctx, childNode, model, childIdx, childLogPrefix + L"   "))
             return false;
         sceneNode.children.push_back(std::move(childNode));
+    }
+
+    return true;
+}
+
+bool Scene::LoadMaterials(const tinygltf::Model &model,
+                          const std::wstring &logPrefix)
+{
+    const auto &materials = model.materials;
+
+    Log::Debug(L"%sMaterials: %d",
+               logPrefix.c_str(),
+               materials.size());
+
+    const std::wstring &materialLogPrefix = logPrefix + L"   ";
+    const std::wstring &valueLogPrefix = materialLogPrefix + L"   ";
+    for (size_t matIdx = 0; matIdx < materials.size(); ++matIdx)
+    {
+        const auto &material = materials[matIdx];
+
+        Log::Debug(L"%s%d \"%s\": values %d",
+                   materialLogPrefix.c_str(),
+                   matIdx,
+                   Utils::StringToWString(material.name).c_str(),
+                   material.values.size());
+
+        for (const auto &value : material.values)
+        {
+            Log::Debug(L"%s\"%s\": %s",
+                       valueLogPrefix.c_str(),
+                       Utils::StringToWString(value.first).c_str(),
+                       ParameterValueToWstring(value.second).c_str());
+        }
+
+        // TODO: ...
     }
 
     return true;

@@ -216,11 +216,16 @@ private:
     // glTF loader
     bool LoadGLTF(IRenderingContext &ctx,
                   const std::wstring &filePath);
+    bool LoadScene(IRenderingContext &ctx,
+                   const tinygltf::Model &model,
+                   const std::wstring &logPrefix);
     bool LoadSceneNodeFromGLTF(IRenderingContext &ctx,
                                SceneNode &sceneNode,
                                const tinygltf::Model &model,
                                int nodeIdx,
                                const std::wstring &logPrefix);
+    bool LoadMaterials(const tinygltf::Model &model,
+                       const std::wstring &logPrefix);
 
     void RenderNodeGeometry(IRenderingContext &ctx,
                             const SceneNode &node,
