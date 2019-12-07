@@ -182,7 +182,7 @@ int SimpleDX11Renderer::Run()
         }
         else
         {
-            Render();
+            RenderFrame();
             //Sleep(32);
             frameCount++;
         }
@@ -699,7 +699,7 @@ bool SimpleDX11Renderer::CreatePixelShader(WCHAR* szFileName,
 }
 
 
-void SimpleDX11Renderer::Render()
+void SimpleDX11Renderer::RenderFrame()
 {
     StartFrame();
 
@@ -735,8 +735,8 @@ void SimpleDX11Renderer::Render()
     // Render scene
     if (mScene)
     {
-        mScene->Animate(*this);
-        mScene->Render(*this);
+        mScene->AnimateFrame(*this);
+        mScene->RenderFrame(*this);
     }
 
     // Resolve multisampled buffer into single sampled before post processing

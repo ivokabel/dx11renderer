@@ -200,8 +200,8 @@ public:
 
     virtual bool Init(IRenderingContext &ctx) override;
     virtual void Destroy() override;
-    virtual void Animate(IRenderingContext &ctx) override;
-    virtual void Render(IRenderingContext &ctx) override;
+    virtual void AnimateFrame(IRenderingContext &ctx) override;
+    virtual void RenderFrame(IRenderingContext &ctx) override;
     virtual bool GetAmbientColor(float(&rgba)[4]) override;
 
 private:

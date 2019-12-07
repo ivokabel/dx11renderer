@@ -748,7 +748,7 @@ void Scene::Destroy()
 }
 
 
-void Scene::Animate(IRenderingContext &ctx)
+void Scene::AnimateFrame(IRenderingContext &ctx)
 {
     if (!ctx.IsValid())
         return;
@@ -795,7 +795,7 @@ void Scene::Animate(IRenderingContext &ctx)
 }
 
 
-void Scene::Render(IRenderingContext &ctx)
+void Scene::RenderFrame(IRenderingContext &ctx)
 {
     if (!ctx.IsValid())
         return;
@@ -831,7 +831,7 @@ void Scene::Render(IRenderingContext &ctx)
     immCtx->PSSetConstantBuffers(3, 1, &mCbChangedPerSceneNode);
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
 
-    // Draw all scene nodes
+    // Scene geometry
     for (auto &node : mRootNodes)
         RenderNodeGeometry(ctx, node, XMMatrixIdentity());
 
@@ -860,6 +860,7 @@ void Scene::Render(IRenderingContext &ctx)
         mPointLightProxy.DrawGeometry(ctx, mVertexLayout);
     }
 }
+
 
 void Scene::RenderNodeGeometry(IRenderingContext &ctx,
                                const SceneNode &node,

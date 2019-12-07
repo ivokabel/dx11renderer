@@ -85,7 +85,7 @@ private:
     void DestroyDevice();
     bool InitScene();
     void DestroyScene();
-    void Render();
+    void RenderFrame();
 
     bool                            CompileShader(WCHAR* szFileName,
                                                   LPCSTR szEntryPoint,
