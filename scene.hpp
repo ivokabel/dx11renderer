@@ -1,6 +1,7 @@
 #pragma once
 
 #include "iscene.hpp"
+#include "constants.hpp"
 
 // We are using an older version of DirectX headers which causes 
 // "warning C4005: '...' : macro redefinition"
@@ -139,6 +140,45 @@ private:
 };
 
 
+struct AmbientLight
+{
+    XMFLOAT4 luminance; // omnidirectional luminance: lm * sr-1 * m-2
+
+    AmbientLight() :
+        luminance{}
+    {}
+};
+
+
+// Directional light
+struct DirectLight
+{
+    XMFLOAT4 dir;
+    XMFLOAT4 dirTransf;
+    XMFLOAT4 luminance; // lm * sr-1 * m-2
+
+    DirectLight() :
+        dir{},
+        dirTransf{},
+        luminance{}
+    {}
+};
+
+
+struct PointLight
+{
+    XMFLOAT4 pos;
+    XMFLOAT4 posTransf;
+    XMFLOAT4 intensity; // luminuous intensity [cd = lm * sr-1] = luminuous flux / 4Pi
+
+    PointLight() :
+        pos{ 0.f, 0.f, 0.f, 0.f },
+        posTransf{ 0.f, 0.f, 0.f, 0.f },
+        intensity{ 0.f, 0.f, 0.f, 0.f }
+    {}
+};
+
+
 class Scene : public IScene
 {
 public:
@@ -190,6 +230,10 @@ private:
     // Geometry
     std::vector<SceneNode>      mRootNodes;
     ScenePrimitive              mPointLightProxy;
+
+    AmbientLight                                    mAmbientLight;
+    std::array<DirectLight, DIRECT_LIGHTS_COUNT>    mDirectLights;
+    std::array<PointLight, POINT_LIGHTS_COUNT>      mPointLights;
 
     // Camera
     XMMATRIX                    mViewMtrx;

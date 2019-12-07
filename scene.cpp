@@ -2,7 +2,6 @@
 
 #include "log.hpp"
 #include "utils.hpp"
-#include "constants.hpp"
 
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
@@ -54,50 +53,6 @@ struct {
     XMVectorSet(0.0f, -0.2f, 0.0f, 1.0f),
     XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f),
 };
-
-
-struct AmbientLight
-{
-    XMFLOAT4 luminance; // omnidirectional luminance: lm * sr-1 * m-2
-
-    AmbientLight() :
-        luminance{}
-    {}
-};
-
-
-// Directional light
-struct DirectLight
-{
-    XMFLOAT4 dir;
-    XMFLOAT4 dirTransf;
-    XMFLOAT4 luminance; // lm * sr-1 * m-2
-
-    DirectLight() :
-        dir{},
-        dirTransf{},
-        luminance{}
-    {}
-};
-
-
-struct PointLight
-{
-    XMFLOAT4 pos;
-    XMFLOAT4 posTransf;
-    XMFLOAT4 intensity; // luminuous intensity [cd = lm * sr-1] = luminuous flux / 4Pi
-
-    PointLight() :
-        pos{},
-        posTransf{},
-        intensity{}
-    {}
-};
-
-
-AmbientLight sAmbientLight;
-std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights;
-std::array<PointLight, POINT_LIGHTS_COUNT> sPointLights;
 
 
 struct CbNeverChanged
@@ -273,15 +228,15 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         node0.AddScale({ 3.2f, 3.2f, 3.2f });
 
-        sAmbientLight.luminance     = XMFLOAT4(0.10f, 0.10f, 0.10f, 1.0f);
+        mAmbientLight.luminance     = XMFLOAT4(0.10f, 0.10f, 0.10f, 1.0f);
 
-        sDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
-        sDirectLights[0].luminance  = XMFLOAT4(2.6f, 2.6f, 2.6f, 1.0f);
+        mDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance  = XMFLOAT4(2.6f, 2.6f, 2.6f, 1.0f);
 
         // coloured point lights
-        sPointLights[0].intensity   = XMFLOAT4(4.000f, 1.800f, 1.200f, 1.0f); // red
-        sPointLights[1].intensity   = XMFLOAT4(1.000f, 2.500f, 1.100f, 1.0f); // green
-        sPointLights[2].intensity   = XMFLOAT4(1.200f, 1.800f, 4.000f, 1.0f); // blue
+        mPointLights[0].intensity   = XMFLOAT4(4.000f, 1.800f, 1.200f, 1.0f); // red
+        mPointLights[1].intensity   = XMFLOAT4(1.000f, 2.500f, 1.100f, 1.0f); // green
+        mPointLights[2].intensity   = XMFLOAT4(1.200f, 1.800f, 4.000f, 1.0f); // blue
 
         return true;
     }
@@ -304,16 +259,16 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         node0.AddScale({ 3.2f, 3.2f, 3.2f });
 
-        sAmbientLight.luminance     = XMFLOAT4(0.f, 0.f, 0.f, 1.0f);
+        mAmbientLight.luminance     = XMFLOAT4(0.f, 0.f, 0.f, 1.0f);
 
         const double lum = 3.5f;
-        sDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
-        sDirectLights[0].luminance  = XMFLOAT4(lum, lum, lum, 1.0f);
+        mDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance  = XMFLOAT4(lum, lum, lum, 1.0f);
 
         const double ints = 3.5f;
-        sPointLights[0].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
-        sPointLights[1].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
-        sPointLights[2].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[0].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[1].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[2].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
 
         return true;
     }
@@ -356,16 +311,16 @@ bool Scene::Load(IRenderingContext &ctx)
         node2.AddScale({ 1.2f, 1.2f, 1.2f });
         node2.AddTranslation({ 2.5f, 0.f, 2.0f });
 
-        sAmbientLight.luminance     = XMFLOAT4(0.00f, 0.00f, 0.00f, 1.0f);
+        mAmbientLight.luminance     = XMFLOAT4(0.00f, 0.00f, 0.00f, 1.0f);
 
         const double lum = 3.0f;
-        sDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
-        sDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+        mDirectLights[0].dir       = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
 
         const double ints = 4.0f;
-        sPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
-        sPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
-        sPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
 
         return true;
     }
@@ -719,14 +674,14 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 
     // debug lights
     const double amb = 0.3f;
-    sAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
+    mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
     const double lum = 5.f;
-    sDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
-    sDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+    mDirectLights[0].dir       = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+    mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
     const double ints = 6.5f;
-    sPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
-    sPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
-    sPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+    mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+    mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+    mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
 
     return true;
 }
@@ -803,7 +758,7 @@ void Scene::Animate(IRenderingContext &ctx)
         node.Animate(ctx);
 
     // Directional lights (are steady for now)
-    for (auto &dirLight : sDirectLights)
+    for (auto &dirLight : mDirectLights)
         dirLight.dirTransf = dirLight.dir;
 
     // Animate point lights
@@ -813,7 +768,7 @@ void Scene::Animate(IRenderingContext &ctx)
     const float totalAnimPos = time / period;
     const float angle = totalAnimPos * XM_2PI;
 
-    const auto pointCount = sPointLights.size();
+    const auto pointCount = mPointLights.size();
     for (int i = 0; i < pointCount; i++)
     {
         const float lightRelOffset = (float)i / pointCount;
@@ -833,9 +788,9 @@ void Scene::Animate(IRenderingContext &ctx)
         const XMMATRIX inclinationMtrx  = XMMatrixRotationZ(orbitInclination);
         const XMMATRIX transfMtrx = translationMtrx * rotationMtrx * inclinationMtrx;
 
-        const XMVECTOR lightVec = XMLoadFloat4(&sPointLights[i].pos);
+        const XMVECTOR lightVec = XMLoadFloat4(&mPointLights[i].pos);
         const XMVECTOR lightVecTransf = XMVector3Transform(lightVec, transfMtrx);
-        XMStoreFloat4(&sPointLights[i].posTransf, lightVecTransf);
+        XMStoreFloat4(&mPointLights[i].posTransf, lightVecTransf);
     }
 }
 
@@ -849,16 +804,16 @@ void Scene::Render(IRenderingContext &ctx)
 
     // Frame constant buffer
     CbChangedEachFrame cbEachFrame;
-    cbEachFrame.AmbientLightLuminance = sAmbientLight.luminance;
-    for (int i = 0; i < sDirectLights.size(); i++)
+    cbEachFrame.AmbientLightLuminance = mAmbientLight.luminance;
+    for (int i = 0; i < mDirectLights.size(); i++)
     {
-        cbEachFrame.DirectLightDirs[i]       = sDirectLights[i].dirTransf;
-        cbEachFrame.DirectLightLuminances[i] = sDirectLights[i].luminance;
+        cbEachFrame.DirectLightDirs[i]       = mDirectLights[i].dirTransf;
+        cbEachFrame.DirectLightLuminances[i] = mDirectLights[i].luminance;
     }
-    for (int i = 0; i < sPointLights.size(); i++)
+    for (int i = 0; i < mPointLights.size(); i++)
     {
-        cbEachFrame.PointLightPositions[i]   = sPointLights[i].posTransf;
-        cbEachFrame.PointLightIntensities[i] = sPointLights[i].intensity;
+        cbEachFrame.PointLightPositions[i]   = mPointLights[i].posTransf;
+        cbEachFrame.PointLightIntensities[i] = mPointLights[i].intensity;
     }
     immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
 
@@ -881,22 +836,22 @@ void Scene::Render(IRenderingContext &ctx)
         RenderNodeGeometry(ctx, node, XMMatrixIdentity());
 
     // Proxy geometry for point lights
-    for (int i = 0; i < sPointLights.size(); i++)
+    for (int i = 0; i < mPointLights.size(); i++)
     {
         CbChangedPerSceneNode cbPerSceneNode;
 
         const float radius = 0.07f;
         XMMATRIX lightScaleMtrx = XMMatrixScaling(radius, radius, radius);
-        XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(XMLoadFloat4(&sPointLights[i].posTransf));
+        XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(XMLoadFloat4(&mPointLights[i].posTransf));
         XMMATRIX lightMtrx = lightScaleMtrx * lightTrnslMtrx;
         cbPerSceneNode.WorldMtrx = XMMatrixTranspose(lightMtrx);
 
         const float radius2 = radius * radius;
         cbPerSceneNode.MeshColor = {
-            sPointLights[i].intensity.x / radius2,
-            sPointLights[i].intensity.y / radius2,
-            sPointLights[i].intensity.z / radius2,
-            sPointLights[i].intensity.w / radius2,
+            mPointLights[i].intensity.x / radius2,
+            mPointLights[i].intensity.y / radius2,
+            mPointLights[i].intensity.z / radius2,
+            mPointLights[i].intensity.w / radius2,
         };
 
         immCtx->UpdateSubresource(mCbChangedPerSceneNode, 0, nullptr, &cbPerSceneNode, 0, 0);
@@ -938,10 +893,10 @@ void Scene::RenderNodeGeometry(IRenderingContext &ctx,
 
 bool Scene::GetAmbientColor(float(&rgba)[4])
 {
-    rgba[0] = sAmbientLight.luminance.x;
-    rgba[1] = sAmbientLight.luminance.y;
-    rgba[2] = sAmbientLight.luminance.z;
-    rgba[3] = sAmbientLight.luminance.w;
+    rgba[0] = mAmbientLight.luminance.x;
+    rgba[1] = mAmbientLight.luminance.y;
+    rgba[2] = mAmbientLight.luminance.z;
+    rgba[3] = mAmbientLight.luminance.w;
     return true;
 }
 
