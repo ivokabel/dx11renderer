@@ -33,6 +33,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eExternalDebugSimpleMeshes
         //Scene::eExternalDebugBox
         Scene::eExternalDebugBoxInterleaved
+        //Scene::eExternalDebugBoxTextured
         );
     SimpleDX11Renderer renderer(scene);
 

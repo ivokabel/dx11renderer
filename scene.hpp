@@ -194,6 +194,7 @@ public:
         eExternalDebugSimpleMeshes,
         eExternalDebugBox,
         eExternalDebugBoxInterleaved,
+        eExternalDebugBoxTextured,
     };
 
     Scene(const SceneId sceneId);
