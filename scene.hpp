@@ -117,6 +117,7 @@ public:
     void AddScale(const std::vector<double> &vec);
     void AddRotationQuaternion(const std::vector<double> &vec);
     void AddTranslation(const std::vector<double> &vec);
+    void AddMatrix(const std::vector<double> &vec);
 
     bool LoadFromGLTF(IRenderingContext & ctx,
                       const tinygltf::Model &model,

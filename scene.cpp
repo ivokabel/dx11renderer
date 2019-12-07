@@ -1640,6 +1640,7 @@ void SceneNode::AddScale(const std::vector<double> &vec)
         return;
 
     const auto scaleMtrx = XMMatrixScaling((float)vec[0], (float)vec[1], (float)vec[2]);
+
     mLocalMtrx = mLocalMtrx * scaleMtrx;
 }
 
@@ -1650,6 +1651,7 @@ void SceneNode::AddRotationQuaternion(const std::vector<double> &vec)
 
     const XMFLOAT4 quaternion((float)vec[0], (float)vec[1], (float)vec[2], (float)vec[3]);
     const auto rotMtrx = XMMatrixRotationQuaternion(XMLoadFloat4(&quaternion));
+
     mLocalMtrx = mLocalMtrx * rotMtrx;
 }
 
@@ -1659,8 +1661,24 @@ void SceneNode::AddTranslation(const std::vector<double> &vec)
         return;
 
     const auto translMtrx = XMMatrixTranslation((float)vec[0], (float)vec[1], (float)vec[2]);
+
     mLocalMtrx = mLocalMtrx * translMtrx;
 }
+
+void SceneNode::AddMatrix(const std::vector<double> &vec)
+{
+    if (vec.size() != 16)
+        return;
+
+    const auto translMtrx = XMMatrixSet(
+        (float)vec[0], (float)vec[4], (float)vec[8],  (float)vec[12],
+        (float)vec[1], (float)vec[5], (float)vec[9],  (float)vec[13],
+        (float)vec[2], (float)vec[6], (float)vec[10], (float)vec[14],
+        (float)vec[3], (float)vec[7], (float)vec[11], (float)vec[15]);
+
+    mLocalMtrx = mLocalMtrx * translMtrx;
+}
+
 
 bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
                              const tinygltf::Model &model,
@@ -1695,18 +1713,19 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
     const std::wstring &subItemsLogPrefix = logPrefix + L"   ";
 
     // Local transformation
-    if (node.matrix.size() == 4)
+    SetIdentity();
+    if (node.matrix.size() == 16)
     {
-        // TODO
+        if (mIsRootNode)
+            AddScale({ 3., 3., 3. }); // debug
 
-        Log::Error(L"%sLocal transformation given by matrix is not yet supported!", subItemsLogPrefix.c_str());
-        return false;
+        AddMatrix(node.matrix);
     }
     else
     {
-        SetIdentity();
         if (mIsRootNode)
             AddScale({ 3., 3., 3. }); // debug
+
         AddScale(node.scale);
         AddRotationQuaternion(node.rotation);
         AddTranslation(node.translation);
