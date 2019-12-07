@@ -192,6 +192,7 @@ public:
         eExternalDebugTriangle,
         eExternalDebugSimpleMeshes,
         eExternalDebugBox,
+        eExternalDebugBoxInterleaved,
     };
 
     Scene(const SceneId sceneId);

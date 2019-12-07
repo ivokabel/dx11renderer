@@ -211,6 +211,9 @@ bool Scene::Load(IRenderingContext &ctx)
     case eExternalDebugBox:
         return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Box/Box.gltf");
 
+    case eExternalDebugBoxInterleaved:
+        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoxInterleaved/BoxInterleaved.gltf");
+
     case eHardwiredSimpleDebugSphere:
     {
         mRootNodes.clear();
