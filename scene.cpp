@@ -45,10 +45,6 @@ const std::array<InputElmDesc, 3> sVertexLayout =
 };
 
 
-std::vector<SceneNode> sSceneNodes;
-ScenePrimitive sPointLightProxy;
-
-
 struct {
     XMVECTOR eye;
     XMVECTOR at;
@@ -237,7 +233,7 @@ bool Scene::Init(IRenderingContext &ctx)
     if (!Load(ctx))
         return false;
 
-    if (!sPointLightProxy.CreateSphere(ctx, 8, 16))
+    if (!mPointLightProxy.CreateSphere(ctx, 8, 16))
         return false;
 
     return true;
@@ -262,12 +258,12 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eHardwiredSimpleDebugSphere:
     {
-        sSceneNodes.clear();
-        sSceneNodes.resize(1);
-        if (sSceneNodes.size() != 1)
+        mRootNodes.clear();
+        mRootNodes.resize(1);
+        if (mRootNodes.size() != 1)
             return false;
 
-        auto &node0 = sSceneNodes[0];
+        auto &node0 = mRootNodes[0];
         auto primitive = node0.CreateEmptyPrimitive();
         if (!primitive)
             return false;
@@ -292,12 +288,12 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eHardwiredEarth:
     {
-        sSceneNodes.clear();
-        sSceneNodes.resize(1);
-        if (sSceneNodes.size() != 1)
+        mRootNodes.clear();
+        mRootNodes.resize(1);
+        if (mRootNodes.size() != 1)
             return false;
 
-        auto &node0 = sSceneNodes[0];
+        auto &node0 = mRootNodes[0];
         auto primitive = node0.CreateEmptyPrimitive();
         if (!primitive)
             return false;
@@ -324,13 +320,13 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eHardwiredThreePlanets:
     {
-        sSceneNodes.clear();
-        sSceneNodes.resize(3);
-        if (sSceneNodes.size() != 3)
+        mRootNodes.clear();
+        mRootNodes.resize(3);
+        if (mRootNodes.size() != 3)
             return false;
 
-        auto &node0 = sSceneNodes[0];
-        auto primitive0 = sSceneNodes[0].CreateEmptyPrimitive();
+        auto &node0 = mRootNodes[0];
+        auto primitive0 = node0.CreateEmptyPrimitive();
         if (!primitive0)
             return false;
         if (!primitive0->CreateSphere(ctx, 40, 80,
@@ -340,8 +336,8 @@ bool Scene::Load(IRenderingContext &ctx)
         node0.AddScale({ 2.2f, 2.2f, 2.2f });
         node0.AddTranslation({ 0.f, 0.f, -1.5f });
 
-        auto &node1 = sSceneNodes[1];
-        auto primitive1 = sSceneNodes[1].CreateEmptyPrimitive();
+        auto &node1 = mRootNodes[1];
+        auto primitive1 = node1.CreateEmptyPrimitive();
         if (!primitive1)
             return false;
         if (!primitive1->CreateSphere(ctx, 20, 40,
@@ -350,8 +346,8 @@ bool Scene::Load(IRenderingContext &ctx)
         node1.AddScale({ 1.2f, 1.2f, 1.2f });
         node1.AddTranslation({ -2.5f, 0.f, 2.0f });
 
-        auto &node2 = sSceneNodes[2];
-        auto primitive2 = sSceneNodes[2].CreateEmptyPrimitive();
+        auto &node2 = mRootNodes[2];
+        auto primitive2 = node2.CreateEmptyPrimitive();
         if (!primitive2)
             return false;
         if (!primitive2->CreateSphere(ctx, 20, 40,
@@ -709,14 +705,14 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
                scene.nodes.size());
 
     // Nodes hierarchy
-    sSceneNodes.clear();
-    sSceneNodes.reserve(model.nodes.size());
+    mRootNodes.clear();
+    mRootNodes.reserve(scene.nodes.size());
     for (const auto nodeIdx : scene.nodes)
     {
         SceneNode sceneNode(true);
         if (!LoadSceneNodeFromGLTF(ctx, sceneNode, model, nodeIdx, logPrefix + L"   "))
             return false;
-        sSceneNodes.push_back(std::move(sceneNode));
+        mRootNodes.push_back(std::move(sceneNode));
     }
 
     Log::Debug(L"");
@@ -792,8 +788,8 @@ void Scene::Destroy()
     Utils::ReleaseAndMakeNull(mCbChangedPerSceneNode);
     Utils::ReleaseAndMakeNull(mSamplerLinear);
 
-    sSceneNodes.clear();
-    sPointLightProxy.Destroy();
+    mRootNodes.clear();
+    mPointLightProxy.Destroy();
 }
 
 
@@ -803,7 +799,7 @@ void Scene::Animate(IRenderingContext &ctx)
         return;
 
     // Scene geometry
-    for (auto &node : sSceneNodes)
+    for (auto &node : mRootNodes)
         node.Animate(ctx);
 
     // Directional lights (are steady for now)
@@ -881,7 +877,7 @@ void Scene::Render(IRenderingContext &ctx)
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
 
     // Draw all scene nodes
-    for (auto &node : sSceneNodes)
+    for (auto &node : mRootNodes)
         RenderNodeGeometry(ctx, node, XMMatrixIdentity());
 
     // Proxy geometry for point lights
@@ -906,7 +902,7 @@ void Scene::Render(IRenderingContext &ctx)
         immCtx->UpdateSubresource(mCbChangedPerSceneNode, 0, nullptr, &cbPerSceneNode, 0, 0);
 
         immCtx->PSSetShader(mPixelShaderSolid, nullptr, 0);
-        sPointLightProxy.DrawGeometry(ctx, mVertexLayout);
+        mPointLightProxy.DrawGeometry(ctx, mVertexLayout);
     }
 }
 

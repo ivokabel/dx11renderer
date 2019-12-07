@@ -187,6 +187,16 @@ private:
 
     const SceneId               mSceneId;
 
+    // Geometry
+    std::vector<SceneNode>      mRootNodes;
+    ScenePrimitive              mPointLightProxy;
+
+    // Camera
+    XMMATRIX                    mViewMtrx;
+    XMMATRIX                    mProjectionMtrx;
+
+    // Shaders
+
     ID3D11VertexShader*         mVertexShader = nullptr;
     ID3D11PixelShader*          mPixelShaderIllum = nullptr;
     ID3D11PixelShader*          mPixelShaderSolid = nullptr;
@@ -198,7 +208,4 @@ private:
     ID3D11Buffer*               mCbChangedPerSceneNode = nullptr;
 
     ID3D11SamplerState*         mSamplerLinear = nullptr;
-
-    XMMATRIX                    mViewMtrx;
-    XMMATRIX                    mProjectionMtrx;
 };
