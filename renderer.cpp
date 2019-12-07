@@ -701,6 +701,8 @@ bool SimpleDX11Renderer::CreatePixelShader(WCHAR* szFileName,
 
 void SimpleDX11Renderer::Render()
 {
+    StartFrame();
+
     ID3D11RenderTargetView* swapChainRTV = nullptr;
     ID3D11DepthStencilView* swapChainDSV = nullptr;
     mImmediateContext->OMGetRenderTargets(1, &swapChainRTV, &swapChainDSV);
@@ -956,6 +958,18 @@ float SimpleDX11Renderer::GetCurrentAnimationTime() const
     }
 
     return time;
+}
+
+
+void SimpleDX11Renderer::StartFrame()
+{
+    mFrameAnimationTime = GetCurrentAnimationTime();
+}
+
+
+float SimpleDX11Renderer::GetFrameAnimationTime() const
+{
+    return mFrameAnimationTime;
 }
 
 

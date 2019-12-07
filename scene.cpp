@@ -763,7 +763,7 @@ void Scene::Animate(IRenderingContext &ctx)
 
     // Animate point lights
 
-    const float time = ctx.GetCurrentAnimationTime();
+    const float time = ctx.GetFrameAnimationTime();
     const float period = 15.f; //seconds
     const float totalAnimPos = time / period;
     const float angle = totalAnimPos * XM_2PI;
@@ -1750,7 +1750,7 @@ void SceneNode::Animate(IRenderingContext &ctx)
 {
     if (mIsRootNode)
     {
-        const float time = ctx.GetCurrentAnimationTime();
+        const float time = ctx.GetFrameAnimationTime();
         const float period = 15.f; //seconds
         const float totalAnimPos = time / period;
         const float angle = totalAnimPos * XM_2PI;
