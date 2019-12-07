@@ -214,7 +214,7 @@ bool Scene::Load(IRenderingContext &ctx)
     case eHardwiredSimpleDebugSphere:
     {
         mRootNodes.clear();
-        mRootNodes.resize(1);
+        mRootNodes.resize(1, SceneNode(true));
         if (mRootNodes.size() != 1)
             return false;
 
@@ -244,7 +244,7 @@ bool Scene::Load(IRenderingContext &ctx)
     case eHardwiredEarth:
     {
         mRootNodes.clear();
-        mRootNodes.resize(1);
+        mRootNodes.resize(1, SceneNode(true));
         if (mRootNodes.size() != 1)
             return false;
 
@@ -276,7 +276,7 @@ bool Scene::Load(IRenderingContext &ctx)
     case eHardwiredThreePlanets:
     {
         mRootNodes.clear();
-        mRootNodes.resize(3);
+        mRootNodes.resize(3, SceneNode(true));
         if (mRootNodes.size() != 3)
             return false;
 
