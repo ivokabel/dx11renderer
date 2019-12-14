@@ -784,39 +784,27 @@ bool Scene::LoadMaterials(const tinygltf::Model &model,
 {
     const auto &materials = model.materials;
 
-    Log::Debug(L"%sMaterials: %d",
-               logPrefix.c_str(),
-               materials.size());
+    Log::Debug(L"%sMaterials:", logPrefix.c_str());
 
-    const std::wstring &materialLogPrefix = logPrefix + L"   ";
-    const std::wstring &valueLogPrefix = materialLogPrefix + L"   ";
+    const std::wstring materialLogPrefix = logPrefix + L"   ";
+    const std::wstring valueLogPrefix = materialLogPrefix + L"   ";
+
+    mMaterials.clear();
+    mMaterials.reserve(materials.size());
     for (size_t matIdx = 0; matIdx < materials.size(); ++matIdx)
     {
         const auto &material = materials[matIdx];
 
-        Log::Debug(L"%s%d \"%s\": values %d",
+        Log::Debug(L"%s%d/%d \"%s\"",
                    materialLogPrefix.c_str(),
                    matIdx,
-                   Utils::StringToWString(material.name).c_str(),
-                   material.values.size());
+                   materials.size(),
+                   Utils::StringToWString(material.name).c_str());
 
-        for (const auto &value : material.values)
-        {
-            Log::Debug(L"%sValue \"%s\": %s",
-                       valueLogPrefix.c_str(),
-                       Utils::StringToWString(value.first).c_str(),
-                       ParameterValueToWstring(value.second).c_str());
-        }
-
-        for (const auto &value : material.additionalValues)
-        {
-            Log::Debug(L"%sAdditional value \"%s\": %s",
-                       valueLogPrefix.c_str(),
-                       Utils::StringToWString(value.first).c_str(),
-                       ParameterValueToWstring(value.second).c_str());
-        }
-
-        // TODO: ...
+        SceneMaterial sceneMaterial;
+        if (!sceneMaterial.LoadFromGltf(material, valueLogPrefix))
+            return false;
+        mMaterials.push_back(std::move(sceneMaterial));
     }
 
     return true;
@@ -1877,3 +1865,94 @@ void SceneNode::Animate(IRenderingContext &ctx)
     for (auto &child : children)
         child.Animate(ctx);
 }
+
+
+bool SceneMaterial::LoadFromGltf(const tinygltf::Material &material,
+                                 const std::wstring &logPrefix)
+{
+    //for (const auto &value : material.values)
+    //{
+    //    Log::Debug(L"%sValue \"%s\": %s",
+    //               valueLogPrefix.c_str(),
+    //               Utils::StringToWString(value.first).c_str(),
+    //               ParameterValueToWstring(value.second).c_str());
+    //}
+    //for (const auto &value : material.additionalValues)
+    //{
+    //    Log::Debug(L"%sAdditional value \"%s\": %s",
+    //               valueLogPrefix.c_str(),
+    //               Utils::StringToWString(value.first).c_str(),
+    //               ParameterValueToWstring(value.second).c_str());
+    //}
+
+    auto &values = material.values;
+
+    if (!LoadFloat4Param(baseColorFactor, "baseColorFactor", values, logPrefix))
+        return false;
+    if (!LoadFloatParam(metallicFactor, "metallicFactor", values, logPrefix))
+        return false;
+    if (!LoadFloatParam(roughnessFactor, "roughnessFactor", values, logPrefix))
+        return false;
+
+    return true;
+};
+
+bool SceneMaterial::LoadFloat4Param(XMFLOAT4 &materialParam,
+                                    const char *paramName,
+                                    const tinygltf::ParameterMap &params,
+                                    const std::wstring &logPrefix)
+{
+    auto paramIt = params.find(paramName);
+    if (paramIt != params.end())
+    {
+        auto &param = paramIt->second;
+        if (param.number_array.size() != 4)
+        {
+            Log::Error(L"%sCorrupted \"%s\" material parameter (size %d instead of 4)!",
+                       logPrefix.c_str(),
+                       Utils::StringToWString(paramName).c_str(),
+                       param.number_array.size());
+            return false;
+        }
+        materialParam = XMFLOAT4((float)param.number_array[0],
+            (float)param.number_array[1],
+                                 (float)param.number_array[2],
+                                 (float)param.number_array[3]);
+
+        Log::Debug(L"%s\"%s\": %s",
+                   logPrefix.c_str(),
+                   Utils::StringToWString(paramName).c_str(),
+                   ParameterValueToWstring(param).c_str());
+    }
+
+    return true;
+};
+
+
+bool SceneMaterial::LoadFloatParam(float &materialParam,
+                                   const char *paramName,
+                                   const tinygltf::ParameterMap &params,
+                                   const std::wstring &logPrefix)
+{
+    auto paramIt = params.find(paramName);
+    if (paramIt != params.end())
+    {
+        auto &param = paramIt->second;
+        if (!param.has_number_value)
+        {
+            Log::Error(L"%sIncorrect \"%s\" material parameter type (must be float)!",
+                       logPrefix.c_str(),
+                       Utils::StringToWString(paramName).c_str());
+            return false;
+        }
+        materialParam = (float)param.number_value;
+
+        Log::Debug(L"%s\"%s\": %s",
+                   logPrefix.c_str(),
+                   Utils::StringToWString(paramName).c_str(),
+                   ParameterValueToWstring(param).c_str());
+    }
+
+    return true;
+};
+

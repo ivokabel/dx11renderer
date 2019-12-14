@@ -141,6 +141,37 @@ private:
 };
 
 
+class SceneMaterial
+{
+public:
+
+    bool LoadFromGltf(const tinygltf::Material &material,
+                      const std::wstring &logPrefix);
+
+private:
+
+    static bool LoadFloat4Param(XMFLOAT4 &materialParam,
+                                const char *paramName,
+                                const tinygltf::ParameterMap &params,
+                                const std::wstring &logPrefix);
+
+    static bool LoadFloatParam(float &materialParam,
+                               const char *paramName,
+                               const tinygltf::ParameterMap &params,
+                               const std::wstring &logPrefix);
+
+private:
+
+    // PBR metal/roughness workflow
+    XMFLOAT4    baseColorFactor{ 1.f, 1.f, 1.f, 1.f };
+    float       metallicFactor = 1.f;
+    float       roughnessFactor = 1.f;
+    //TODO:     baseColorTexture
+    //TODO:     metallicRoughnessTexture
+};
+
+
+
 struct AmbientLight
 {
     XMFLOAT4 luminance; // omnidirectional luminance: lm * sr-1 * m-2
@@ -239,6 +270,10 @@ private:
     std::vector<SceneNode>      mRootNodes;
     ScenePrimitive              mPointLightProxy;
 
+    // Materials
+    std::vector<SceneMaterial>  mMaterials;
+
+    // Lights
     AmbientLight                                    mAmbientLight;
     std::array<DirectLight, DIRECT_LIGHTS_COUNT>    mDirectLights;
     std::array<PointLight, POINT_LIGHTS_COUNT>      mPointLights;
