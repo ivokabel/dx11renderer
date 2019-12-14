@@ -191,6 +191,9 @@ bool Scene::Init(IRenderingContext &ctx)
     if (!mPointLightProxy.CreateSphere(ctx, 8, 16))
         return false;
 
+    if (!mDefaultMaterial.Create(ctx))
+        return false;
+
     return true;
 }
 
@@ -219,6 +222,15 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eHardwiredSimpleDebugSphere:
     {
+        mMaterials.clear();
+        mMaterials.resize(1, SceneMaterial());
+        if (mMaterials.size() != 1)
+            return false;
+
+        auto &material0 = mMaterials[0];
+        if (!material0.Create(ctx, L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png"))
+            return false;
+
         mRootNodes.clear();
         mRootNodes.resize(1, SceneNode(true));
         if (mRootNodes.size() != 1)
@@ -229,9 +241,9 @@ bool Scene::Load(IRenderingContext &ctx)
         if (!primitive)
             return false;
 
-        if (!primitive->CreateSphere(ctx, 40, 80,
-                                     L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png"))
+        if (!primitive->CreateSphere(ctx, 40, 80))
             return false;
+        primitive->SetMaterialIdx(0);
         node0.AddScale({ 3.2f, 3.2f, 3.2f });
 
         mAmbientLight.luminance     = XMFLOAT4(0.10f, 0.10f, 0.10f, 1.0f);
@@ -249,6 +261,17 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eHardwiredEarth:
     {
+        mMaterials.clear();
+        mMaterials.resize(1, SceneMaterial());
+        if (mMaterials.size() != 1)
+            return false;
+
+        auto &material0 = mMaterials[0];
+        if (!material0.Create(ctx,
+                              L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
+                              L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
+            return false;
+
         mRootNodes.clear();
         mRootNodes.resize(1, SceneNode(true));
         if (mRootNodes.size() != 1)
@@ -259,10 +282,9 @@ bool Scene::Load(IRenderingContext &ctx)
         if (!primitive)
             return false;
 
-        if (!primitive->CreateSphere(ctx, 40, 80,
-                                     L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
-                                     L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
+        if (!primitive->CreateSphere(ctx, 40, 80))
             return false;
+        primitive->SetMaterialIdx(0);
         node0.AddScale({ 3.2f, 3.2f, 3.2f });
 
         mAmbientLight.luminance     = XMFLOAT4(0.f, 0.f, 0.f, 1.0f);
@@ -281,39 +303,57 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eHardwiredThreePlanets:
     {
+        mMaterials.clear();
+        mMaterials.resize(3, SceneMaterial());
+        if (mMaterials.size() != 3)
+            return false;
+
         mRootNodes.clear();
         mRootNodes.resize(3, SceneNode(true));
         if (mRootNodes.size() != 3)
+            return false;
+
+        auto &material0 = mMaterials[0];
+        if (!material0.Create(ctx,
+                              L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
+                              L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
             return false;
 
         auto &node0 = mRootNodes[0];
         auto primitive0 = node0.CreateEmptyPrimitive();
         if (!primitive0)
             return false;
-        if (!primitive0->CreateSphere(ctx, 40, 80,
-                                      L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
-                                      L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
+        if (!primitive0->CreateSphere(ctx, 40, 80))
             return false;
+        primitive0->SetMaterialIdx(0);
         node0.AddScale({ 2.2f, 2.2f, 2.2f });
         node0.AddTranslation({ 0.f, 0.f, -1.5f });
+
+        auto &material1 = mMaterials[1];
+        if (!material1.Create(ctx, L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
+            return false;
 
         auto &node1 = mRootNodes[1];
         auto primitive1 = node1.CreateEmptyPrimitive();
         if (!primitive1)
             return false;
-        if (!primitive1->CreateSphere(ctx, 20, 40,
-                                      L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
+        if (!primitive1->CreateSphere(ctx, 20, 40))
             return false;
+        primitive1->SetMaterialIdx(1);
         node1.AddScale({ 1.2f, 1.2f, 1.2f });
         node1.AddTranslation({ -2.5f, 0.f, 2.0f });
+
+        auto &material2 = mMaterials[2];
+        if (!material2.Create(ctx, L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
+            return false;
 
         auto &node2 = mRootNodes[2];
         auto primitive2 = node2.CreateEmptyPrimitive();
         if (!primitive2)
             return false;
-        if (!primitive2->CreateSphere(ctx, 20, 40,
-                                      L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
+        if (!primitive2->CreateSphere(ctx, 20, 40))
             return false;
+        primitive2->SetMaterialIdx(2);
         node2.AddScale({ 1.2f, 1.2f, 1.2f });
         node2.AddTranslation({ 2.5f, 0.f, 2.0f });
 
@@ -680,10 +720,10 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 
     Log::Debug(L"");
 
-    if (!LoadScene(ctx, model, logPrefix))
+    if (!LoadMaterials(ctx, model, logPrefix))
         return false;
 
-    if (!LoadMaterials(model, logPrefix))
+    if (!LoadScene(ctx, model, logPrefix))
         return false;
 
     Log::Debug(L"");
@@ -779,12 +819,13 @@ bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
     return true;
 }
 
-bool Scene::LoadMaterials(const tinygltf::Model &model,
+bool Scene::LoadMaterials(IRenderingContext &ctx,
+                          const tinygltf::Model &model,
                           const std::wstring &logPrefix)
 {
     const auto &materials = model.materials;
 
-    Log::Debug(L"%sMaterials:", logPrefix.c_str());
+    Log::Debug(L"%sMaterials: %d", logPrefix.c_str(), materials.size());
 
     const std::wstring materialLogPrefix = logPrefix + L"   ";
     const std::wstring valueLogPrefix = materialLogPrefix + L"   ";
@@ -802,7 +843,7 @@ bool Scene::LoadMaterials(const tinygltf::Model &model,
                    Utils::StringToWString(material.name).c_str());
 
         SceneMaterial sceneMaterial;
-        if (!sceneMaterial.LoadFromGltf(material, valueLogPrefix))
+        if (!sceneMaterial.LoadFromGltf(ctx, material, valueLogPrefix))
             return false;
         mMaterials.push_back(std::move(sceneMaterial));
     }
@@ -962,8 +1003,12 @@ void Scene::RenderNodeGeometry(IRenderingContext &ctx,
     // Draw current node
     for (auto &primitive : node.primitives)
     {
-        immCtx->PSSetShaderResources(0, 1, primitive.GetDiffuseSRV());
-        immCtx->PSSetShaderResources(1, 1, primitive.GetSpecularSRV());
+        const int matIdx = primitive.GetMaterialIdx();
+        if (matIdx >= 0 && matIdx < mMaterials.size())
+            mMaterials[matIdx].PSSetShaderResources(ctx);
+        else
+            mDefaultMaterial.PSSetShaderResources(ctx);
+
         primitive.DrawGeometry(ctx, mVertexLayout);
     }
 
@@ -990,15 +1035,11 @@ ScenePrimitive::ScenePrimitive(const ScenePrimitive &src) :
     mIndices(src.mIndices),
     mTopology(src.mTopology),
     mVertexBuffer(src.mVertexBuffer),
-    mIndexBuffer(src.mIndexBuffer),
-    mDiffuseSRV(src.mDiffuseSRV),
-    mSpecularSRV(src.mSpecularSRV)
+    mIndexBuffer(src.mIndexBuffer)
 {
     // We are creating new references of device resources
     Utils::SaveAddRef(mVertexBuffer);
     Utils::SaveAddRef(mIndexBuffer);
-    Utils::SaveAddRef(mDiffuseSRV);
-    Utils::SaveAddRef(mSpecularSRV);
 }
 
 ScenePrimitive::ScenePrimitive(ScenePrimitive &&src) :
@@ -1006,9 +1047,7 @@ ScenePrimitive::ScenePrimitive(ScenePrimitive &&src) :
     mIndices(std::move(src.mIndices)),
     mTopology(Utils::Exchange(src.mTopology, D3D_PRIMITIVE_TOPOLOGY_UNDEFINED)),
     mVertexBuffer(Utils::Exchange(src.mVertexBuffer, nullptr)),
-    mIndexBuffer(Utils::Exchange(src.mIndexBuffer, nullptr)),
-    mDiffuseSRV(Utils::Exchange(src.mDiffuseSRV, nullptr)),
-    mSpecularSRV(Utils::Exchange(src.mSpecularSRV, nullptr))
+    mIndexBuffer(Utils::Exchange(src.mIndexBuffer, nullptr))
 {}
 
 ScenePrimitive& ScenePrimitive::operator =(const ScenePrimitive &src)
@@ -1018,14 +1057,10 @@ ScenePrimitive& ScenePrimitive::operator =(const ScenePrimitive &src)
     mTopology = src.mTopology;
     mVertexBuffer = src.mVertexBuffer;
     mIndexBuffer = src.mIndexBuffer;
-    mDiffuseSRV = src.mDiffuseSRV;
-    mSpecularSRV = src.mSpecularSRV;
 
     // We are creating new references of device resources
     Utils::SaveAddRef(mVertexBuffer);
     Utils::SaveAddRef(mIndexBuffer);
-    Utils::SaveAddRef(mDiffuseSRV);
-    Utils::SaveAddRef(mSpecularSRV);
 
     return *this;
 }
@@ -1037,8 +1072,6 @@ ScenePrimitive& ScenePrimitive::operator =(ScenePrimitive &&src)
     mTopology = Utils::Exchange(src.mTopology, D3D_PRIMITIVE_TOPOLOGY_UNDEFINED);
     mVertexBuffer = Utils::Exchange(src.mVertexBuffer, nullptr);
     mIndexBuffer = Utils::Exchange(src.mIndexBuffer, nullptr);
-    mDiffuseSRV = Utils::Exchange(src.mDiffuseSRV, nullptr);
-    mSpecularSRV = Utils::Exchange(src.mSpecularSRV, nullptr);
 
     return *this;
 }
@@ -1049,28 +1082,22 @@ ScenePrimitive::~ScenePrimitive()
 }
 
 
-bool ScenePrimitive::CreateCube(IRenderingContext & ctx,
-                                const wchar_t * diffuseTexPath)
+bool ScenePrimitive::CreateCube(IRenderingContext & ctx)
 {
     if (!GenerateCubeGeometry())
         return false;
     if (!CreateDeviceBuffers(ctx))
-        return false;
-    if (!LoadTextures(ctx, diffuseTexPath))
         return false;
 
     return true;
 }
 
 
-bool ScenePrimitive::CreateOctahedron(IRenderingContext & ctx,
-                                      const wchar_t * diffuseTexPath)
+bool ScenePrimitive::CreateOctahedron(IRenderingContext & ctx)
 {
     if (!GenerateOctahedronGeometry())
         return false;
     if (!CreateDeviceBuffers(ctx))
-        return false;
-    if (!LoadTextures(ctx, diffuseTexPath))
         return false;
 
     return true;
@@ -1079,15 +1106,11 @@ bool ScenePrimitive::CreateOctahedron(IRenderingContext & ctx,
 
 bool ScenePrimitive::CreateSphere(IRenderingContext & ctx,
                                   const WORD vertSegmCount,
-                                  const WORD stripCount,
-                                  const wchar_t * diffuseTexPath,
-                                  const wchar_t * specularTexPath)
+                                  const WORD stripCount)
 {
     if (!GenerateSphereGeometry(vertSegmCount, stripCount))
         return false;
     if (!CreateDeviceBuffers(ctx))
-        return false;
-    if (!LoadTextures(ctx, diffuseTexPath, specularTexPath))
         return false;
 
     return true;
@@ -1297,21 +1320,19 @@ bool ScenePrimitive::LoadFromGLTF(IRenderingContext & ctx,
                                   const int primitiveIdx,
                                   const std::wstring &logPrefix)
 {
-    if (!LoadGeometryFromGLTF(model, mesh, primitiveIdx, logPrefix))
+    if (!LoadDataFromGLTF(model, mesh, primitiveIdx, logPrefix))
         return false;
     if (!CreateDeviceBuffers(ctx))
-        return false;
-    if (!LoadTextures(ctx))
         return false;
 
     return true;
 }
 
 
-bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
-                                          const tinygltf::Mesh &mesh,
-                                          const int primitiveIdx,
-                                          const std::wstring &logPrefix)
+bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
+                                      const tinygltf::Mesh &mesh,
+                                      const int primitiveIdx,
+                                      const std::wstring &logPrefix)
 {
     bool success = false;
 
@@ -1507,12 +1528,25 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
         return false;
 
     // DX primitive topology
-
     mTopology = GltfModeToTopology(primitive.mode);
     if (mTopology == D3D_PRIMITIVE_TOPOLOGY_UNDEFINED)
     {
         Log::Error(L"%sUnsupported primitive topology!", subItemsLogPrefix.c_str());
         return false;
+    }
+
+    // Material
+    const auto matIdx = primitive.material;
+    if (matIdx >= 0)
+    {
+        if (matIdx >= model.materials.size())
+        {
+            Log::Error(L"%sInvalid material index (%d/%d)!",
+                       subItemsLogPrefix.c_str(), matIdx, model.materials.size());
+            return false;
+        }
+
+        mMaterialIdx = matIdx;
     }
 
     return true;
@@ -1563,93 +1597,10 @@ bool ScenePrimitive::CreateDeviceBuffers(IRenderingContext & ctx)
 }
 
 
-bool ScenePrimitive::LoadTextures(IRenderingContext &ctx,
-                                  const wchar_t * diffuseTexPath,
-                                  const wchar_t * specularTexPath)
-{
-    HRESULT hr = S_OK;
-
-    auto device = ctx.GetDevice();
-    if (!device)
-        return false;
-
-    if (diffuseTexPath)
-    {
-        hr = D3DX11CreateShaderResourceViewFromFile(device, diffuseTexPath, nullptr, nullptr, &mDiffuseSRV, nullptr);
-        if (FAILED(hr))
-            return false;
-    }
-    else
-    {
-        static const auto grayColor = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.f);
-        CreateConstantTextureShaderResourceView(ctx, mDiffuseSRV, grayColor);
-    }
-
-    if (specularTexPath)
-    {
-        hr = D3DX11CreateShaderResourceViewFromFile(device, specularTexPath, nullptr, nullptr, &mSpecularSRV, nullptr);
-        if (FAILED(hr))
-            return false;
-    }
-    else
-    {
-        static const auto blackColor = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
-        CreateConstantTextureShaderResourceView(ctx, mSpecularSRV, blackColor);
-    }
-
-    return true;
-}
-
-
-bool ScenePrimitive::CreateConstantTextureShaderResourceView(IRenderingContext &ctx,
-                                                             ID3D11ShaderResourceView *&srv,
-                                                             XMFLOAT4 color)
-{
-    HRESULT hr = S_OK;
-    ID3D11Texture2D *tex = nullptr;
-
-    auto device = ctx.GetDevice();
-    if (!device)
-        return false;
-
-    // 1x1 constant-valued texture
-    D3D11_TEXTURE2D_DESC descTex;
-    ZeroMemory(&descTex, sizeof(D3D11_TEXTURE2D_DESC));
-    descTex.ArraySize = 1;
-    descTex.Usage = D3D11_USAGE_IMMUTABLE;
-    descTex.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    descTex.Width = 1;
-    descTex.Height = 1;
-    descTex.MipLevels = 1;
-    descTex.SampleDesc.Count = 1;
-    descTex.SampleDesc.Quality = 0;
-    descTex.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-    D3D11_SUBRESOURCE_DATA initData = { &color, sizeof(XMFLOAT4), 0 };
-    hr = device->CreateTexture2D(&descTex, &initData, &tex);
-    if (FAILED(hr))
-        return false;
-
-    // Shader resource view
-    D3D11_SHADER_RESOURCE_VIEW_DESC descSRV;
-    descSRV.Format = descTex.Format;
-    descSRV.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-    descSRV.Texture2D.MipLevels = 1;
-    descSRV.Texture2D.MostDetailedMip = 0;
-    hr = device->CreateShaderResourceView(tex, &descSRV, &srv);
-    Utils::ReleaseAndMakeNull(tex);
-    if (FAILED(hr))
-        return false;
-
-    return true;
-}
-
-
-
 void ScenePrimitive::Destroy()
 {
     DestroyGeomData();
     DestroyDeviceBuffers();
-    DestroyTextures();
 }
 
 
@@ -1665,13 +1616,6 @@ void ScenePrimitive::DestroyDeviceBuffers()
 {
     Utils::ReleaseAndMakeNull(mVertexBuffer);
     Utils::ReleaseAndMakeNull(mIndexBuffer);
-}
-
-
-void ScenePrimitive::DestroyTextures()
-{
-    Utils::ReleaseAndMakeNull(mDiffuseSRV);
-    Utils::ReleaseAndMakeNull(mSpecularSRV);
 }
 
 
@@ -1867,7 +1811,163 @@ void SceneNode::Animate(IRenderingContext &ctx)
 }
 
 
-bool SceneMaterial::LoadFromGltf(const tinygltf::Material &material,
+SceneMaterial::SceneMaterial()
+{}
+
+SceneMaterial::SceneMaterial(const SceneMaterial &src) :
+    mDiffuseSRV(src.mDiffuseSRV),
+    mSpecularSRV(src.mSpecularSRV)
+{
+    // We are creating new references of device resources
+    Utils::SaveAddRef(mDiffuseSRV);
+    Utils::SaveAddRef(mSpecularSRV);
+}
+
+SceneMaterial::SceneMaterial(SceneMaterial &&src) :
+    mDiffuseSRV(Utils::Exchange(src.mDiffuseSRV, nullptr)),
+    mSpecularSRV(Utils::Exchange(src.mSpecularSRV, nullptr))
+{}
+
+SceneMaterial& SceneMaterial::operator =(const SceneMaterial &src)
+{
+    mDiffuseSRV = src.mDiffuseSRV;
+    mSpecularSRV = src.mSpecularSRV;
+
+    // We are creating new references of device resources
+    Utils::SaveAddRef(mDiffuseSRV);
+    Utils::SaveAddRef(mSpecularSRV);
+
+    return *this;
+}
+
+SceneMaterial& SceneMaterial::operator =(SceneMaterial &&src)
+{
+    mDiffuseSRV = Utils::Exchange(src.mDiffuseSRV, nullptr);
+    mSpecularSRV = Utils::Exchange(src.mSpecularSRV, nullptr);
+
+    return *this;
+}
+
+SceneMaterial::~SceneMaterial()
+{
+    DestroyTextures();
+}
+
+
+bool SceneMaterial::CreateConstantTextureShaderResourceView(IRenderingContext &ctx,
+                                                            ID3D11ShaderResourceView *&srv,
+                                                            XMFLOAT4 color)
+{
+    HRESULT hr = S_OK;
+    ID3D11Texture2D *tex = nullptr;
+
+    auto device = ctx.GetDevice();
+    if (!device)
+        return false;
+
+    // 1x1 constant-valued texture
+    D3D11_TEXTURE2D_DESC descTex;
+    ZeroMemory(&descTex, sizeof(D3D11_TEXTURE2D_DESC));
+    descTex.ArraySize = 1;
+    descTex.Usage = D3D11_USAGE_IMMUTABLE;
+    descTex.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    descTex.Width = 1;
+    descTex.Height = 1;
+    descTex.MipLevels = 1;
+    descTex.SampleDesc.Count = 1;
+    descTex.SampleDesc.Quality = 0;
+    descTex.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    D3D11_SUBRESOURCE_DATA initData = { &color, sizeof(XMFLOAT4), 0 };
+    hr = device->CreateTexture2D(&descTex, &initData, &tex);
+    if (FAILED(hr))
+        return false;
+
+    // Shader resource view
+    D3D11_SHADER_RESOURCE_VIEW_DESC descSRV;
+    descSRV.Format = descTex.Format;
+    descSRV.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    descSRV.Texture2D.MipLevels = 1;
+    descSRV.Texture2D.MostDetailedMip = 0;
+    hr = device->CreateShaderResourceView(tex, &descSRV, &srv);
+    Utils::ReleaseAndMakeNull(tex);
+    if (FAILED(hr))
+        return false;
+
+    return true;
+}
+
+
+bool SceneMaterial::CreateTextures(IRenderingContext &ctx)
+{
+    HRESULT hr = S_OK;
+
+    auto device = ctx.GetDevice();
+    if (!device)
+        return false;
+
+    if (mDiffuseTexPath)
+    {
+        hr = D3DX11CreateShaderResourceViewFromFile(device, mDiffuseTexPath, nullptr, nullptr, &mDiffuseSRV, nullptr);
+        if (FAILED(hr))
+            return false;
+    }
+    else
+        CreateConstantTextureShaderResourceView(ctx, mDiffuseSRV, baseColorFactor);
+
+    if (mSpecularTexPath)
+    {
+        hr = D3DX11CreateShaderResourceViewFromFile(device, mSpecularTexPath, nullptr, nullptr, &mSpecularSRV, nullptr);
+        if (FAILED(hr))
+            return false;
+    }
+    else
+    {
+        // TODO: const params...
+        static const auto blackColor = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
+        CreateConstantTextureShaderResourceView(ctx, mSpecularSRV, blackColor);
+    }
+
+    return true;
+}
+
+
+void SceneMaterial::DestroyTextures()
+{
+    Utils::ReleaseAndMakeNull(mDiffuseSRV);
+    Utils::ReleaseAndMakeNull(mSpecularSRV);
+}
+
+
+bool SceneMaterial::Create(IRenderingContext &ctx,
+                           const wchar_t *diffuseTexPath,
+                           const wchar_t *specularTexPath)
+{
+    mDiffuseTexPath = diffuseTexPath;
+    mSpecularTexPath = specularTexPath;
+
+    return CreateTextures(ctx);
+}
+
+bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx, 
+                                 const tinygltf::Material &material,
+                                 const std::wstring &logPrefix)
+{
+    if (!LoadParamsFromGltf(material, logPrefix))
+        return false;
+
+    return CreateTextures(ctx);
+}
+
+void SceneMaterial::PSSetShaderResources(IRenderingContext &ctx) const
+{
+    if (auto immCtx = ctx.GetImmediateContext())
+    {
+        immCtx->PSSetShaderResources(0, 1, &mDiffuseSRV);
+        immCtx->PSSetShaderResources(1, 1, &mSpecularSRV);
+    }
+}
+
+bool SceneMaterial::LoadParamsFromGltf(const tinygltf::Material &material,
                                  const std::wstring &logPrefix)
 {
     //for (const auto &value : material.values)

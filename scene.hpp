@@ -41,15 +41,11 @@ public:
     ScenePrimitive& operator = (const ScenePrimitive&);
     ScenePrimitive& operator = (ScenePrimitive&&);
 
-    bool CreateCube(IRenderingContext & ctx,
-                    const wchar_t * diffuseTexPath = nullptr);
-    bool CreateOctahedron(IRenderingContext & ctx,
-                          const wchar_t * diffuseTexPath = nullptr);
+    bool CreateCube(IRenderingContext & ctx);
+    bool CreateOctahedron(IRenderingContext & ctx);
     bool CreateSphere(IRenderingContext & ctx,
                       const WORD vertSegmCount = 40,
-                      const WORD stripCount = 80,
-                      const wchar_t * diffuseTexPath = nullptr,
-                      const wchar_t * specularTexPath = nullptr);
+                      const WORD stripCount = 80);
 
     bool LoadFromGLTF(IRenderingContext & ctx,
                       const tinygltf::Model &model,
@@ -59,8 +55,8 @@ public:
 
     void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout *vertexLayout) const;
 
-    ID3D11ShaderResourceView* const* GetDiffuseSRV()  const { return &mDiffuseSRV; };
-    ID3D11ShaderResourceView* const* GetSpecularSRV() const { return &mSpecularSRV; };
+    void SetMaterialIdx(int idx) { mMaterialIdx = idx; };
+    int GetMaterialIdx() const { return mMaterialIdx; };
 
     void Destroy();
 
@@ -70,24 +66,15 @@ private:
     bool GenerateOctahedronGeometry();
     bool GenerateSphereGeometry(const WORD vertSegmCount, const WORD stripCount);
 
-    bool LoadGeometryFromGLTF(const tinygltf::Model &model,
+    bool LoadDataFromGLTF(const tinygltf::Model &model,
                               const tinygltf::Mesh &mesh,
                               const int primitiveIdx,
                               const std::wstring &logPrefix);
 
     bool CreateDeviceBuffers(IRenderingContext &ctx);
-    bool LoadTextures(IRenderingContext &ctx,
-                      const wchar_t * diffuseTexPath = nullptr,
-                      const wchar_t * specularTexPath = nullptr);
-
-    static bool CreateConstantTextureShaderResourceView(IRenderingContext &ctx,
-                                                        ID3D11ShaderResourceView *&srv,
-                                                        XMFLOAT4 color);
-
 
     void DestroyGeomData();
     void DestroyDeviceBuffers();
-    void DestroyTextures();
 
 private:
 
@@ -100,9 +87,8 @@ private:
     ID3D11Buffer*               mVertexBuffer = nullptr;
     ID3D11Buffer*               mIndexBuffer = nullptr;
 
-    // Textures
-    ID3D11ShaderResourceView*   mDiffuseSRV = nullptr;
-    ID3D11ShaderResourceView*   mSpecularSRV = nullptr;
+    // Material
+    int                         mMaterialIdx = -1;
 };
 
 
@@ -145,10 +131,35 @@ class SceneMaterial
 {
 public:
 
-    bool LoadFromGltf(const tinygltf::Material &material,
+    SceneMaterial();
+    SceneMaterial(const SceneMaterial &src);
+    SceneMaterial(SceneMaterial &&src);
+    SceneMaterial& operator =(const SceneMaterial &src);
+    SceneMaterial& operator =(SceneMaterial &&src);
+    ~SceneMaterial();
+
+public:
+
+    bool Create(IRenderingContext &ctx,
+                const wchar_t * diffuseTexPath = nullptr,
+                const wchar_t * specularTexPath = nullptr);
+    bool LoadFromGltf(IRenderingContext &ctx,
+                      const tinygltf::Material &material,
                       const std::wstring &logPrefix);
 
+    void PSSetShaderResources(IRenderingContext &ctx) const;
+
 private:
+
+    static bool CreateConstantTextureShaderResourceView(IRenderingContext &ctx,
+                                                        ID3D11ShaderResourceView *&srv,
+                                                        XMFLOAT4 color);
+
+    bool CreateTextures(IRenderingContext &ctx);
+    void DestroyTextures();
+
+    bool LoadParamsFromGltf(const tinygltf::Material &material,
+                            const std::wstring &logPrefix);
 
     static bool LoadFloat4Param(XMFLOAT4 &materialParam,
                                 const char *paramName,
@@ -162,12 +173,20 @@ private:
 
 private:
 
+    // Deprecated?
+    const wchar_t *mDiffuseTexPath = nullptr;
+    const wchar_t *mSpecularTexPath = nullptr;
+
     // PBR metal/roughness workflow
     XMFLOAT4    baseColorFactor{ 1.f, 1.f, 1.f, 1.f };
     float       metallicFactor = 1.f;
     float       roughnessFactor = 1.f;
     //TODO:     baseColorTexture
     //TODO:     metallicRoughnessTexture
+
+    // Textures
+    ID3D11ShaderResourceView*   mDiffuseSRV = nullptr;
+    ID3D11ShaderResourceView*   mSpecularSRV = nullptr;
 };
 
 
@@ -255,7 +274,8 @@ private:
                                const tinygltf::Model &model,
                                int nodeIdx,
                                const std::wstring &logPrefix);
-    bool LoadMaterials(const tinygltf::Model &model,
+    bool LoadMaterials(IRenderingContext &ctx,
+                       const tinygltf::Model &model,
                        const std::wstring &logPrefix);
 
     void RenderNodeGeometry(IRenderingContext &ctx,
@@ -272,6 +292,7 @@ private:
 
     // Materials
     std::vector<SceneMaterial>  mMaterials;
+    SceneMaterial               mDefaultMaterial;
 
     // Lights
     AmbientLight                                    mAmbientLight;
