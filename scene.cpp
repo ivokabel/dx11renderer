@@ -756,7 +756,7 @@ bool Scene::LoadScene(IRenderingContext &ctx,
         Log::Warning(L"%sMore scenes present in the model. Loading just the first one.", logPrefix.c_str());
     const auto &scene = model.scenes[0];
 
-    Log::Debug(L"%sScene 0 \"%s\": %d node(s)",
+    Log::Debug(L"%sScene 0 \"%s\": %d root node(s)",
                 logPrefix.c_str(),
                 Utils::StringToWString(scene.name).c_str(),
                 scene.nodes.size());
@@ -805,13 +805,13 @@ bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
             return false;
         }
 
-        Log::Debug(L"%sLoading child %d \"%s\"",
-                   childLogPrefix.c_str(),
-                   childIdx,
-                   Utils::StringToWString(model.nodes[childIdx].name).c_str());
+        //Log::Debug(L"%sLoading child %d \"%s\"",
+        //           childLogPrefix.c_str(),
+        //           childIdx,
+        //           Utils::StringToWString(model.nodes[childIdx].name).c_str());
 
         SceneNode childNode;
-        if (!LoadSceneNodeFromGLTF(ctx, childNode, model, childIdx, childLogPrefix + L"   "))
+        if (!LoadSceneNodeFromGLTF(ctx, childNode, model, childIdx, childLogPrefix))
             return false;
         sceneNode.children.push_back(std::move(childNode));
     }
@@ -1464,8 +1464,8 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
         {
             auto texCoord0 = *reinterpret_cast<const XMFLOAT2*>(ptr);
 
-            Log::Debug(L"%s%d: texCoord0 [%.1f, %.1f]",
-                       dataConsumerLogPrefix.c_str(), itemIdx, texCoord0.x, texCoord0.y);
+            //Log::Debug(L"%s%d: texCoord0 [%.1f, %.1f]",
+            //           dataConsumerLogPrefix.c_str(), itemIdx, texCoord0.x, texCoord0.y);
 
             mVertices[itemIdx].Tex = texCoord0;
         };
@@ -1495,10 +1495,16 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
 
     const auto &indicesAccessor = model.accessors[indicesAccessorIdx];
 
-    if ((indicesAccessor.componentType != TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) ||
-        (indicesAccessor.type != TINYGLTF_TYPE_SCALAR))
+    if (indicesAccessor.type != TINYGLTF_TYPE_SCALAR)
     {
-        Log::Error(L"%sUnsupported indices data type!", subItemsLogPrefix.c_str());
+        Log::Error(L"%sUnsupported indices data type (must be scalar)!", subItemsLogPrefix.c_str());
+        return false;
+    }
+    if ((indicesAccessor.componentType < TINYGLTF_COMPONENT_TYPE_BYTE) ||
+        (indicesAccessor.componentType > TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT))
+    {
+        Log::Error(L"%sUnsupported indices data component type (%d)!",
+                   subItemsLogPrefix.c_str(), indicesAccessor.componentType);
         return false;
     }
 
@@ -1510,22 +1516,76 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
         return false;
     }
 
-    auto IndexDataConsumer = [this, &dataConsumerLogPrefix](int itemIdx, const unsigned char *ptr)
+    const auto indicesComponentType = indicesAccessor.componentType;
+    auto IndexDataConsumer =
+        [this, &dataConsumerLogPrefix, indicesComponentType]
+        (int itemIdx, const unsigned char *ptr)
     {
-        auto index = *reinterpret_cast<const unsigned short*>(ptr);
-
         itemIdx; // unused param
-        //Log::Debug(L"%s%d: %d", dataConsumerLogPrefix.c_str(), itemIdx, index);
 
-        mIndices.push_back(index);
+        switch (indicesComponentType)
+        {
+        case TINYGLTF_COMPONENT_TYPE_BYTE:              mIndices.push_back(*reinterpret_cast<const int8_t*>(ptr)); break;
+        case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:     mIndices.push_back(*reinterpret_cast<const uint8_t*>(ptr)); break;
+        case TINYGLTF_COMPONENT_TYPE_SHORT:             mIndices.push_back(*reinterpret_cast<const int16_t*>(ptr)); break;
+        case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:    mIndices.push_back(*reinterpret_cast<const uint16_t*>(ptr)); break;
+        case TINYGLTF_COMPONENT_TYPE_INT:               mIndices.push_back(*reinterpret_cast<const int32_t*>(ptr)); break;
+        case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:      mIndices.push_back(*reinterpret_cast<const uint32_t*>(ptr)); break;
+        }
     };
 
-    if (!IterateGltfAccesorData<unsigned short, 1>(model,
-                                                   indicesAccessor,
-                                                   IndexDataConsumer,
-                                                   subItemsLogPrefix.c_str(),
-                                                   L"Indices"))
+    // TODO: Wrap into a function IterateGltfAccesorData(componentType, ...)? std::forward()?
+    switch (indicesComponentType)
+    {
+    case TINYGLTF_COMPONENT_TYPE_BYTE:
+        IterateGltfAccesorData<const int8_t, 1>(model,
+                                                indicesAccessor,
+                                                IndexDataConsumer,
+                                                subItemsLogPrefix.c_str(),
+                                                L"Indices");
+        break;
+    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+        IterateGltfAccesorData<uint8_t, 1>(model,
+                                           indicesAccessor,
+                                           IndexDataConsumer,
+                                           subItemsLogPrefix.c_str(),
+                                           L"Indices");
+        break;
+    case TINYGLTF_COMPONENT_TYPE_SHORT:
+        IterateGltfAccesorData<int16_t, 1>(model,
+                                           indicesAccessor,
+                                           IndexDataConsumer,
+                                           subItemsLogPrefix.c_str(),
+                                           L"Indices");
+        break;
+    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+        IterateGltfAccesorData<uint16_t, 1>(model,
+                                            indicesAccessor,
+                                            IndexDataConsumer,
+                                            subItemsLogPrefix.c_str(),
+                                            L"Indices");
+        break;
+    case TINYGLTF_COMPONENT_TYPE_INT:
+        IterateGltfAccesorData<int32_t, 1>(model,
+                                           indicesAccessor,
+                                           IndexDataConsumer,
+                                           subItemsLogPrefix.c_str(),
+                                           L"Indices");
+        break;
+    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+        IterateGltfAccesorData<uint32_t, 1>(model,
+                                            indicesAccessor,
+                                            IndexDataConsumer,
+                                            subItemsLogPrefix.c_str(),
+                                            L"Indices");
+        break;
+    }
+    if (mIndices.size() != indicesAccessor.count)
+    {
+        Log::Error(L"%sFailed to load indices (loaded %d instead of %d))!",
+                   subItemsLogPrefix.c_str(), mIndices.size(), indicesAccessor.count);
         return false;
+    }
 
     // DX primitive topology
     mTopology = GltfModeToTopology(primitive.mode);
