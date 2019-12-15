@@ -245,6 +245,7 @@ public:
         eExternalDebugBox,
         eExternalDebugBoxInterleaved,
         eExternalDebugBoxTextured,
+        eExternalPolyDuckyTeslaCybertruck,
     };
 
     Scene(const SceneId sceneId);
