@@ -220,6 +220,9 @@ bool Scene::Load(IRenderingContext &ctx)
     case eExternalDebugBoxTextured:
         return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoxTextured/BoxTextured.gltf", 3.f);
 
+    case eExternalDebug2CylinderEngine:
+        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/2CylinderEngine/2CylinderEngine.gltf", 1.f);
+
     case eExternalPolyDuckyTeslaCybertruck:
         return LoadExternal(ctx, L"../Scenes/Sketchfab/PolyDucky/Tesla Cybertruck/scene.gltf", 2.5f);
         //return LoadExternal(ctx, L"../Scenes/Sketchfab/hunter333d/Nintendo Game Boy Classic/scene.gltf");

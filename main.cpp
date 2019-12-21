@@ -31,9 +31,10 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eExternalDebugTriangleWithoutIndices // Non-indexed geometry not yet supported!
         //Scene::eExternalDebugTriangle
         //Scene::eExternalDebugSimpleMeshes
-        Scene::eExternalDebugBox
+        //Scene::eExternalDebugBox
         //Scene::eExternalDebugBoxInterleaved
         //Scene::eExternalDebugBoxTextured
+        Scene::eExternalDebug2CylinderEngine
         //Scene::eExternalPolyDuckyTeslaCybertruck
         );
     SimpleDX11Renderer renderer(scene);

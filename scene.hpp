@@ -246,6 +246,7 @@ public:
         eExternalDebugBox,
         eExternalDebugBoxInterleaved,
         eExternalDebugBoxTextured,
+        eExternalDebug2CylinderEngine,
         eExternalPolyDuckyTeslaCybertruck,
     };
 
