@@ -1310,7 +1310,7 @@ bool ScenePrimitive::GenerateSphereGeometry(const WORD vertSegmCount, const WORD
             mIndices.push_back( idxOffset + line);
         }
         mIndices.push_back(idxOffset + vertexCountPerStrip - 1); // south pole
-        mIndices.push_back(static_cast<WORD>(-1)); // strip restart
+        mIndices.push_back(static_cast<uint32_t>(-1)); // strip restart
     }
 
     assert(mIndices.size() == indexCount);
@@ -1637,15 +1637,17 @@ bool ScenePrimitive::CreateDeviceBuffers(IRenderingContext & ctx)
 
     HRESULT hr = S_OK;
 
-    // Vertex buffer
     D3D11_BUFFER_DESC bd;
     ZeroMemory(&bd, sizeof(bd));
+
+    D3D11_SUBRESOURCE_DATA initData;
+    ZeroMemory(&initData, sizeof(initData));
+
+    // Vertex buffer
     bd.Usage = D3D11_USAGE_DEFAULT;
     bd.ByteWidth = (UINT)(sizeof(SceneVertex) * mVertices.size());
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bd.CPUAccessFlags = 0;
-    D3D11_SUBRESOURCE_DATA initData;
-    ZeroMemory(&initData, sizeof(initData));
     initData.pSysMem = mVertices.data();
     hr = device->CreateBuffer(&bd, &initData, &mVertexBuffer);
     if (FAILED(hr))
@@ -1656,7 +1658,7 @@ bool ScenePrimitive::CreateDeviceBuffers(IRenderingContext & ctx)
 
     // Index buffer
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(WORD) * (UINT)mIndices.size();
+    bd.ByteWidth = sizeof(uint32_t) * (UINT)mIndices.size();
     bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
     bd.CPUAccessFlags = 0;
     initData.pSysMem = mIndices.data();
@@ -1701,7 +1703,7 @@ void ScenePrimitive::DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* ver
     UINT stride = sizeof(SceneVertex);
     UINT offset = 0;
     immCtx->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offset);
-    immCtx->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+    immCtx->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
     immCtx->IASetPrimitiveTopology(mTopology);
 
     immCtx->DrawIndexed((UINT)mIndices.size(), 0, 0);

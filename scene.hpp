@@ -80,7 +80,7 @@ private:
 
     // Geometry data
     std::vector<SceneVertex>    mVertices;
-    std::vector<WORD>           mIndices;
+    std::vector<uint32_t>       mIndices;
     D3D11_PRIMITIVE_TOPOLOGY    mTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 
     // Device geometry data
