@@ -203,25 +203,25 @@ bool Scene::Load(IRenderingContext &ctx)
     switch (mSceneId)
     {
     case eExternalDebugTriangleWithoutIndices:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/TriangleWithoutIndices/TriangleWithoutIndices.gltf");
+        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/TriangleWithoutIndices/TriangleWithoutIndices.gltf", 3.f);
 
     case eExternalDebugTriangle:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Triangle/Triangle.gltf");
+        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Triangle/Triangle.gltf", 3.f);
 
     case eExternalDebugSimpleMeshes:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/SimpleMeshes/SimpleMeshes.gltf");
+        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/SimpleMeshes/SimpleMeshes.gltf", 3.f);
 
     case eExternalDebugBox:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Box/Box.gltf");
+        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Box/Box.gltf", 3.f);
 
     case eExternalDebugBoxInterleaved:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoxInterleaved/BoxInterleaved.gltf");
+        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoxInterleaved/BoxInterleaved.gltf", 3.f);
 
     case eExternalDebugBoxTextured:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoxTextured/BoxTextured.gltf");
+        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoxTextured/BoxTextured.gltf", 3.f);
 
     case eExternalPolyDuckyTeslaCybertruck:
-        return LoadExternal(ctx, L"../Scenes/Sketchfab/PolyDucky/Tesla Cybertruck/scene.gltf");
+        return LoadExternal(ctx, L"../Scenes/Sketchfab/PolyDucky/Tesla Cybertruck/scene.gltf", 2.5f);
         //return LoadExternal(ctx, L"../Scenes/Sketchfab/hunter333d/Nintendo Game Boy Classic/scene.gltf");
         //return LoadExternal(ctx, L"../Scenes/Sketchfab/ArneDC/Prinzsound SM8 - Weltron 2001 Spaceball Radio/scene.gltf");
         //return LoadExternal(ctx, L"../Scenes/Sketchfab/Ivan Norman/Low-poly truck (car Drifter)/scene.gltf");
@@ -385,13 +385,15 @@ bool Scene::Load(IRenderingContext &ctx)
 }
 
 
-bool Scene::LoadExternal(IRenderingContext &ctx, const std::wstring &filePath)
+bool Scene::LoadExternal(IRenderingContext &ctx,
+                         const std::wstring &filePath,
+                         float scale)
 {
     const auto fileExt = Utils::GetFilePathExt(filePath);
     if ((fileExt.compare(L"glb") == 0) ||
         (fileExt.compare(L"gltf") == 0))
     {
-        return LoadGLTF(ctx, filePath);
+        return LoadGLTF(ctx, filePath, scale);
     }
     else
     {
@@ -715,7 +717,9 @@ bool IterateGltfAccesorData(const tinygltf::Model &model,
 }
 
 
-bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
+bool Scene::LoadGLTF(IRenderingContext &ctx,
+                     const std::wstring &filePath,
+                     float scale)
 {
     using namespace std;
 
@@ -731,7 +735,7 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
     if (!LoadMaterials(ctx, model, logPrefix))
         return false;
 
-    if (!LoadScene(ctx, model, logPrefix))
+    if (!LoadScene(ctx, model, scale, logPrefix))
         return false;
 
     Log::Debug(L"");
@@ -751,8 +755,9 @@ bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
 }
 
 bool Scene::LoadScene(IRenderingContext &ctx,
-                          const tinygltf::Model &model,
-                          const std::wstring &logPrefix)
+                      const tinygltf::Model &model,
+                      float scale,
+                      const std::wstring &logPrefix)
 {
     // Choose one scene
     if (model.scenes.size() < 1)
@@ -765,9 +770,9 @@ bool Scene::LoadScene(IRenderingContext &ctx,
     const auto &scene = model.scenes[0];
 
     Log::Debug(L"%sScene 0 \"%s\": %d root node(s)",
-                logPrefix.c_str(),
-                Utils::StringToWString(scene.name).c_str(),
-                scene.nodes.size());
+               logPrefix.c_str(),
+               Utils::StringToWString(scene.name).c_str(),
+               scene.nodes.size());
 
     // Nodes hierarchy
     mRootNodes.clear();
@@ -775,7 +780,7 @@ bool Scene::LoadScene(IRenderingContext &ctx,
     for (const auto nodeIdx : scene.nodes)
     {
         SceneNode sceneNode(true);
-        if (!LoadSceneNodeFromGLTF(ctx, sceneNode, model, nodeIdx, logPrefix + L"   "))
+        if (!LoadSceneNodeFromGLTF(ctx, sceneNode, model, scale, nodeIdx, logPrefix + L"   "))
             return false;
         mRootNodes.push_back(std::move(sceneNode));
     }
@@ -786,6 +791,7 @@ bool Scene::LoadScene(IRenderingContext &ctx,
 bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
                                   SceneNode &sceneNode,
                                   const tinygltf::Model &model,
+                                  float scale,
                                   int nodeIdx,
                                   const std::wstring &logPrefix)
 {
@@ -798,7 +804,7 @@ bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
     const auto &node = model.nodes[nodeIdx];
 
     // Node itself
-    if (!sceneNode.LoadFromGLTF(ctx, model, node, nodeIdx, logPrefix))
+    if (!sceneNode.LoadFromGLTF(ctx, model, node, scale, nodeIdx, logPrefix))
         return false;
 
     // Children
@@ -819,7 +825,7 @@ bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
         //           Utils::StringToWString(model.nodes[childIdx].name).c_str());
 
         SceneNode childNode;
-        if (!LoadSceneNodeFromGLTF(ctx, childNode, model, childIdx, childLogPrefix))
+        if (!LoadSceneNodeFromGLTF(ctx, childNode, model, 1.f, childIdx, childLogPrefix))
             return false;
         sceneNode.children.push_back(std::move(childNode));
     }
@@ -1772,6 +1778,7 @@ void SceneNode::AddMatrix(const std::vector<double> &vec)
 bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
                              const tinygltf::Model &model,
                              const tinygltf::Node &node,
+                             float scale,
                              int nodeIdx,
                              const std::wstring &logPrefix)
 {
@@ -1805,19 +1812,17 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
     SetIdentity();
     if (node.matrix.size() == 16)
     {
-        if (mIsRootNode)
-            AddScale({ 3., 3., 3. }); // debug
-
         AddMatrix(node.matrix);
+        if (mIsRootNode)
+            AddScale({ scale, scale, scale });
     }
     else
     {
-        if (mIsRootNode)
-            AddScale({ 3., 3., 3. }); // debug
-
         AddScale(node.scale);
         AddRotationQuaternion(node.rotation);
         AddTranslation(node.translation);
+        if (mIsRootNode)
+            AddScale({ scale, scale, scale });
     }
 
     // Mesh
