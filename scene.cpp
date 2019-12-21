@@ -1055,8 +1055,8 @@ ScenePrimitive::ScenePrimitive(const ScenePrimitive &src) :
     mIndexBuffer(src.mIndexBuffer)
 {
     // We are creating new references of device resources
-    Utils::SaveAddRef(mVertexBuffer);
-    Utils::SaveAddRef(mIndexBuffer);
+    Utils::SafeAddRef(mVertexBuffer);
+    Utils::SafeAddRef(mIndexBuffer);
 }
 
 ScenePrimitive::ScenePrimitive(ScenePrimitive &&src) :
@@ -1076,8 +1076,8 @@ ScenePrimitive& ScenePrimitive::operator =(const ScenePrimitive &src)
     mIndexBuffer = src.mIndexBuffer;
 
     // We are creating new references of device resources
-    Utils::SaveAddRef(mVertexBuffer);
-    Utils::SaveAddRef(mIndexBuffer);
+    Utils::SafeAddRef(mVertexBuffer);
+    Utils::SafeAddRef(mIndexBuffer);
 
     return *this;
 }
@@ -1897,8 +1897,8 @@ SceneMaterial::SceneMaterial(const SceneMaterial &src) :
     mSpecularSRV(src.mSpecularSRV)
 {
     // We are creating new references of device resources
-    Utils::SaveAddRef(mDiffuseSRV);
-    Utils::SaveAddRef(mSpecularSRV);
+    Utils::SafeAddRef(mDiffuseSRV);
+    Utils::SafeAddRef(mSpecularSRV);
 }
 
 SceneMaterial::SceneMaterial(SceneMaterial &&src) :
@@ -1912,8 +1912,8 @@ SceneMaterial& SceneMaterial::operator =(const SceneMaterial &src)
     mSpecularSRV = src.mSpecularSRV;
 
     // We are creating new references of device resources
-    Utils::SaveAddRef(mDiffuseSRV);
-    Utils::SaveAddRef(mSpecularSRV);
+    Utils::SafeAddRef(mDiffuseSRV);
+    Utils::SafeAddRef(mSpecularSRV);
 
     return *this;
 }

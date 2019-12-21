@@ -25,7 +25,7 @@ namespace Utils
     }
 
     template <typename T>
-    void SaveAddRef(T &value)
+    void SafeAddRef(T &value)
     {
         if (value)
             value->AddRef();
