@@ -248,6 +248,7 @@ public:
         eExternalDebugBoxTextured,
         eExternalDebug2CylinderEngine,
         eExternalPolyDuckyTeslaCybertruck,
+        eExternalLowPolyDrifter,
     };
 
     Scene(const SceneId sceneId);

@@ -225,9 +225,11 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eExternalPolyDuckyTeslaCybertruck:
         return LoadExternal(ctx, L"../Scenes/Sketchfab/PolyDucky/Tesla Cybertruck/scene.gltf", 2.5f);
+
+    case eExternalLowPolyDrifter:
+        return LoadExternal(ctx, L"../Scenes/Sketchfab/Ivan Norman/Low-poly truck (car Drifter)/scene.gltf", 0.005f);
         //return LoadExternal(ctx, L"../Scenes/Sketchfab/hunter333d/Nintendo Game Boy Classic/scene.gltf");
         //return LoadExternal(ctx, L"../Scenes/Sketchfab/ArneDC/Prinzsound SM8 - Weltron 2001 Spaceball Radio/scene.gltf");
-        //return LoadExternal(ctx, L"../Scenes/Sketchfab/Ivan Norman/Low-poly truck (car Drifter)/scene.gltf");
         //return LoadExternal(ctx, L"../Scenes/Sketchfab/Greg McKechnie/Spot Mini (Rigged)/scene.gltf");
         //return LoadExternal(ctx, L"../Scenes/Sketchfab/_Sef_/Robo_V1/scene.gltf");
 
