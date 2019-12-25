@@ -1739,9 +1739,9 @@ void SceneNode::AddScale(const std::vector<double> &vec)
     if (vec.size() != 3)
         return;
 
-    const auto scaleMtrx = XMMatrixScaling((float)vec[0], (float)vec[1], (float)vec[2]);
+    const auto mtrx = XMMatrixScaling((float)vec[0], (float)vec[1], (float)vec[2]);
 
-    mLocalMtrx = mLocalMtrx * scaleMtrx;
+    mLocalMtrx = mLocalMtrx * mtrx;
 }
 
 void SceneNode::AddRotationQuaternion(const std::vector<double> &vec)
@@ -1750,9 +1750,10 @@ void SceneNode::AddRotationQuaternion(const std::vector<double> &vec)
         return;
 
     const XMFLOAT4 quaternion((float)vec[0], (float)vec[1], (float)vec[2], (float)vec[3]);
-    const auto rotMtrx = XMMatrixRotationQuaternion(XMLoadFloat4(&quaternion));
+    const auto xmQuaternion = XMLoadFloat4(&quaternion);
+    const auto mtrx = XMMatrixRotationQuaternion(xmQuaternion);
 
-    mLocalMtrx = mLocalMtrx * rotMtrx;
+    mLocalMtrx = mLocalMtrx * mtrx;
 }
 
 void SceneNode::AddTranslation(const std::vector<double> &vec)
@@ -1760,9 +1761,9 @@ void SceneNode::AddTranslation(const std::vector<double> &vec)
     if (vec.size() != 3)
         return;
 
-    const auto translMtrx = XMMatrixTranslation((float)vec[0], (float)vec[1], (float)vec[2]);
+    const auto mtrx = XMMatrixTranslation((float)vec[0], (float)vec[1], (float)vec[2]);
 
-    mLocalMtrx = mLocalMtrx * translMtrx;
+    mLocalMtrx = mLocalMtrx * mtrx;
 }
 
 void SceneNode::AddMatrix(const std::vector<double> &vec)
@@ -1770,13 +1771,13 @@ void SceneNode::AddMatrix(const std::vector<double> &vec)
     if (vec.size() != 16)
         return;
 
-    const auto translMtrx = XMMatrixSet(
+    const auto mtrx = XMMatrixSet(
         (float)vec[0], (float)vec[4], (float)vec[8],  (float)vec[12],
         (float)vec[1], (float)vec[5], (float)vec[9],  (float)vec[13],
         (float)vec[2], (float)vec[6], (float)vec[10], (float)vec[14],
         (float)vec[3], (float)vec[7], (float)vec[11], (float)vec[15]);
 
-    mLocalMtrx = mLocalMtrx * translMtrx;
+    mLocalMtrx = mLocalMtrx * mtrx;
 }
 
 
@@ -1816,19 +1817,15 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
     // Local transformation
     SetIdentity();
     if (node.matrix.size() == 16)
-    {
         AddMatrix(node.matrix);
-        if (mIsRootNode)
-            AddScale({ scale, scale, scale });
-    }
     else
     {
         AddScale(node.scale);
         AddRotationQuaternion(node.rotation);
         AddTranslation(node.translation);
-        if (mIsRootNode)
-            AddScale({ scale, scale, scale });
     }
+    if (mIsRootNode)
+        AddScale({ scale, scale, scale });
 
     // Mesh
 
