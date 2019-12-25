@@ -36,7 +36,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eExternalDebugBoxTextured
         //Scene::eExternalDebug2CylinderEngine
         //Scene::eExternalPolyDuckyTeslaCybertruck
-        Scene::eExternalLowPolyDrifter
+        //Scene::eExternalLowPolyDrifter
+        Scene::eExternalWolfBaseMesh
         );
     SimpleDX11Renderer renderer(scene);
 

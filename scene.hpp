@@ -249,6 +249,7 @@ public:
         eExternalDebug2CylinderEngine,
         eExternalPolyDuckyTeslaCybertruck,
         eExternalLowPolyDrifter,
+        eExternalWolfBaseMesh,
     };
 
     Scene(const SceneId sceneId);
