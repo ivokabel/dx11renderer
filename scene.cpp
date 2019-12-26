@@ -1881,7 +1881,7 @@ void SceneNode::Animate(IRenderingContext &ctx)
 
         const XMMATRIX rotMtrx = XMMatrixRotationY(angle);
 
-        mWorldMtrx = rotMtrx * mLocalMtrx;
+        mWorldMtrx = mLocalMtrx * rotMtrx;
     }
     else
         mWorldMtrx = mLocalMtrx;
