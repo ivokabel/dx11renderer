@@ -1057,7 +1057,8 @@ ScenePrimitive::ScenePrimitive(const ScenePrimitive &src) :
     mIndices(src.mIndices),
     mTopology(src.mTopology),
     mVertexBuffer(src.mVertexBuffer),
-    mIndexBuffer(src.mIndexBuffer)
+    mIndexBuffer(src.mIndexBuffer),
+    mMaterialIdx(src.mMaterialIdx)
 {
     // We are creating new references of device resources
     Utils::SafeAddRef(mVertexBuffer);
@@ -1069,7 +1070,8 @@ ScenePrimitive::ScenePrimitive(ScenePrimitive &&src) :
     mIndices(std::move(src.mIndices)),
     mTopology(Utils::Exchange(src.mTopology, D3D_PRIMITIVE_TOPOLOGY_UNDEFINED)),
     mVertexBuffer(Utils::Exchange(src.mVertexBuffer, nullptr)),
-    mIndexBuffer(Utils::Exchange(src.mIndexBuffer, nullptr))
+    mIndexBuffer(Utils::Exchange(src.mIndexBuffer, nullptr)),
+    mMaterialIdx(Utils::Exchange(src.mMaterialIdx, -1))
 {}
 
 ScenePrimitive& ScenePrimitive::operator =(const ScenePrimitive &src)
@@ -1084,6 +1086,8 @@ ScenePrimitive& ScenePrimitive::operator =(const ScenePrimitive &src)
     Utils::SafeAddRef(mVertexBuffer);
     Utils::SafeAddRef(mIndexBuffer);
 
+    mMaterialIdx = src.mMaterialIdx;
+
     return *this;
 }
 
@@ -1094,6 +1098,8 @@ ScenePrimitive& ScenePrimitive::operator =(ScenePrimitive &&src)
     mTopology = Utils::Exchange(src.mTopology, D3D_PRIMITIVE_TOPOLOGY_UNDEFINED);
     mVertexBuffer = Utils::Exchange(src.mVertexBuffer, nullptr);
     mIndexBuffer = Utils::Exchange(src.mIndexBuffer, nullptr);
+
+    mMaterialIdx = Utils::Exchange(src.mMaterialIdx, -1);
 
     return *this;
 }
@@ -1857,12 +1863,10 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
         primitives.reserve(primitivesCount);
         for (size_t i = 0; i < primitivesCount; ++i)
         {
-            primitives.push_back(ScenePrimitive());
-            if (!primitives.back().LoadFromGLTF(ctx, model, mesh, (int)i, subItemsLogPrefix + L"   "))
-            {
-                primitives.pop_back();
+            ScenePrimitive primitive;
+            if (!primitive.LoadFromGLTF(ctx, model, mesh, (int)i, subItemsLogPrefix + L"   "))
                 return false;
-            }
+            primitives.push_back(std::move(primitive));
         }
     }
 
