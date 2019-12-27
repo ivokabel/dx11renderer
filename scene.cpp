@@ -260,7 +260,7 @@ bool Scene::Load(IRenderingContext &ctx)
     case eExternalTeslaCybertruck:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/PolyDucky/Tesla Cybertruck/scene.gltf"))
             return false;
-        AddScaleToRoots(2.2);
+        AddScaleToRoots(2.1);
         AddTranslationToRoots({ 0., 0., 0. });
         return true;
 
