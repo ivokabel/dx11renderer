@@ -1783,10 +1783,10 @@ void SceneNode::AddMatrix(const std::vector<double> &vec)
         return;
 
     const auto mtrx = XMMatrixSet(
-        (float)vec[0], (float)vec[4], (float)vec[8],  (float)vec[12],
-        (float)vec[1], (float)vec[5], (float)vec[9],  (float)vec[13],
-        (float)vec[2], (float)vec[6], (float)vec[10], (float)vec[14],
-        (float)vec[3], (float)vec[7], (float)vec[11], (float)vec[15]);
+        (float)vec[0],  (float)vec[1],  (float)vec[2],  (float)vec[3],
+        (float)vec[4],  (float)vec[5],  (float)vec[6],  (float)vec[7],
+        (float)vec[8],  (float)vec[9],  (float)vec[10], (float)vec[11],
+        (float)vec[12], (float)vec[13], (float)vec[14], (float)vec[15]);
 
     mLocalMtrx = mLocalMtrx * mtrx;
 }
