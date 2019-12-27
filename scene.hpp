@@ -294,6 +294,13 @@ private:
                        const tinygltf::Model &model,
                        const std::wstring &logPrefix);
 
+    // Transformations
+    void AddScaleToRoots(double scale);
+    void AddScaleToRoots(const std::vector<double> &vec);
+    void AddRotationQuaternionToRoots(const std::vector<double> &vec);
+    void AddTranslationToRoots(const std::vector<double> &vec);
+    void AddMatrixToRoots(const std::vector<double> &vec);
+
     void RenderNodeGeometry(IRenderingContext &ctx,
                             const SceneNode &node,
                             const XMMATRIX &parentWorldMtrx);

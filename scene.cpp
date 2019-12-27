@@ -1023,6 +1023,41 @@ void Scene::RenderFrame(IRenderingContext &ctx)
 }
 
 
+void Scene::AddScaleToRoots(double scale)
+{
+    for (auto &rootNode : mRootNodes)
+        rootNode.AddScale(scale);
+}
+
+
+void Scene::AddScaleToRoots(const std::vector<double> &vec)
+{
+    for (auto &rootNode : mRootNodes)
+        rootNode.AddScale(vec);
+}
+
+
+void Scene::AddRotationQuaternionToRoots(const std::vector<double> &vec)
+{
+    for (auto &rootNode : mRootNodes)
+        rootNode.AddRotationQuaternion(vec);
+}
+
+
+void Scene::AddTranslationToRoots(const std::vector<double> &vec)
+{
+    for (auto &rootNode : mRootNodes)
+        rootNode.AddTranslation(vec);
+}
+
+
+void Scene::AddMatrixToRoots(const std::vector<double> &vec)
+{
+    for (auto &rootNode : mRootNodes)
+        rootNode.AddMatrix(vec);
+}
+
+
 void Scene::RenderNodeGeometry(IRenderingContext &ctx,
                                const SceneNode &node,
                                const XMMATRIX &parentWorldMtrx)
