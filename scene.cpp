@@ -209,25 +209,25 @@ bool Scene::Load(IRenderingContext &ctx)
         return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Triangle/Triangle.gltf", 3.f);
 
     case eExternalDebugSimpleMeshes:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/SimpleMeshes/SimpleMeshes.gltf", 3.f);
+        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/SimpleMeshes/SimpleMeshes.gltf", 2.f);
 
     case eExternalDebugBox:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Box/Box.gltf", 3.f);
+        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Box/Box.gltf", 4.f);
 
     case eExternalDebugBoxInterleaved:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoxInterleaved/BoxInterleaved.gltf", 3.f);
+        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoxInterleaved/BoxInterleaved.gltf", 4.f);
 
     case eExternalDebugBoxTextured:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoxTextured/BoxTextured.gltf", 3.f);
+        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoxTextured/BoxTextured.gltf", 4.f);
 
     case eExternalDebug2CylinderEngine:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/2CylinderEngine/2CylinderEngine.gltf", 1.f);
+        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/2CylinderEngine/2CylinderEngine.gltf", 0.01f);
 
     case eExternalPolyDuckyTeslaCybertruck:
         return LoadExternal(ctx, L"../Scenes/Sketchfab/PolyDucky/Tesla Cybertruck/scene.gltf", 2.5f);
 
     case eExternalLowPolyDrifter:
-        return LoadExternal(ctx, L"../Scenes/Sketchfab/Ivan Norman/Low-poly truck (car Drifter)/scene.gltf", 0.005f);
+        return LoadExternal(ctx, L"../Scenes/Sketchfab/Ivan Norman/Low-poly truck (car Drifter)/scene.gltf", 0.010f);
 
     case eExternalWolfBaseMesh:
         return LoadExternal(ctx, L"../Scenes/Sketchfab/TheCharliEZM/Wolf base mesh/scene.gltf", 0.005f);
