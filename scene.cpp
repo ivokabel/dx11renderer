@@ -203,7 +203,10 @@ bool Scene::Load(IRenderingContext &ctx)
     switch (mSceneId)
     {
     case eExternalDebugTriangleWithoutIndices:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/TriangleWithoutIndices/TriangleWithoutIndices.gltf", 3.f);
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/TriangleWithoutIndices/TriangleWithoutIndices.gltf"))
+            return false;
+        AddScaleToRoots(3.);
+        return true;
 
     case eExternalDebugTriangle:
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Triangle/Triangle.gltf"))
@@ -460,15 +463,13 @@ bool Scene::Load(IRenderingContext &ctx)
 }
 
 
-bool Scene::LoadExternal(IRenderingContext &ctx,
-                         const std::wstring &filePath,
-                         float scale)
+bool Scene::LoadExternal(IRenderingContext &ctx, const std::wstring &filePath)
 {
     const auto fileExt = Utils::GetFilePathExt(filePath);
     if ((fileExt.compare(L"glb") == 0) ||
         (fileExt.compare(L"gltf") == 0))
     {
-        return LoadGLTF(ctx, filePath, scale);
+        return LoadGLTF(ctx, filePath);
     }
     else
     {
@@ -793,8 +794,7 @@ bool IterateGltfAccesorData(const tinygltf::Model &model,
 
 
 bool Scene::LoadGLTF(IRenderingContext &ctx,
-                     const std::wstring &filePath,
-                     float scale)
+                     const std::wstring &filePath)
 {
     using namespace std;
 
@@ -810,7 +810,7 @@ bool Scene::LoadGLTF(IRenderingContext &ctx,
     if (!LoadMaterials(ctx, model, logPrefix))
         return false;
 
-    if (!LoadScene(ctx, model, scale, logPrefix))
+    if (!LoadScene(ctx, model, logPrefix))
         return false;
 
     Log::Debug(L"");
@@ -831,7 +831,6 @@ bool Scene::LoadGLTF(IRenderingContext &ctx,
 
 bool Scene::LoadScene(IRenderingContext &ctx,
                       const tinygltf::Model &model,
-                      float scale,
                       const std::wstring &logPrefix)
 {
     // Choose one scene
@@ -855,7 +854,7 @@ bool Scene::LoadScene(IRenderingContext &ctx,
     for (const auto nodeIdx : scene.nodes)
     {
         SceneNode sceneNode(true);
-        if (!LoadSceneNodeFromGLTF(ctx, sceneNode, model, scale, nodeIdx, logPrefix + L"   "))
+        if (!LoadSceneNodeFromGLTF(ctx, sceneNode, model, nodeIdx, logPrefix + L"   "))
             return false;
         mRootNodes.push_back(std::move(sceneNode));
     }
@@ -866,7 +865,6 @@ bool Scene::LoadScene(IRenderingContext &ctx,
 bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
                                   SceneNode &sceneNode,
                                   const tinygltf::Model &model,
-                                  float scale,
                                   int nodeIdx,
                                   const std::wstring &logPrefix)
 {
@@ -879,7 +877,7 @@ bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
     const auto &node = model.nodes[nodeIdx];
 
     // Node itself
-    if (!sceneNode.LoadFromGLTF(ctx, model, node, scale, nodeIdx, logPrefix))
+    if (!sceneNode.LoadFromGLTF(ctx, model, node, nodeIdx, logPrefix))
         return false;
 
     // Children
@@ -900,7 +898,7 @@ bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
         //           Utils::StringToWString(model.nodes[childIdx].name).c_str());
 
         SceneNode childNode;
-        if (!LoadSceneNodeFromGLTF(ctx, childNode, model, 1.f, childIdx, childLogPrefix))
+        if (!LoadSceneNodeFromGLTF(ctx, childNode, model, childIdx, childLogPrefix))
             return false;
         sceneNode.children.push_back(std::move(childNode));
     }
@@ -1927,7 +1925,6 @@ void SceneNode::AddMatrix(const std::vector<double> &vec)
 bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
                              const tinygltf::Model &model,
                              const tinygltf::Node &node,
-                             float scale,
                              int nodeIdx,
                              const std::wstring &logPrefix)
 {
@@ -1989,8 +1986,6 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
         AddRotationQuaternion(node.rotation);
         AddTranslation(node.translation);
     }
-    if (mIsRootNode)
-        AddScale({ scale, scale, scale });
 
     // Mesh
 

@@ -109,7 +109,6 @@ public:
     bool LoadFromGLTF(IRenderingContext & ctx,
                       const tinygltf::Model &model,
                       const tinygltf::Node &node,
-                      float scale,
                       int nodeIdx,
                       const std::wstring &logPrefix);
 
@@ -272,22 +271,17 @@ private:
 
     // Loads the scene specified via constructor
     bool Load(IRenderingContext &ctx);
-    bool LoadExternal(IRenderingContext &ctx,
-                      const std::wstring &filePath,
-                      float scale = 1.f);
+    bool LoadExternal(IRenderingContext &ctx, const std::wstring &filePath);
 
     // glTF loader
     bool LoadGLTF(IRenderingContext &ctx,
-                  const std::wstring &filePath,
-                  float scale);
+                  const std::wstring &filePath);
     bool LoadScene(IRenderingContext &ctx,
                    const tinygltf::Model &model,
-                   float scale,
                    const std::wstring &logPrefix);
     bool LoadSceneNodeFromGLTF(IRenderingContext &ctx,
                                SceneNode &sceneNode,
                                const tinygltf::Model &model,
-                               float scale,
                                int nodeIdx,
                                const std::wstring &logPrefix);
     bool LoadMaterials(IRenderingContext &ctx,
