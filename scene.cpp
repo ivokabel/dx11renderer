@@ -876,11 +876,11 @@ bool Scene::LoadMaterials(IRenderingContext &ctx,
     {
         const auto &material = materials[matIdx];
 
-        //Log::Debug(L"%s%d/%d \"%s\"",
-        //           materialLogPrefix.c_str(),
-        //           matIdx,
-        //           materials.size(),
-        //           Utils::StringToWString(material.name).c_str());
+        Log::Debug(L"%s%d/%d \"%s\"",
+                   materialLogPrefix.c_str(),
+                   matIdx,
+                   materials.size(),
+                   Utils::StringToWString(material.name).c_str());
 
         SceneMaterial sceneMaterial;
         if (!sceneMaterial.LoadFromGltf(ctx, material, valueLogPrefix))
@@ -2124,20 +2124,20 @@ void SceneMaterial::PSSetShaderResources(IRenderingContext &ctx) const
 bool SceneMaterial::LoadParamsFromGltf(const tinygltf::Material &material,
                                        const std::wstring &logPrefix)
 {
-    //for (const auto &value : material.values)
-    //{
-    //    Log::Debug(L"%sValue \"%s\": %s",
-    //               valueLogPrefix.c_str(),
-    //               Utils::StringToWString(value.first).c_str(),
-    //               ParameterValueToWstring(value.second).c_str());
-    //}
-    //for (const auto &value : material.additionalValues)
-    //{
-    //    Log::Debug(L"%sAdditional value \"%s\": %s",
-    //               valueLogPrefix.c_str(),
-    //               Utils::StringToWString(value.first).c_str(),
-    //               ParameterValueToWstring(value.second).c_str());
-    //}
+    for (const auto &value : material.values)
+    {
+        Log::Debug(L"%s%s: %s",
+                   logPrefix.c_str(),
+                   Utils::StringToWString(value.first).c_str(),
+                   ParameterValueToWstring(value.second).c_str());
+    }
+    for (const auto &value : material.additionalValues)
+    {
+        Log::Debug(L"%s%s*: %s",
+                   logPrefix.c_str(),
+                   Utils::StringToWString(value.first).c_str(),
+                   ParameterValueToWstring(value.second).c_str());
+    }
 
     auto &values = material.values;
 
