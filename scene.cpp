@@ -223,6 +223,16 @@ bool Scene::Load(IRenderingContext &ctx)
     case eExternalDebug2CylinderEngine:
         return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/2CylinderEngine/2CylinderEngine.gltf", 0.01f);
 
+    case eExternalDebugDuck:
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Duck/Duck.gltf"))
+            return false;
+        for (auto &rootNode : mRootNodes)
+        {
+            rootNode.AddScale(3.6);
+            rootNode.AddTranslation({-0.5, -2.8, 0.});
+        }
+        return true;
+
     case eExternalTeslaCybertruck:
         return LoadExternal(ctx, L"../Scenes/Sketchfab/PolyDucky/Tesla Cybertruck/scene.gltf", 2.5f);
 

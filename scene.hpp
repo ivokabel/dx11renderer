@@ -248,6 +248,7 @@ public:
         eExternalDebugBoxInterleaved,
         eExternalDebugBoxTextured,
         eExternalDebug2CylinderEngine,
+        eExternalDebugDuck,
         eExternalTeslaCybertruck,
         eExternalLowPolyDrifter,
         eExternalWolfBaseMesh,
