@@ -1761,7 +1761,12 @@ void SceneNode::SetIdentity()
 void SceneNode::AddScale(const std::vector<double> &vec)
 {
     if (vec.size() != 3)
+    {
+        if (vec.size() != 0)
+            Log::Warning(L"SceneNode::AddScale: vector of incorrect size (%d instead of 3)",
+                         vec.size());
         return;
+    }
 
     const auto mtrx = XMMatrixScaling((float)vec[0], (float)vec[1], (float)vec[2]);
 
@@ -1771,7 +1776,12 @@ void SceneNode::AddScale(const std::vector<double> &vec)
 void SceneNode::AddRotationQuaternion(const std::vector<double> &vec)
 {
     if (vec.size() != 4)
+    {
+        if (vec.size() != 0)
+            Log::Warning(L"SceneNode::AddRotationQuaternion: vector of incorrect size (%d instead of 4)",
+                         vec.size());
         return;
+    }
 
     const XMFLOAT4 quaternion((float)vec[0], (float)vec[1], (float)vec[2], (float)vec[3]);
     const auto xmQuaternion = XMLoadFloat4(&quaternion);
@@ -1783,7 +1793,12 @@ void SceneNode::AddRotationQuaternion(const std::vector<double> &vec)
 void SceneNode::AddTranslation(const std::vector<double> &vec)
 {
     if (vec.size() != 3)
+    {
+        if (vec.size() != 0)
+            Log::Warning(L"SceneNode::AddTranslation: vector of incorrect size (%d instead of 3)",
+                         vec.size());
         return;
+    }
 
     const auto mtrx = XMMatrixTranslation((float)vec[0], (float)vec[1], (float)vec[2]);
 
@@ -1793,7 +1808,12 @@ void SceneNode::AddTranslation(const std::vector<double> &vec)
 void SceneNode::AddMatrix(const std::vector<double> &vec)
 {
     if (vec.size() != 16)
+    {
+        if (vec.size() != 0)
+            Log::Warning(L"SceneNode::AddMatrix: vector of incorrect size (%d instead of 16)",
+                         vec.size());
         return;
+    }
 
     const auto mtrx = XMMatrixSet(
         (float)vec[0],  (float)vec[1],  (float)vec[2],  (float)vec[3],
@@ -1841,7 +1861,29 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
     // Local transformation
     SetIdentity();
     if (node.matrix.size() == 16)
+    {
         AddMatrix(node.matrix);
+
+        // Sanity checking
+        if (!node.scale.empty())
+            Log::Warning(L"%sNode %d/%d \"%s\": node.scale is not empty when tranformation matrix is provided. Ignoring.",
+                         logPrefix.c_str(),
+                         nodeIdx,
+                         model.nodes.size(),
+                         Utils::StringToWString(node.name).c_str());
+        if (!node.rotation.empty())
+            Log::Warning(L"%sNode %d/%d \"%s\": node.rotation is not empty when tranformation matrix is provided. Ignoring.",
+                         logPrefix.c_str(),
+                         nodeIdx,
+                         model.nodes.size(),
+                         Utils::StringToWString(node.name).c_str());
+        if (!node.translation.empty())
+            Log::Warning(L"%sNode %d/%d \"%s\": node.translation is not empty when tranformation matrix is provided. Ignoring.",
+                         logPrefix.c_str(),
+                         nodeIdx,
+                         model.nodes.size(),
+                         Utils::StringToWString(node.name).c_str());
+    }
     else
     {
         AddScale(node.scale);
