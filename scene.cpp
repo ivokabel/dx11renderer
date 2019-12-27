@@ -206,53 +206,102 @@ bool Scene::Load(IRenderingContext &ctx)
         return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/TriangleWithoutIndices/TriangleWithoutIndices.gltf", 3.f);
 
     case eExternalDebugTriangle:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Triangle/Triangle.gltf", 3.f);
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Triangle/Triangle.gltf"))
+            return false;
+        AddScaleToRoots(4.5);
+        AddTranslationToRoots({ 0., -1.5, 0. });
+        return true;
 
     case eExternalDebugSimpleMeshes:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/SimpleMeshes/SimpleMeshes.gltf", 2.f);
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/SimpleMeshes/SimpleMeshes.gltf"))
+            return false;
+        AddScaleToRoots(2.5);
+        AddTranslationToRoots({ 0., -0.5, 0. });
+        return true;
 
     case eExternalDebugBox:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Box/Box.gltf", 4.f);
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Box/Box.gltf"))
+            return false;
+        AddScaleToRoots(4.);
+        AddTranslationToRoots({ 0., 0., 0. });
+        return true;
 
     case eExternalDebugBoxInterleaved:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoxInterleaved/BoxInterleaved.gltf", 4.f);
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoxInterleaved/BoxInterleaved.gltf"))
+            return false;
+        AddScaleToRoots(4.);
+        AddTranslationToRoots({ 0., 0., 0. });
+        return true;
 
     case eExternalDebugBoxTextured:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoxTextured/BoxTextured.gltf", 4.f);
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoxTextured/BoxTextured.gltf"))
+            return false;
+        AddScaleToRoots(4.);
+        AddTranslationToRoots({ 0., 0., 0. });
+        return true;
 
     case eExternalDebug2CylinderEngine:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/2CylinderEngine/2CylinderEngine.gltf", 0.01f);
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/2CylinderEngine/2CylinderEngine.gltf"))
+            return false;
+        AddScaleToRoots(0.009f);
+        AddTranslationToRoots({ 0., 0.2, 0. });
+        return true;
 
     case eExternalDebugDuck:
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Duck/Duck.gltf"))
             return false;
-        for (auto &rootNode : mRootNodes)
-        {
-            rootNode.AddScale(3.6);
-            rootNode.AddTranslation({-0.5, -2.8, 0.});
-        }
+        AddScaleToRoots(3.6);
+        AddTranslationToRoots({ -0.5, -2.8, 0. });
         return true;
 
     case eExternalTeslaCybertruck:
-        return LoadExternal(ctx, L"../Scenes/Sketchfab/PolyDucky/Tesla Cybertruck/scene.gltf", 2.5f);
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/PolyDucky/Tesla Cybertruck/scene.gltf"))
+            return false;
+        AddScaleToRoots(2.2);
+        AddTranslationToRoots({ 0., 0., 0. });
+        return true;
 
     case eExternalLowPolyDrifter:
-        return LoadExternal(ctx, L"../Scenes/Sketchfab/Ivan Norman/Low-poly truck (car Drifter)/scene.gltf", 0.010f);
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Ivan Norman/Low-poly truck (car Drifter)/scene.gltf"))
+            return false;
+        AddScaleToRoots(0.012);
+        AddTranslationToRoots({ 0.5, -1.2, 0. });
+        return true;
 
     case eExternalWolfBaseMesh:
-        return LoadExternal(ctx, L"../Scenes/Sketchfab/TheCharliEZM/Wolf base mesh/scene.gltf", 0.005f);
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/TheCharliEZM/Wolf base mesh/scene.gltf"))
+            return false;
+        AddScaleToRoots(0.007);
+        AddTranslationToRoots({ 0.7, -2.2, 0. });
+        return true;
 
     case eExternalNintendoGameBoyClassic:
-        return LoadExternal(ctx, L"../Scenes/Sketchfab/hunter333d/Nintendo Game Boy Classic/scene.gltf", 0.18f);
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/hunter333d/Nintendo Game Boy Classic/scene.gltf"))
+            return false;
+        AddScaleToRoots(0.45);
+        AddTranslationToRoots({ 0., -1.5, 0. });
+        return true;
 
     case eExternalWeltron2001SpaceballRadio:
-        return LoadExternal(ctx, L"../Scenes/Sketchfab/ArneDC/Prinzsound SM8 - Weltron 2001 Spaceball Radio/scene.gltf", 0.022f);
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/ArneDC/Prinzsound SM8 - Weltron 2001 Spaceball Radio/scene.gltf"))
+            return false;
+        AddScaleToRoots(.014);
+        AddTranslationToRoots({ 0., -3.1, 0. });
+        return true;
 
     case eExternalSpotMiniRigged:
-        return LoadExternal(ctx, L"../Scenes/Sketchfab/Greg McKechnie/Spot Mini (Rigged)/scene.gltf", 0.00012f);
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Greg McKechnie/Spot Mini (Rigged)/scene.gltf"))
+            return false;
+        AddScaleToRoots(.00022f);
+        AddTranslationToRoots({ 0., 0., 2.8 });
+        return true;
 
     case eExternalRoboV1:
-        return LoadExternal(ctx, L"../Scenes/Sketchfab/_Sef_/Robo_V1/scene.gltf", 0.00001f);
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/_Sef_/Robo_V1/scene.gltf"))
+            return false;
+        AddScaleToRoots(.001);
+        AddTranslationToRoots({ 0., -1., 0. });
+        return true;
 
     case eHardwiredSimpleDebugSphere:
     {
@@ -769,7 +818,7 @@ bool Scene::LoadGLTF(IRenderingContext &ctx,
     // debug lights
     const double amb = 0.3f;
     mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
-    const double lum = 5.f;
+    const double lum = 2.f;
     mDirectLights[0].dir       = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
     mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
     const double ints = 6.5f;

@@ -37,10 +37,10 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         Scene::eExternalDebug2CylinderEngine
         //Scene::eExternalDebugDuck
         //Scene::eExternalWolfBaseMesh
+        //Scene::eExternalNintendoGameBoyClassic
         //Scene::eExternalLowPolyDrifter
         //Scene::eExternalTeslaCybertruck
         //Scene::eExternalSpotMiniRigged
-        //Scene::eExternalNintendoGameBoyClassic
         //Scene::eExternalWeltron2001SpaceballRadio
         //Scene::eExternalRoboV1
         );
