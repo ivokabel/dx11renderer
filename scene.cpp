@@ -858,11 +858,11 @@ bool Scene::LoadMaterials(IRenderingContext &ctx,
     {
         const auto &material = materials[matIdx];
 
-        Log::Debug(L"%s%d/%d \"%s\"",
-                   materialLogPrefix.c_str(),
-                   matIdx,
-                   materials.size(),
-                   Utils::StringToWString(material.name).c_str());
+        //Log::Debug(L"%s%d/%d \"%s\"",
+        //           materialLogPrefix.c_str(),
+        //           matIdx,
+        //           materials.size(),
+        //           Utils::StringToWString(material.name).c_str());
 
         SceneMaterial sceneMaterial;
         if (!sceneMaterial.LoadFromGltf(ctx, material, valueLogPrefix))
@@ -1549,8 +1549,6 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
         [this, &dataConsumerLogPrefix, indicesComponentType]
         (int itemIdx, const unsigned char *ptr)
     {
-        itemIdx; // unused param
-
         switch (indicesComponentType)
         {
         case TINYGLTF_COMPONENT_TYPE_BYTE:              mIndices.push_back(*reinterpret_cast<const int8_t*>(ptr)); break;
@@ -1560,6 +1558,13 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
         case TINYGLTF_COMPONENT_TYPE_INT:               mIndices.push_back(*reinterpret_cast<const int32_t*>(ptr)); break;
         case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:      mIndices.push_back(*reinterpret_cast<const uint32_t*>(ptr)); break;
         }
+
+        // debug
+        itemIdx; // unused param
+        //Log::Debug(L"%s%d: %d",
+        //           dataConsumerLogPrefix.c_str(),
+        //           itemIdx,
+        //           mIndices.back());
     };
 
     // TODO: Wrap into a function IterateGltfAccesorData(componentType, ...)? std::forward()?
@@ -2052,7 +2057,7 @@ void SceneMaterial::PSSetShaderResources(IRenderingContext &ctx) const
 }
 
 bool SceneMaterial::LoadParamsFromGltf(const tinygltf::Material &material,
-                                 const std::wstring &logPrefix)
+                                       const std::wstring &logPrefix)
 {
     //for (const auto &value : material.values)
     //{
@@ -2103,10 +2108,10 @@ bool SceneMaterial::LoadFloat4Param(XMFLOAT4 &materialParam,
                                  (float)param.number_array[2],
                                  (float)param.number_array[3]);
 
-        Log::Debug(L"%s\"%s\": %s",
-                   logPrefix.c_str(),
-                   Utils::StringToWString(paramName).c_str(),
-                   ParameterValueToWstring(param).c_str());
+        //Log::Debug(L"%s\"%s\": %s",
+        //           logPrefix.c_str(),
+        //           Utils::StringToWString(paramName).c_str(),
+        //           ParameterValueToWstring(param).c_str());
     }
 
     return true;
@@ -2131,10 +2136,10 @@ bool SceneMaterial::LoadFloatParam(float &materialParam,
         }
         materialParam = (float)param.number_value;
 
-        Log::Debug(L"%s\"%s\": %s",
-                   logPrefix.c_str(),
-                   Utils::StringToWString(paramName).c_str(),
-                   ParameterValueToWstring(param).c_str());
+        //Log::Debug(L"%s\"%s\": %s",
+        //           logPrefix.c_str(),
+        //           Utils::StringToWString(paramName).c_str(),
+        //           ParameterValueToWstring(param).c_str());
     }
 
     return true;
