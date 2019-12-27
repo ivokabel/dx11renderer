@@ -223,7 +223,7 @@ bool Scene::Load(IRenderingContext &ctx)
     case eExternalDebug2CylinderEngine:
         return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/2CylinderEngine/2CylinderEngine.gltf", 0.01f);
 
-    case eExternalPolyDuckyTeslaCybertruck:
+    case eExternalTeslaCybertruck:
         return LoadExternal(ctx, L"../Scenes/Sketchfab/PolyDucky/Tesla Cybertruck/scene.gltf", 2.5f);
 
     case eExternalLowPolyDrifter:
@@ -231,10 +231,18 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eExternalWolfBaseMesh:
         return LoadExternal(ctx, L"../Scenes/Sketchfab/TheCharliEZM/Wolf base mesh/scene.gltf", 0.005f);
-        //return LoadExternal(ctx, L"../Scenes/Sketchfab/hunter333d/Nintendo Game Boy Classic/scene.gltf", 0.03f);
-        //return LoadExternal(ctx, L"../Scenes/Sketchfab/ArneDC/Prinzsound SM8 - Weltron 2001 Spaceball Radio/scene.gltf", 0.001f);
-        //return LoadExternal(ctx, L"../Scenes/Sketchfab/Greg McKechnie/Spot Mini (Rigged)/scene.gltf", 0.005f);
-        //return LoadExternal(ctx, L"../Scenes/Sketchfab/_Sef_/Robo_V1/scene.gltf", 0.005f);
+
+    case eExternalNintendoGameBoyClassic:
+        return LoadExternal(ctx, L"../Scenes/Sketchfab/hunter333d/Nintendo Game Boy Classic/scene.gltf", 0.18f);
+
+    case eExternalWeltron2001SpaceballRadio:
+        return LoadExternal(ctx, L"../Scenes/Sketchfab/ArneDC/Prinzsound SM8 - Weltron 2001 Spaceball Radio/scene.gltf", 0.022f);
+
+    case eExternalSpotMiniRigged:
+        return LoadExternal(ctx, L"../Scenes/Sketchfab/Greg McKechnie/Spot Mini (Rigged)/scene.gltf", 0.00012f);
+
+    case eExternalRoboV1:
+        return LoadExternal(ctx, L"../Scenes/Sketchfab/_Sef_/Robo_V1/scene.gltf", 0.00001f);
 
     case eHardwiredSimpleDebugSphere:
     {

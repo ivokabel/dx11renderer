@@ -247,9 +247,13 @@ public:
         eExternalDebugBoxInterleaved,
         eExternalDebugBoxTextured,
         eExternalDebug2CylinderEngine,
-        eExternalPolyDuckyTeslaCybertruck,
+        eExternalTeslaCybertruck,
         eExternalLowPolyDrifter,
         eExternalWolfBaseMesh,
+        eExternalNintendoGameBoyClassic,
+        eExternalWeltron2001SpaceballRadio,
+        eExternalSpotMiniRigged,
+        eExternalRoboV1,
     };
 
     Scene(const SceneId sceneId);
