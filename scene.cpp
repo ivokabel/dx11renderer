@@ -1022,7 +1022,7 @@ void Scene::RenderNodeGeometry(IRenderingContext &ctx,
 
     auto immCtx = ctx.GetImmediateContext();
 
-    const auto worldMtrx = parentWorldMtrx * node.GetWorldMtrx();
+    const auto worldMtrx = node.GetWorldMtrx() * parentWorldMtrx;
 
     // Update per-node constant buffer
     CbChangedPerSceneNode cbPerSceneNode;
