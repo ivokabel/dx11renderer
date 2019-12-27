@@ -1758,6 +1758,11 @@ void SceneNode::SetIdentity()
     mLocalMtrx = XMMatrixIdentity();
 }
 
+void SceneNode::AddScale(double scale)
+{
+    AddScale({ scale, scale, scale });
+}
+
 void SceneNode::AddScale(const std::vector<double> &vec)
 {
     if (vec.size() != 3)

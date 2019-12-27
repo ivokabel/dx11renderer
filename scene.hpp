@@ -100,6 +100,7 @@ public:
     ScenePrimitive* CreateEmptyPrimitive();
 
     void SetIdentity();
+    void AddScale(double scale);
     void AddScale(const std::vector<double> &vec);
     void AddRotationQuaternion(const std::vector<double> &vec);
     void AddTranslation(const std::vector<double> &vec);
