@@ -299,6 +299,13 @@ bool Scene::Load(IRenderingContext &ctx)
         AddTranslationToRoots({ 0., 0., 2.8 });
         return true;
 
+    case eExternalMandaloriansHelmet:
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/arn204/The Mandalorian's Helmet/scene.gltf"))
+            return false;
+        AddTranslationToRoots({ -35., -70., 85. });
+        AddScaleToRoots(.15f);
+        return true;
+
     case eExternalRoboV1:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/_Sef_/Robo_V1/scene.gltf"))
             return false;

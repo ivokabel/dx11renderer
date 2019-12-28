@@ -254,6 +254,7 @@ public:
         eExternalNintendoGameBoyClassic,
         eExternalWeltron2001SpaceballRadio,
         eExternalSpotMiniRigged,
+        eExternalMandaloriansHelmet,
         eExternalRoboV1,
     };
 
