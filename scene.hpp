@@ -128,6 +128,37 @@ private:
 };
 
 
+class SceneTexture
+{
+public:
+    SceneTexture();
+    SceneTexture(const SceneTexture &src);
+    SceneTexture(SceneTexture &&src);
+    SceneTexture& operator =(const SceneTexture &src);
+    SceneTexture& operator =(SceneTexture &&src);
+    ~SceneTexture();
+
+    void SetTexturePath(const wchar_t *path);
+    bool Load(const char *constParamName,
+              const char *textureParamName,
+              const tinygltf::Model &model,
+              const tinygltf::ParameterMap &params,
+              const std::wstring &logPrefix);
+
+    bool Create(IRenderingContext &ctx);
+    void Destroy();
+
+private:
+    XMFLOAT4                    constFactor{ 1.f, 1.f, 1.f, 1.f };
+    std::wstring                texPath;
+    // TODO: sampler, texCoord
+
+public:
+    ID3D11ShaderResourceView*   srv = nullptr;
+};
+
+
+
 class SceneMaterial
 {
 public:
@@ -145,6 +176,7 @@ public:
                 const wchar_t * diffuseTexPath = nullptr,
                 const wchar_t * specularTexPath = nullptr);
     bool LoadFromGltf(IRenderingContext &ctx,
+                      const tinygltf::Model &model,
                       const tinygltf::Material &material,
                       const std::wstring &logPrefix);
 
@@ -152,14 +184,11 @@ public:
 
 private:
 
-    static bool CreateConstantTextureShaderResourceView(IRenderingContext &ctx,
-                                                        ID3D11ShaderResourceView *&srv,
-                                                        XMFLOAT4 color);
-
     bool CreateTextures(IRenderingContext &ctx);
     void DestroyTextures();
 
-    bool LoadParamsFromGltf(const tinygltf::Material &material,
+    bool LoadParamsFromGltf(const tinygltf::Model &model,
+                            const tinygltf::Material &material,
                             const std::wstring &logPrefix);
 
     static bool LoadFloat4Param(XMFLOAT4 &materialParam,
@@ -175,18 +204,15 @@ private:
 private:
 
     // Deprecated?
-    const wchar_t *mDiffuseTexPath = nullptr;
     const wchar_t *mSpecularTexPath = nullptr;
 
     // PBR metal/roughness workflow
-    XMFLOAT4    baseColorFactor{ 1.f, 1.f, 1.f, 1.f };
-    float       metallicFactor = 1.f;
-    float       roughnessFactor = 1.f;
-    //TODO:     baseColorTexture
-    //TODO:     metallicRoughnessTexture
+    SceneTexture    baseColorTexture;
+    float           metallicFactor = 1.f;
+    float           roughnessFactor = 1.f;
+    //TODO:         metallicRoughnessTexture
 
     // Textures
-    ID3D11ShaderResourceView*   mDiffuseSRV = nullptr;
     ID3D11ShaderResourceView*   mSpecularSRV = nullptr;
 };
 

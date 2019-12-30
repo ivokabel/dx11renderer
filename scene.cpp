@@ -648,8 +648,26 @@ static std::string FloatArrayToWstring(const std::vector<double> &arr)
 
     std::stringstream ss;
     ss << "[ ";
-    for (size_t i = 0; i < arr.size(); i++) {
+    for (size_t i = 0; i < arr.size(); i++)
         ss << arr[i] << ((i != arr.size() - 1) ? ", " : "");
+    ss << " ]";
+
+    return ss.str();
+}
+
+static std::string StringDoubleMapToWstring(const std::map<std::string, double> &mp)
+{
+    if (mp.size() == 0)
+        return "";
+
+    std::stringstream ss;
+    ss << "[";
+    bool first = true;
+    for (auto &item : mp)
+    {
+        ss << (first ? " " : ", ");
+        ss << item.first << ": " << item.second;
+        first = false;
     }
     ss << " ]";
 
@@ -660,6 +678,8 @@ static std::wstring ParameterValueToWstring(const tinygltf::Parameter &param)
 {
     if (!param.number_array.empty())
         return Utils::StringToWString(FloatArrayToWstring(param.number_array));
+    else if (!param.json_double_value.empty())
+        return Utils::StringToWString(StringDoubleMapToWstring(param.json_double_value));
     else if (param.has_number_value)
     {
         std::wstringstream ss;
@@ -667,7 +687,7 @@ static std::wstring ParameterValueToWstring(const tinygltf::Parameter &param)
         return ss.str();
     }
     else
-        return Utils::StringToWString(param.string_value);
+        return Utils::StringToWString("\"" + param.string_value + "\"");
 }
 
 
@@ -937,7 +957,7 @@ bool Scene::LoadMaterials(IRenderingContext &ctx,
                    Utils::StringToWString(material.name).c_str());
 
         SceneMaterial sceneMaterial;
-        if (!sceneMaterial.LoadFromGltf(ctx, material, valueLogPrefix))
+        if (!sceneMaterial.LoadFromGltf(ctx, model, material, valueLogPrefix))
             return false;
         mMaterials.push_back(std::move(sceneMaterial));
     }
@@ -2051,52 +2071,9 @@ void SceneNode::Animate(IRenderingContext &ctx)
 }
 
 
-SceneMaterial::SceneMaterial()
-{}
-
-SceneMaterial::SceneMaterial(const SceneMaterial &src) :
-    mDiffuseSRV(src.mDiffuseSRV),
-    mSpecularSRV(src.mSpecularSRV)
-{
-    // We are creating new references of device resources
-    Utils::SafeAddRef(mDiffuseSRV);
-    Utils::SafeAddRef(mSpecularSRV);
-}
-
-SceneMaterial::SceneMaterial(SceneMaterial &&src) :
-    mDiffuseSRV(Utils::Exchange(src.mDiffuseSRV, nullptr)),
-    mSpecularSRV(Utils::Exchange(src.mSpecularSRV, nullptr))
-{}
-
-SceneMaterial& SceneMaterial::operator =(const SceneMaterial &src)
-{
-    mDiffuseSRV = src.mDiffuseSRV;
-    mSpecularSRV = src.mSpecularSRV;
-
-    // We are creating new references of device resources
-    Utils::SafeAddRef(mDiffuseSRV);
-    Utils::SafeAddRef(mSpecularSRV);
-
-    return *this;
-}
-
-SceneMaterial& SceneMaterial::operator =(SceneMaterial &&src)
-{
-    mDiffuseSRV = Utils::Exchange(src.mDiffuseSRV, nullptr);
-    mSpecularSRV = Utils::Exchange(src.mSpecularSRV, nullptr);
-
-    return *this;
-}
-
-SceneMaterial::~SceneMaterial()
-{
-    DestroyTextures();
-}
-
-
-bool SceneMaterial::CreateConstantTextureShaderResourceView(IRenderingContext &ctx,
-                                                            ID3D11ShaderResourceView *&srv,
-                                                            XMFLOAT4 color)
+bool CreateConstantTextureShaderResourceView(IRenderingContext &ctx,
+                                             ID3D11ShaderResourceView *&srv,
+                                             XMFLOAT4 color)
 {
     HRESULT hr = S_OK;
     ID3D11Texture2D *tex = nullptr;
@@ -2137,6 +2114,198 @@ bool SceneMaterial::CreateConstantTextureShaderResourceView(IRenderingContext &c
 }
 
 
+SceneTexture::SceneTexture()
+{}
+
+SceneTexture::SceneTexture(const SceneTexture &src) :
+    srv(src.srv)
+{
+    // We are creating new reference of device resource
+    Utils::SafeAddRef(srv);
+}
+
+SceneTexture::SceneTexture(SceneTexture &&src) :
+    srv(Utils::Exchange(src.srv, nullptr))
+{}
+
+SceneTexture& SceneTexture::operator =(const SceneTexture &src)
+{
+    srv = src.srv;
+
+    // We are creating new reference of device resource
+    Utils::SafeAddRef(srv);
+
+    return *this;
+}
+
+SceneTexture& SceneTexture::operator =(SceneTexture &&src)
+{
+    srv = Utils::Exchange(src.srv, nullptr);
+
+    return *this;
+}
+
+SceneTexture::~SceneTexture()
+{
+    Destroy();
+}
+
+
+void SceneTexture::SetTexturePath(const wchar_t *path)
+{
+    Destroy();
+    texPath = path;
+}
+
+
+bool SceneTexture::Load(const char *constParamName,
+                        const char *textureParamName,
+                        const tinygltf::Model &model,
+                        const tinygltf::ParameterMap &params,
+                        const std::wstring &logPrefix)
+{
+    auto paramIt = params.find(constParamName);
+    if (paramIt != params.end())
+    {
+        auto &param = paramIt->second;
+        if (param.number_array.size() != 4)
+        {
+            Log::Error(L"%sCorrupted \"%s\" material parameter (size %d instead of 4)!",
+                       logPrefix.c_str(),
+                       Utils::StringToWString(constParamName).c_str(),
+                       param.number_array.size());
+            return false;
+        }
+        constFactor = XMFLOAT4((float)param.number_array[0],
+                               (float)param.number_array[1],
+                               (float)param.number_array[2],
+                               (float)param.number_array[3]);
+
+        //Log::Debug(L"%s\"%s\": %s",
+        //           logPrefix.c_str(),
+        //           Utils::StringToWString(constParamName).c_str(),
+        //           ParameterValueToWstring(param).c_str());
+    }
+
+    paramIt = params.find(textureParamName);
+    if (paramIt != params.end())
+    {
+        auto &param = paramIt->second;
+        const auto &textures = model.textures;
+        const auto &images   = model.images;
+
+        const auto textureIndex = param.TextureIndex();
+        if ((textureIndex < 0) || (textureIndex >= textures.size()))
+        {
+            Log::Error(L"%sInvalid texture index (%d/%d) in \"%s\" parameter!",
+                       logPrefix.c_str(),
+                       textureIndex,
+                       textures.size(),
+                       Utils::StringToWString(textureParamName).c_str());
+            return false;
+        }
+
+        const auto &texture = textures[textureIndex];
+        const auto texSource = texture.source;
+        if ((texSource < 0) || (texSource >= images.size()))
+        {
+            Log::Error(L"%sInvalid source image index (%d/%d) in texture %d!",
+                       logPrefix.c_str(),
+                       texSource,
+                       images.size(),
+                       textureIndex);
+            return false;
+        }
+        // TODO: Sampler
+
+        const auto &image = images[texSource];
+        texPath = Utils::StringToWString(image.uri);
+
+        Log::Debug(L"%sImage: uri \"%s\"",
+                   logPrefix.c_str(),
+                   Utils::StringToWString(image.uri).c_str());
+        
+        // TODO: Create texture directly from memory!
+        //
+        // For what you're attempting to do, you shouldn't need this helper function at all. 
+        // Simply use ID3D11Device::CreateTexture2D and fill the D3D11_TEXTURE2D_DESC with your desired settings.
+        // If you have initial data you want to fill the texture with, pass the pointer to that data by filling out 
+        // the D3D11_SUBRESOURCE_DATA structure and passing it as the pInitialData parameter.
+        // Then when you want to change the contents of that texture at runtime, you call ID3D11DeviceContext::Map.
+        //
+        // To use the texture as a shader resource, you just create a shader resource view.
+        // If you just need to access the whole texture and don't need to do anything fancy, 
+        // you can just pass NULL as the pDesc parameter.
+    }
+
+    return true;
+}
+
+
+bool SceneTexture::Create(IRenderingContext &ctx)
+{
+    auto device = ctx.GetDevice();
+    if (!device)
+        return false;
+
+    HRESULT hr = S_OK;
+
+    if (!texPath.empty())
+    {
+        hr = D3DX11CreateShaderResourceViewFromFile(device, texPath.c_str(), nullptr, nullptr, &srv, nullptr);
+        if (FAILED(hr))
+            return false;
+    }
+    else
+        CreateConstantTextureShaderResourceView(ctx, srv, constFactor);
+
+    return true;
+}
+
+
+void SceneTexture::Destroy()
+{
+    Utils::ReleaseAndMakeNull(srv);
+}
+
+
+SceneMaterial::SceneMaterial()
+{}
+
+SceneMaterial::SceneMaterial(const SceneMaterial &src) :
+    mSpecularSRV(src.mSpecularSRV)
+{
+    // We are creating new references of device resources
+    Utils::SafeAddRef(mSpecularSRV);
+}
+
+SceneMaterial::SceneMaterial(SceneMaterial &&src) :
+    mSpecularSRV(Utils::Exchange(src.mSpecularSRV, nullptr))
+{}
+
+SceneMaterial& SceneMaterial::operator =(const SceneMaterial &src)
+{
+    mSpecularSRV = src.mSpecularSRV;
+
+    // We are creating new references of device resources
+    Utils::SafeAddRef(mSpecularSRV);
+
+    return *this;
+}
+
+SceneMaterial& SceneMaterial::operator =(SceneMaterial &&src)
+{
+    mSpecularSRV = Utils::Exchange(src.mSpecularSRV, nullptr);
+
+    return *this;
+}
+
+SceneMaterial::~SceneMaterial()
+{
+    DestroyTextures();
+}
+
+
 bool SceneMaterial::CreateTextures(IRenderingContext &ctx)
 {
     HRESULT hr = S_OK;
@@ -2145,14 +2314,8 @@ bool SceneMaterial::CreateTextures(IRenderingContext &ctx)
     if (!device)
         return false;
 
-    if (mDiffuseTexPath)
-    {
-        hr = D3DX11CreateShaderResourceViewFromFile(device, mDiffuseTexPath, nullptr, nullptr, &mDiffuseSRV, nullptr);
-        if (FAILED(hr))
-            return false;
-    }
-    else
-        CreateConstantTextureShaderResourceView(ctx, mDiffuseSRV, baseColorFactor);
+    if (!baseColorTexture.Create(ctx))
+        return false;
 
     if (mSpecularTexPath)
     {
@@ -2173,7 +2336,7 @@ bool SceneMaterial::CreateTextures(IRenderingContext &ctx)
 
 void SceneMaterial::DestroyTextures()
 {
-    Utils::ReleaseAndMakeNull(mDiffuseSRV);
+    baseColorTexture.Destroy();
     Utils::ReleaseAndMakeNull(mSpecularSRV);
 }
 
@@ -2182,17 +2345,18 @@ bool SceneMaterial::Create(IRenderingContext &ctx,
                            const wchar_t *diffuseTexPath,
                            const wchar_t *specularTexPath)
 {
-    mDiffuseTexPath = diffuseTexPath;
+    baseColorTexture.SetTexturePath(diffuseTexPath);
     mSpecularTexPath = specularTexPath;
 
     return CreateTextures(ctx);
 }
 
 bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx, 
+                                 const tinygltf::Model &model,
                                  const tinygltf::Material &material,
                                  const std::wstring &logPrefix)
 {
-    if (!LoadParamsFromGltf(material, logPrefix))
+    if (!LoadParamsFromGltf(model, material, logPrefix))
         return false;
 
     return CreateTextures(ctx);
@@ -2202,12 +2366,13 @@ void SceneMaterial::PSSetShaderResources(IRenderingContext &ctx) const
 {
     if (auto immCtx = ctx.GetImmediateContext())
     {
-        immCtx->PSSetShaderResources(0, 1, &mDiffuseSRV);
+        immCtx->PSSetShaderResources(0, 1, &baseColorTexture.srv);
         immCtx->PSSetShaderResources(1, 1, &mSpecularSRV);
     }
 }
 
-bool SceneMaterial::LoadParamsFromGltf(const tinygltf::Material &material,
+bool SceneMaterial::LoadParamsFromGltf(const tinygltf::Model &model,
+                                       const tinygltf::Material &material,
                                        const std::wstring &logPrefix)
 {
     for (const auto &value : material.values)
@@ -2227,10 +2392,13 @@ bool SceneMaterial::LoadParamsFromGltf(const tinygltf::Material &material,
 
     auto &values = material.values;
 
-    if (!LoadFloat4Param(baseColorFactor, "baseColorFactor", values, logPrefix))
+    //if (!LoadFloat4Param(baseColorFactor, "baseColorFactor", values, logPrefix))
+    if (!baseColorTexture.Load("baseColorFactor", "baseColorTexture", model, values, logPrefix))
         return false;
+
     if (!LoadFloatParam(metallicFactor, "metallicFactor", values, logPrefix))
         return false;
+
     if (!LoadFloatParam(roughnessFactor, "roughnessFactor", values, logPrefix))
         return false;
 
@@ -2243,27 +2411,27 @@ bool SceneMaterial::LoadFloat4Param(XMFLOAT4 &materialParam,
                                     const std::wstring &logPrefix)
 {
     auto paramIt = params.find(paramName);
-    if (paramIt != params.end())
-    {
-        auto &param = paramIt->second;
-        if (param.number_array.size() != 4)
-        {
-            Log::Error(L"%sCorrupted \"%s\" material parameter (size %d instead of 4)!",
-                       logPrefix.c_str(),
-                       Utils::StringToWString(paramName).c_str(),
-                       param.number_array.size());
-            return false;
-        }
-        materialParam = XMFLOAT4((float)param.number_array[0],
-            (float)param.number_array[1],
-                                 (float)param.number_array[2],
-                                 (float)param.number_array[3]);
+    if (paramIt == params.end())
+        return true;
 
-        //Log::Debug(L"%s\"%s\": %s",
-        //           logPrefix.c_str(),
-        //           Utils::StringToWString(paramName).c_str(),
-        //           ParameterValueToWstring(param).c_str());
+    auto &param = paramIt->second;
+    if (param.number_array.size() != 4)
+    {
+        Log::Error(L"%sCorrupted \"%s\" material parameter (size %d instead of 4)!",
+                    logPrefix.c_str(),
+                    Utils::StringToWString(paramName).c_str(),
+                    param.number_array.size());
+        return false;
     }
+    materialParam = XMFLOAT4((float)param.number_array[0],
+                             (float)param.number_array[1],
+                             (float)param.number_array[2],
+                             (float)param.number_array[3]);
+
+    //Log::Debug(L"%s\"%s\": %s",
+    //           logPrefix.c_str(),
+    //           Utils::StringToWString(paramName).c_str(),
+    //           ParameterValueToWstring(param).c_str());
 
     return true;
 };
@@ -2275,23 +2443,23 @@ bool SceneMaterial::LoadFloatParam(float &materialParam,
                                    const std::wstring &logPrefix)
 {
     auto paramIt = params.find(paramName);
-    if (paramIt != params.end())
-    {
-        auto &param = paramIt->second;
-        if (!param.has_number_value)
-        {
-            Log::Error(L"%sIncorrect \"%s\" material parameter type (must be float)!",
-                       logPrefix.c_str(),
-                       Utils::StringToWString(paramName).c_str());
-            return false;
-        }
-        materialParam = (float)param.number_value;
+    if (paramIt == params.end())
+        return true;
 
-        //Log::Debug(L"%s\"%s\": %s",
-        //           logPrefix.c_str(),
-        //           Utils::StringToWString(paramName).c_str(),
-        //           ParameterValueToWstring(param).c_str());
+    auto &param = paramIt->second;
+    if (!param.has_number_value)
+    {
+        Log::Error(L"%sIncorrect \"%s\" material parameter type (must be float)!",
+                    logPrefix.c_str(),
+                    Utils::StringToWString(paramName).c_str());
+        return false;
     }
+    materialParam = (float)param.number_value;
+
+    //Log::Debug(L"%s\"%s\": %s",
+    //           logPrefix.c_str(),
+    //           Utils::StringToWString(paramName).c_str(),
+    //           ParameterValueToWstring(param).c_str());
 
     return true;
 };
