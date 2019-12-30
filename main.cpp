@@ -33,7 +33,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eExternalDebugSimpleMeshes
         //Scene::eExternalDebugBox
         //Scene::eExternalDebugBoxInterleaved
-        //Scene::eExternalDebugBoxTextured
+        Scene::eExternalDebugBoxTextured
         //Scene::eExternalDebug2CylinderEngine
         //Scene::eExternalDebugDuck
         //Scene::eExternalWolfBaseMesh
@@ -41,7 +41,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eExternalLowPolyDrifter
         //Scene::eExternalTeslaCybertruck
         //Scene::eExternalSpotMiniRigged
-        Scene::eExternalMandaloriansHelmet
+        //Scene::eExternalMandaloriansHelmet
         //Scene::eExternalWeltron2001SpaceballRadio
         //Scene::eExternalRoboV1
         );

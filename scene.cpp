@@ -253,36 +253,36 @@ bool Scene::Load(IRenderingContext &ctx)
     case eExternalDebugDuck:
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Duck/Duck.gltf"))
             return false;
-        AddScaleToRoots(3.6);
-        AddTranslationToRoots({ -0.5, -2.8, 0. });
+        AddScaleToRoots(3.8);
+        AddTranslationToRoots({ -0.5, -3.3, 0. });
         return true;
 
     case eExternalTeslaCybertruck:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/PolyDucky/Tesla Cybertruck/scene.gltf"))
             return false;
-        AddScaleToRoots(2.1);
-        AddTranslationToRoots({ 0., 0., 0. });
+        AddScaleToRoots(2.6);
+        AddTranslationToRoots({ 0.3, 0., 0. });
         return true;
 
     case eExternalLowPolyDrifter:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Ivan Norman/Low-poly truck (car Drifter)/scene.gltf"))
             return false;
-        AddScaleToRoots(0.012);
+        AddScaleToRoots(0.015);
         AddTranslationToRoots({ 0.5, -1.2, 0. });
         return true;
 
     case eExternalWolfBaseMesh:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/TheCharliEZM/Wolf base mesh/scene.gltf"))
             return false;
-        AddScaleToRoots(0.007);
-        AddTranslationToRoots({ 0.7, -2.2, 0. });
+        AddScaleToRoots(0.008);
+        AddTranslationToRoots({ 0.7, -2.4, 0. });
         return true;
 
     case eExternalNintendoGameBoyClassic:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/hunter333d/Nintendo Game Boy Classic/scene.gltf"))
             return false;
-        AddScaleToRoots(0.45);
-        AddTranslationToRoots({ 0., -1.5, 0. });
+        AddScaleToRoots(0.50);
+        AddTranslationToRoots({ 0., -1.7, 0. });
         return true;
 
     case eExternalWeltron2001SpaceballRadio:
@@ -295,7 +295,7 @@ bool Scene::Load(IRenderingContext &ctx)
     case eExternalSpotMiniRigged:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Greg McKechnie/Spot Mini (Rigged)/scene.gltf"))
             return false;
-        AddScaleToRoots(.00022f);
+        AddScaleToRoots(.00024f);
         AddTranslationToRoots({ 0., 0., 2.8 });
         return true;
 
@@ -991,7 +991,7 @@ void Scene::AnimateFrame(IRenderingContext &ctx)
         const float orbitRadius =
             (mSceneId == eHardwiredThreePlanets)
             ? 4.8f
-            : 4.4f;
+            : 5.5f;
         const float rotationAngle = -2.f * angle - lightRelOffset * XM_2PI;
         const float orbitInclination =
             (mSceneId == eHardwiredThreePlanets)
