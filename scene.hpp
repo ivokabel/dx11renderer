@@ -142,6 +142,7 @@ public:
                 const wchar_t *path);
     bool LoadFromGltf(const char *constParamName,
                       const char *textureParamName,
+                      IRenderingContext &ctx,
                       const tinygltf::Model &model,
                       const tinygltf::ParameterMap &params,
                       const std::wstring &logPrefix);

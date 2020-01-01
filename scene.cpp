@@ -744,8 +744,8 @@ bool IterateGltfAccesorData(const tinygltf::Model &model,
                Utils::StringToWString(accessor.name).c_str(),
                accessor.bufferView,
                accessor.byteOffset,
-               Utils::StringToWString(TypeToString(accessor.type)).c_str(),
-               Utils::StringToWString(ComponentTypeToString(accessor.componentType)).c_str(),
+               GltfTypeToString(accessor.type).c_str(),
+               GltfComponentTypeToString(accessor.componentType).c_str(),
                accessor.count);
 
     // Buffer view
@@ -1497,7 +1497,7 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
                logPrefix.c_str(),
                primitiveIdx,
                mesh.primitives.size(),
-               Utils::StringToWString(ModeToString(primitive.mode)).c_str(),
+               Utils::StringToWString(GltfModeToString(primitive.mode)).c_str(),
                Utils::StringToWString(StringIntMapToString(primitive.attributes)).c_str(),
                primitive.indices,
                primitive.material);
@@ -2071,30 +2071,33 @@ void SceneNode::Animate(IRenderingContext &ctx)
 }
 
 
-bool CreateConstantTextureShaderResourceView(IRenderingContext &ctx,
-                                             ID3D11ShaderResourceView *&srv,
-                                             XMFLOAT4 color)
+bool CreateTextureSrvFromData(IRenderingContext &ctx,
+                              ID3D11ShaderResourceView *&srv,
+                              const UINT width,
+                              const UINT height,
+                              const DXGI_FORMAT dataFormat,
+                              const void *data,
+                              const UINT lineMemPitch)
 {
-    HRESULT hr = S_OK;
-    ID3D11Texture2D *tex = nullptr;
-
     auto device = ctx.GetDevice();
     if (!device)
         return false;
+    HRESULT hr = S_OK;
+    ID3D11Texture2D *tex = nullptr;
 
-    // 1x1 constant-valued texture
+    // Texture containing the data
     D3D11_TEXTURE2D_DESC descTex;
     ZeroMemory(&descTex, sizeof(D3D11_TEXTURE2D_DESC));
     descTex.ArraySize = 1;
     descTex.Usage = D3D11_USAGE_IMMUTABLE;
-    descTex.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    descTex.Width = 1;
-    descTex.Height = 1;
+    descTex.Format = dataFormat;
+    descTex.Width = width;
+    descTex.Height = height;
     descTex.MipLevels = 1;
     descTex.SampleDesc.Count = 1;
     descTex.SampleDesc.Quality = 0;
     descTex.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-    D3D11_SUBRESOURCE_DATA initData = { &color, sizeof(XMFLOAT4), 0 };
+    D3D11_SUBRESOURCE_DATA initData = { data, lineMemPitch, 0 };
     hr = device->CreateTexture2D(&descTex, &initData, &tex);
     if (FAILED(hr))
         return false;
@@ -2111,6 +2114,16 @@ bool CreateConstantTextureShaderResourceView(IRenderingContext &ctx,
         return false;
 
     return true;
+}
+
+
+bool CreateConstantTextureSRV(IRenderingContext &ctx,
+                              ID3D11ShaderResourceView *&srv,
+                              XMFLOAT4 color)
+{
+    return CreateTextureSrvFromData(ctx, srv,
+                                    1, 1, DXGI_FORMAT_R32G32B32A32_FLOAT,
+                                    &color, sizeof(XMFLOAT4));
 }
 
 
@@ -2171,7 +2184,7 @@ bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path)
             return false;
     }
     else
-        CreateConstantTextureShaderResourceView(ctx, srv, constFactor);
+        CreateConstantTextureSRV(ctx, srv, constFactor);
 
     return true;
 }
@@ -2179,6 +2192,7 @@ bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path)
 
 bool SceneTexture::LoadFromGltf(const char *constParamName,
                                 const char *textureParamName,
+                                IRenderingContext &ctx,
                                 const tinygltf::Model &model,
                                 const tinygltf::ParameterMap &params,
                                 const std::wstring &logPrefix)
@@ -2245,17 +2259,63 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
         image.height;
         image.component;
         image.bits; // bit depth per channel. 8(byte), 16 or 32.
-        //int pixel_type;  // pixel type(TINYGLTF_COMPONENT_TYPE_***). usually
-        //                 // UBYTE(bits = 8) or USHORT(bits = 16)
+        image.pixel_type;  // pixel type(TINYGLTF_COMPONENT_TYPE_***). usually UBYTE(bits = 8) or USHORT(bits = 16)
         image.image;
         image.uri;
         //int bufferView;        // (required if no uri)
         //std::string mimeType;  // (required if no uri) ["image/jpeg", "image/png", "image/bmp", "image/gif"]
 
-        Log::Debug(L"%sImage: uri \"%s\"",
+        Log::Debug(L"%sImage \"%s\": %dx%d, %dx%db %s, \"%s\"",
                    logPrefix.c_str(),
                    Utils::StringToWString(image.name).c_str(),
+                   image.width,
+                   image.height,
+                   image.component,
+                   image.bits,
+                   GltfComponentTypeToString(image.pixel_type).c_str(),
                    Utils::StringToWString(image.uri).c_str());
+
+        const auto pixelSize        = image.component * image.bits / 8;
+        const auto expectedDataSize = image.width * image.height * pixelSize;
+        if (image.width <= 0 ||
+            image.height <= 0 ||
+            image.component != 4 ||
+            image.bits != 8 ||
+            image.pixel_type != TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE ||
+            image.image.size() != expectedDataSize)
+        {
+            Log::Error(L"%sInvalid image \"%s\": %dx%d, %dx%db %s, data size %d, \"%s\"",
+                       logPrefix.c_str(),
+                       Utils::StringToWString(image.name).c_str(),
+                       image.width,
+                       image.height,
+                       image.component,
+                       image.bits,
+                       GltfComponentTypeToString(image.pixel_type).c_str(),
+                       image.image.size(),
+                       Utils::StringToWString(image.uri).c_str());
+            return false;
+        }
+
+        // debug
+        CreateConstantTextureSRV(ctx, srv, constFactor);
+
+        //if (!CreateTextureSrvFromData(ctx,
+        //                              srv,
+        //                              image.width,
+        //                              image.height,
+        //                              DXGI_FORMAT_R8G8B8A8_UINT,
+        //                              image.image.data(),
+        //                              image.width * pixelSize))
+        //{
+        //    //Log::Error(L"%sInvalid source image index (%d/%d) in texture %d!",
+        //    //           logPrefix.c_str(),
+        //    //           texSource,
+        //    //           images.size(),
+        //    //           textureIndex);
+        //    return false;
+        //}
+
 
         // TODO: Create texture directly from memory!
         //
@@ -2275,7 +2335,7 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
 
 
 SceneMaterial::SceneMaterial() :
-    baseColorTexture(XMFLOAT4(0.f, 0.f, 0.f, 1.f))
+    baseColorTexture(XMFLOAT4(.5f, .5f, .5f, 1.f))
 {}
 
 SceneMaterial::SceneMaterial(const SceneMaterial &src) :
@@ -2345,7 +2405,7 @@ bool SceneMaterial::Create(IRenderingContext &ctx,
     else
     {
         static const auto blackColor = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
-        CreateConstantTextureShaderResourceView(ctx, mSpecularSRV, blackColor);
+        CreateConstantTextureSRV(ctx, mSpecularSRV, blackColor);
     }
 
     return true;
@@ -2377,7 +2437,7 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
     auto &values = material.values;
 
     //if (!LoadFloat4Param(baseColorFactor, "baseColorFactor", values, logPrefix))
-    if (!baseColorTexture.LoadFromGltf("baseColorFactor", "baseColorTexture", model, values, logPrefix))
+    if (!baseColorTexture.LoadFromGltf("baseColorFactor", "baseColorTexture", ctx, model, values, logPrefix))
         return false;
 
     if (!LoadFloatParam(metallicFactor, "metallicFactor", values, logPrefix))
@@ -2388,7 +2448,7 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
 
     // Deprecated
     static const auto blackColor = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
-    CreateConstantTextureShaderResourceView(ctx, mSpecularSRV, blackColor);
+    CreateConstantTextureSRV(ctx, mSpecularSRV, blackColor);
 
     return true;
 };
