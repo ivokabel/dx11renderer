@@ -131,26 +131,23 @@ private:
 class SceneTexture
 {
 public:
-    SceneTexture();
+    SceneTexture(XMFLOAT4 defaultConstFactor);
     SceneTexture(const SceneTexture &src);
-    SceneTexture(SceneTexture &&src);
     SceneTexture& operator =(const SceneTexture &src);
+    SceneTexture(SceneTexture &&src);
     SceneTexture& operator =(SceneTexture &&src);
     ~SceneTexture();
 
-    void SetTexturePath(const wchar_t *path);
-    bool Load(const char *constParamName,
-              const char *textureParamName,
-              const tinygltf::Model &model,
-              const tinygltf::ParameterMap &params,
-              const std::wstring &logPrefix);
-
-    bool Create(IRenderingContext &ctx);
-    void Destroy();
+    bool Create(IRenderingContext &ctx,
+                const wchar_t *path);
+    bool LoadFromGltf(const char *constParamName,
+                      const char *textureParamName,
+                      const tinygltf::Model &model,
+                      const tinygltf::ParameterMap &params,
+                      const std::wstring &logPrefix);
 
 private:
-    XMFLOAT4                    constFactor{ 1.f, 1.f, 1.f, 1.f };
-    std::wstring                texPath;
+    XMFLOAT4 constFactor;
     // TODO: sampler, texCoord
 
 public:
@@ -184,13 +181,6 @@ public:
 
 private:
 
-    bool CreateTextures(IRenderingContext &ctx);
-    void DestroyTextures();
-
-    bool LoadParamsFromGltf(const tinygltf::Model &model,
-                            const tinygltf::Material &material,
-                            const std::wstring &logPrefix);
-
     static bool LoadFloat4Param(XMFLOAT4 &materialParam,
                                 const char *paramName,
                                 const tinygltf::ParameterMap &params,
@@ -203,9 +193,6 @@ private:
 
 private:
 
-    // Deprecated?
-    const wchar_t *mSpecularTexPath = nullptr;
-
     // PBR metal/roughness workflow
     SceneTexture    baseColorTexture;
     float           metallicFactor = 1.f;
@@ -213,7 +200,7 @@ private:
     //TODO:         metallicRoughnessTexture
 
     // Textures
-    ID3D11ShaderResourceView*   mSpecularSRV = nullptr;
+    ID3D11ShaderResourceView*   mSpecularSRV = nullptr; // Deprecated?
 };
 
 
