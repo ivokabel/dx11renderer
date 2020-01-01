@@ -533,7 +533,7 @@ bool LoadGltfModel(tinygltf::Model &model, const std::wstring &filePath)
 
 
 // debug
-static std::string ModeToString(int mode)
+static std::string GltfModeToString(int mode)
 {
     if (mode == TINYGLTF_MODE_POINTS)
         return "POINTS";
@@ -589,48 +589,64 @@ static std::string StringIntMapToString(const std::map<std::string, int> &m)
     return ss.str();
 }
 
-static std::string TypeToString(int ty) {
+static std::wstring GltfTypeToString(int ty)
+{
     if (ty == TINYGLTF_TYPE_SCALAR)
-        return "SCALAR";
+        return L"SCALAR";
     else if (ty == TINYGLTF_TYPE_VECTOR)
-        return "VECTOR";
+        return L"VECTOR";
     else if (ty == TINYGLTF_TYPE_VEC2)
-        return "VEC2";
+        return L"VEC2";
     else if (ty == TINYGLTF_TYPE_VEC3)
-        return "VEC3";
+        return L"VEC3";
     else if (ty == TINYGLTF_TYPE_VEC4)
-        return "VEC4";
+        return L"VEC4";
     else if (ty == TINYGLTF_TYPE_MATRIX)
-        return "MATRIX";
+        return L"MATRIX";
     else if (ty == TINYGLTF_TYPE_MAT2)
-        return "MAT2";
+        return L"MAT2";
     else if (ty == TINYGLTF_TYPE_MAT3)
-        return "MAT3";
+        return L"MAT3";
     else if (ty == TINYGLTF_TYPE_MAT4)
-        return "MAT4";
-    return "**UNKNOWN**";
+        return L"MAT4";
+    return L"**UNKNOWN**";
 }
 
-static std::string ComponentTypeToString(int ty) {
+static std::wstring GltfComponentTypeToString(int ty)
+{
     if (ty == TINYGLTF_COMPONENT_TYPE_BYTE)
-        return "BYTE";
+        return L"BYTE";
     else if (ty == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
-        return "UNSIGNED_BYTE";
+        return L"UNSIGNED_BYTE";
     else if (ty == TINYGLTF_COMPONENT_TYPE_SHORT)
-        return "SHORT";
+        return L"SHORT";
     else if (ty == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
-        return "UNSIGNED_SHORT";
+        return L"UNSIGNED_SHORT";
     else if (ty == TINYGLTF_COMPONENT_TYPE_INT)
-        return "INT";
+        return L"INT";
     else if (ty == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
-        return "UNSIGNED_INT";
+        return L"UNSIGNED_INT";
     else if (ty == TINYGLTF_COMPONENT_TYPE_FLOAT)
-        return "FLOAT";
+        return L"FLOAT";
     else if (ty == TINYGLTF_COMPONENT_TYPE_DOUBLE)
-        return "DOUBLE";
+        return L"DOUBLE";
 
-    return "**UNKNOWN**";
+    return L"**UNKNOWN**";
 }
+
+//static size_t SizeOfGltfComponentType(int ty)
+//{
+//    switch (ty)
+//    {
+//    case TINYGLTF_COMPONENT_TYPE_BYTE:              return sizeof(int8_t);
+//    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:     return sizeof(uint8_t);
+//    case TINYGLTF_COMPONENT_TYPE_SHORT:             return sizeof(int16_t);
+//    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:    return sizeof(uint16_t);
+//    case TINYGLTF_COMPONENT_TYPE_INT:               return sizeof(int32_t);
+//    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:      return sizeof(uint32_t);
+//    default:                                        return 0;
+//    }
+//}
 
 //static std::string TargetToString(int target) {
 //    if (target == 34962)
