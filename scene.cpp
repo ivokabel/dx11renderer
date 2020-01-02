@@ -2243,31 +2243,7 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
                                 const tinygltf::ParameterMap &params,
                                 const std::wstring &logPrefix)
 {
-    // Constant factor
-    auto constParamIt = params.find(constParamName);
-    if (constParamIt != params.end())
-    {
-        auto &constParam = constParamIt->second;
-        if (constParam.number_array.size() != 4)
-        {
-            Log::Error(L"%sCorrupted \"%s\" material parameter (size %d instead of 4)!",
-                       logPrefix.c_str(),
-                       Utils::StringToWString(constParamName).c_str(),
-                       constParam.number_array.size());
-            return false;
-        }
-        constFactor = XMFLOAT4((float)constParam.number_array[0],
-                               (float)constParam.number_array[1],
-                               (float)constParam.number_array[2],
-                               (float)constParam.number_array[3]);
-
-        //Log::Debug(L"%s\"%s\": %s",
-        //           logPrefix.c_str(),
-        //           Utils::StringToWString(constParamName).c_str(),
-        //           ParameterValueToWstring(constParam).c_str());
-    }
-
-    // Texture
+    // Try texture first
     auto textureParamIt = params.find(textureParamName);
     if (textureParamIt != params.end())
     {
@@ -2367,9 +2343,45 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
                        image.height);
             return false;
         }
+
+        return true;
     }
 
-    return true;
+    // If there's no texture, try constant factor
+    auto constParamIt = params.find(constParamName);
+    if (constParamIt != params.end())
+    {
+        auto &constParam = constParamIt->second;
+        if (constParam.number_array.size() != 4)
+        {
+            Log::Error(L"%sCorrupted \"%s\" material parameter (size %d instead of 4)!",
+                        logPrefix.c_str(),
+                        Utils::StringToWString(constParamName).c_str(),
+                        constParam.number_array.size());
+            return false;
+        }
+        constFactor = XMFLOAT4((float)constParam.number_array[0],
+            (float)constParam.number_array[1],
+                                (float)constParam.number_array[2],
+                                (float)constParam.number_array[3]);
+
+        //Log::Debug(L"%s\"%s\": %s",
+        //           logPrefix.c_str(),
+        //           Utils::StringToWString(constParamName).c_str(),
+        //           ParameterValueToWstring(constParam).c_str());
+
+        if (!CreateConstantTextureSRV(ctx, srv, constFactor))
+        {
+            Log::Error(L"%sFailed to create constant texture for \"%s\"!",
+                       logPrefix.c_str(),
+                       Utils::StringToWString(constParamName).c_str());
+            return false;
+        }
+
+        return true;
+    }
+
+    return true; // Use default constant factor
 }
 
 
