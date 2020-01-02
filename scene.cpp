@@ -2143,6 +2143,36 @@ bool CreateConstantTextureSRV(IRenderingContext &ctx,
 }
 
 
+bool ConvertToFloatImage(std::vector<unsigned char> &floatImage,
+                         const tinygltf::Image &srcImage)
+{
+    const size_t floatDataSize = srcImage.width * srcImage.height * 4 * sizeof(float);
+    floatImage.resize(floatDataSize);
+    if (floatImage.size() != floatDataSize)
+        return false;
+
+    auto floatPtr = reinterpret_cast<float*>(floatImage.data());
+
+    if (srcImage.component == 4 &&
+        srcImage.bits == 8 &&
+        srcImage.pixel_type == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
+    {
+        auto srcPtr = reinterpret_cast<const uint8_t*>(srcImage.image.data());
+
+        for (size_t x = 0; x < srcImage.width; x++)
+            for (size_t y = 0; y < srcImage.height; y++)
+            {
+                for (size_t comp = 0; comp < srcImage.component; comp++, srcPtr++, floatPtr++)
+                    *floatPtr = *srcPtr / 255.f;
+            }
+
+        return true;
+    }
+    else
+        return false;
+}
+
+
 SceneTexture::SceneTexture(XMFLOAT4 defaultConstFactor) :
     constFactor(defaultConstFactor)
 {}
@@ -2271,79 +2301,72 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
         // TODO: Sampler
 
         const auto &image = images[texSource];
-        image.width;
-        image.height;
-        image.component;
-        image.bits; // bit depth per channel. 8(byte), 16 or 32.
-        image.pixel_type;  // pixel type(TINYGLTF_COMPONENT_TYPE_***). usually UBYTE(bits = 8) or USHORT(bits = 16)
-        image.image;
-        image.uri;
-        //int bufferView;        // (required if no uri)
-        //std::string mimeType;  // (required if no uri) ["image/jpeg", "image/png", "image/bmp", "image/gif"]
 
-        Log::Debug(L"%sImage \"%s\": %dx%d, %dx%db %s, \"%s\"",
+        Log::Debug(L"%sImage \"%s\": \"%s\", %dx%d, %dx%db %s, data %dB",
                    logPrefix.c_str(),
                    Utils::StringToWString(image.name).c_str(),
+                   Utils::StringToWString(image.uri).c_str(),
                    image.width,
                    image.height,
                    image.component,
                    image.bits,
                    GltfComponentTypeToString(image.pixel_type).c_str(),
-                   Utils::StringToWString(image.uri).c_str());
+                   image.image.size());
 
-        const auto pixelSize        = image.component * image.bits / 8;
-        const auto expectedDataSize = image.width * image.height * pixelSize;
+        const auto srcPixelSize        = image.component * image.bits / 8;
+        const auto expectedSrcDataSize = image.width * image.height * srcPixelSize;
         if (image.width <= 0 ||
             image.height <= 0 ||
             image.component != 4 ||
             image.bits != 8 ||
             image.pixel_type != TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE ||
-            image.image.size() != expectedDataSize)
+            image.image.size() != expectedSrcDataSize)
         {
-            Log::Error(L"%sInvalid image \"%s\": %dx%d, %dx%db %s, data size %d, \"%s\"",
+            Log::Error(L"%sInvalid image \"%s\": \"%s\", %dx%d, %dx%db %s, data %dB",
                        logPrefix.c_str(),
                        Utils::StringToWString(image.name).c_str(),
+                       Utils::StringToWString(image.uri).c_str(),
                        image.width,
                        image.height,
                        image.component,
                        image.bits,
                        GltfComponentTypeToString(image.pixel_type).c_str(),
-                       image.image.size(),
-                       Utils::StringToWString(image.uri).c_str());
+                       image.image.size());
             return false;
         }
 
-        // debug
-        CreateConstantTextureSRV(ctx, srv, constFactor);
+        std::vector<unsigned char> floatImage;
+        if (!ConvertToFloatImage(floatImage, image))
+        {
+            Log::Error(L"%sFailed to convert image \"%s\" to float format: \"%s\", %dx%d, %dx%db %s, data %dB",
+                       logPrefix.c_str(),
+                       Utils::StringToWString(image.name).c_str(),
+                       Utils::StringToWString(image.uri).c_str(),
+                       image.width,
+                       image.height,
+                       image.component,
+                       image.bits,
+                       GltfComponentTypeToString(image.pixel_type).c_str(),
+                       image.image.size());
+            return false;
+        }
 
-        //if (!CreateTextureSrvFromData(ctx,
-        //                              srv,
-        //                              image.width,
-        //                              image.height,
-        //                              DXGI_FORMAT_R8G8B8A8_UINT,
-        //                              image.image.data(),
-        //                              image.width * pixelSize))
-        //{
-        //    //Log::Error(L"%sInvalid source image index (%d/%d) in texture %d!",
-        //    //           logPrefix.c_str(),
-        //    //           texSource,
-        //    //           images.size(),
-        //    //           textureIndex);
-        //    return false;
-        //}
-
-
-        // TODO: Create texture directly from memory!
-        //
-        // For what you're attempting to do, you shouldn't need this helper function at all. 
-        // Simply use ID3D11Device::CreateTexture2D and fill the D3D11_TEXTURE2D_DESC with your desired settings.
-        // If you have initial data you want to fill the texture with, pass the pointer to that data by filling out 
-        // the D3D11_SUBRESOURCE_DATA structure and passing it as the pInitialData parameter.
-        // Then when you want to change the contents of that texture at runtime, you call ID3D11DeviceContext::Map.
-        //
-        // To use the texture as a shader resource, you just create a shader resource view.
-        // If you just need to access the whole texture and don't need to do anything fancy, 
-        // you can just pass NULL as the pDesc parameter.
+        if (!CreateTextureSrvFromData(ctx,
+                                      srv,
+                                      image.width,
+                                      image.height,
+                                      DXGI_FORMAT_R32G32B32A32_FLOAT,
+                                      floatImage.data(),
+                                      image.width * 4 * sizeof(float)))
+        {
+            Log::Error(L"%sFailed to create texture & SRV for image \"%s\": \"%s\", %dx%d",
+                       logPrefix.c_str(),
+                       Utils::StringToWString(image.name).c_str(),
+                       Utils::StringToWString(image.uri).c_str(),
+                       image.width,
+                       image.height);
+            return false;
+        }
     }
 
     return true;
