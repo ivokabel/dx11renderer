@@ -961,7 +961,7 @@ float SimpleDX11Renderer::GetCurrentAnimationTime() const
         time = (timeCur - timeStart) / 1000.0f;
     }
 
-    return mIsAnimationActive ? time : 0.;
+    return mIsAnimationActive ? time : 0.f;
 }
 
 
