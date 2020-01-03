@@ -518,160 +518,6 @@ bool Scene::LoadExternal(IRenderingContext &ctx, const std::wstring &filePath)
 }
 
 
-static D3D11_PRIMITIVE_TOPOLOGY GltfModeToTopology(int mode)
-{
-    switch (mode)
-    {
-    case TINYGLTF_MODE_POINTS:
-        return D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
-    case TINYGLTF_MODE_LINE:
-        return D3D_PRIMITIVE_TOPOLOGY_LINELIST;
-    case TINYGLTF_MODE_LINE_STRIP:
-        return D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
-    case TINYGLTF_MODE_TRIANGLES:
-        return D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-    case TINYGLTF_MODE_TRIANGLE_STRIP:
-        return D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
-    //case TINYGLTF_MODE_LINE_LOOP:
-    //case TINYGLTF_MODE_TRIANGLE_FAN:
-    default:
-        return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-    }
-}
-
-
-static std::string StringIntMapToString(const std::map<std::string, int> &m)
-{
-    std::stringstream ss;
-    bool first = true;
-    for (auto item : m)
-    {
-        if (!first)
-            ss << ", ";
-        else
-            first = false;
-        ss << item.first << ": " << item.second;
-    }
-    return ss.str();
-}
-
-static std::wstring GltfTypeToString(int ty)
-{
-    if (ty == TINYGLTF_TYPE_SCALAR)
-        return L"SCALAR";
-    else if (ty == TINYGLTF_TYPE_VECTOR)
-        return L"VECTOR";
-    else if (ty == TINYGLTF_TYPE_VEC2)
-        return L"VEC2";
-    else if (ty == TINYGLTF_TYPE_VEC3)
-        return L"VEC3";
-    else if (ty == TINYGLTF_TYPE_VEC4)
-        return L"VEC4";
-    else if (ty == TINYGLTF_TYPE_MATRIX)
-        return L"MATRIX";
-    else if (ty == TINYGLTF_TYPE_MAT2)
-        return L"MAT2";
-    else if (ty == TINYGLTF_TYPE_MAT3)
-        return L"MAT3";
-    else if (ty == TINYGLTF_TYPE_MAT4)
-        return L"MAT4";
-    return L"**UNKNOWN**";
-}
-
-static std::wstring GltfComponentTypeToString(int ty)
-{
-    if (ty == TINYGLTF_COMPONENT_TYPE_BYTE)
-        return L"BYTE";
-    else if (ty == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
-        return L"UNSIGNED_BYTE";
-    else if (ty == TINYGLTF_COMPONENT_TYPE_SHORT)
-        return L"SHORT";
-    else if (ty == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
-        return L"UNSIGNED_SHORT";
-    else if (ty == TINYGLTF_COMPONENT_TYPE_INT)
-        return L"INT";
-    else if (ty == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
-        return L"UNSIGNED_INT";
-    else if (ty == TINYGLTF_COMPONENT_TYPE_FLOAT)
-        return L"FLOAT";
-    else if (ty == TINYGLTF_COMPONENT_TYPE_DOUBLE)
-        return L"DOUBLE";
-
-    return L"**UNKNOWN**";
-}
-
-//static size_t SizeOfGltfComponentType(int ty)
-//{
-//    switch (ty)
-//    {
-//    case TINYGLTF_COMPONENT_TYPE_BYTE:              return sizeof(int8_t);
-//    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:     return sizeof(uint8_t);
-//    case TINYGLTF_COMPONENT_TYPE_SHORT:             return sizeof(int16_t);
-//    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:    return sizeof(uint16_t);
-//    case TINYGLTF_COMPONENT_TYPE_INT:               return sizeof(int32_t);
-//    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:      return sizeof(uint32_t);
-//    default:                                        return 0;
-//    }
-//}
-
-//static std::string TargetToString(int target) {
-//    if (target == 34962)
-//        return "GL_ARRAY_BUFFER";
-//    else if (target == 34963)
-//        return "GL_ELEMENT_ARRAY_BUFFER";
-//    else
-//        return "**UNKNOWN**";
-//}
-
-static std::string FloatArrayToWstring(const std::vector<double> &arr)
-{
-    if (arr.size() == 0)
-        return "";
-
-    std::stringstream ss;
-    ss << "[ ";
-    for (size_t i = 0; i < arr.size(); i++)
-        ss << arr[i] << ((i != arr.size() - 1) ? ", " : "");
-    ss << " ]";
-
-    return ss.str();
-}
-
-static std::string StringDoubleMapToWstring(const std::map<std::string, double> &mp)
-{
-    if (mp.size() == 0)
-        return "";
-
-    std::stringstream ss;
-    ss << "[";
-    bool first = true;
-    for (auto &item : mp)
-    {
-        ss << (first ? " " : ", ");
-        ss << item.first << ": " << item.second;
-        first = false;
-    }
-    ss << " ]";
-
-    return ss.str();
-}
-
-static std::wstring ParameterValueToWstring(const tinygltf::Parameter &param)
-{
-    if (!param.number_array.empty())
-        return Utils::StringToWString(FloatArrayToWstring(param.number_array));
-    else if (!param.json_double_value.empty())
-        return Utils::StringToWString(StringDoubleMapToWstring(param.json_double_value));
-    else if (param.has_number_value)
-    {
-        std::wstringstream ss;
-        ss << param.number_value;
-        return ss.str();
-    }
-    else
-        return Utils::StringToWString("\"" + param.string_value + "\"");
-}
-
 
 const tinygltf::Accessor& GetPrimitiveAttrAccessor(bool &accessorLoaded,
                                                    const tinygltf::Model &model,
@@ -726,8 +572,8 @@ bool IterateGltfAccesorData(const tinygltf::Model &model,
                Utils::StringToWString(accessor.name).c_str(),
                accessor.bufferView,
                accessor.byteOffset,
-               GltfTypeToString(accessor.type).c_str(),
-               GltfComponentTypeToString(accessor.componentType).c_str(),
+               GltfUtils::TypeToWString(accessor.type).c_str(),
+               GltfUtils::ComponentTypeToWString(accessor.componentType).c_str(),
                accessor.count);
 
     // Buffer view
@@ -752,7 +598,7 @@ bool IterateGltfAccesorData(const tinygltf::Model &model,
     //           bufferView.byteOffset,
     //           bufferView.byteLength,
     //           bufferView.byteStride,
-    //           Utils::StringToWString(TargetToString(bufferView.target)).c_str());
+    //           GltfUtils::TargetToWString(bufferView.target).c_str());
 
     // Buffer
 
@@ -1483,7 +1329,7 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
                primitiveIdx,
                mesh.primitives.size(),
                GltfUtils::ModeToWString(primitive.mode).c_str(),
-               Utils::StringToWString(StringIntMapToString(primitive.attributes)).c_str(),
+               GltfUtils::StringIntMapToWString(primitive.attributes).c_str(),
                primitive.indices,
                primitive.material);
 
@@ -1733,7 +1579,7 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
     }
 
     // DX primitive topology
-    mTopology = GltfModeToTopology(primitive.mode);
+    mTopology = GltfUtils::ModeToTopology(primitive.mode);
     if (mTopology == D3D_PRIMITIVE_TOPOLOGY_UNDEFINED)
     {
         Log::Error(L"%sUnsupported primitive topology!", subItemsLogPrefix.c_str());
@@ -2255,7 +2101,7 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
                    image.height,
                    image.component,
                    image.bits,
-                   GltfComponentTypeToString(image.pixel_type).c_str(),
+                   GltfUtils::ComponentTypeToWString(image.pixel_type).c_str(),
                    image.image.size());
 
         const auto srcPixelSize        = image.component * image.bits / 8;
@@ -2275,7 +2121,7 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
                        image.height,
                        image.component,
                        image.bits,
-                       GltfComponentTypeToString(image.pixel_type).c_str(),
+                       GltfUtils::ComponentTypeToWString(image.pixel_type).c_str(),
                        image.image.size());
             return false;
         }
@@ -2291,7 +2137,7 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
                        image.height,
                        image.component,
                        image.bits,
-                       GltfComponentTypeToString(image.pixel_type).c_str(),
+                       GltfUtils::ComponentTypeToWString(image.pixel_type).c_str(),
                        image.image.size());
             return false;
         }
@@ -2337,7 +2183,7 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
         //Log::Debug(L"%s\"%s\": %s",
         //           logPrefix.c_str(),
         //           Utils::StringToWString(constParamName).c_str(),
-        //           ParameterValueToWstring(constParam).c_str());
+        //           GltfUtils::ParameterValueToWstring(constParam).c_str());
 
         if (!CreateConstantTextureSRV(ctx, srv, mConstFactor))
         {
@@ -2443,14 +2289,14 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
             Log::Debug(L"%s%s: %s",
                        logPrefix.c_str(),
                        Utils::StringToWString(value.first).c_str(),
-                       ParameterValueToWstring(value.second).c_str());
+                       GltfUtils::ParameterValueToWstring(value.second).c_str());
         }
         for (const auto &value : material.additionalValues)
         {
             Log::Debug(L"%s%s*: %s",
                        logPrefix.c_str(),
                        Utils::StringToWString(value.first).c_str(),
-                       ParameterValueToWstring(value.second).c_str());
+                       GltfUtils::ParameterValueToWstring(value.second).c_str());
         }
     }
 
@@ -2459,10 +2305,10 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
     if (!mBaseColorTexture.LoadFromGltf("baseColorFactor", "baseColorTexture", ctx, model, values, logPrefix))
         return false;
 
-    if (!LoadFloatParam(mMetallicFactor, "metallicFactor", values, logPrefix))
+    if (!GltfUtils::LoadFloatParam(mMetallicFactor, "metallicFactor", values, logPrefix))
         return false;
 
-    if (!LoadFloatParam(mRoughnessFactor, "roughnessFactor", values, logPrefix))
+    if (!GltfUtils::LoadFloatParam(mRoughnessFactor, "roughnessFactor", values, logPrefix))
         return false;
 
     // Deprecated
@@ -2471,66 +2317,6 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
 
     return true;
 };
-
-//bool SceneMaterial::LoadFloat4Param(XMFLOAT4 &materialParam,
-//                                    const char *paramName,
-//                                    const tinygltf::ParameterMap &params,
-//                                    const std::wstring &logPrefix)
-//{
-//    auto paramIt = params.find(paramName);
-//    if (paramIt == params.end())
-//        return true;
-//
-//    auto &param = paramIt->second;
-//    if (param.number_array.size() != 4)
-//    {
-//        Log::Error(L"%sCorrupted \"%s\" material parameter (size %d instead of 4)!",
-//                    logPrefix.c_str(),
-//                    Utils::StringToWString(paramName).c_str(),
-//                    param.number_array.size());
-//        return false;
-//    }
-//    materialParam = XMFLOAT4((float)param.number_array[0],
-//                             (float)param.number_array[1],
-//                             (float)param.number_array[2],
-//                             (float)param.number_array[3]);
-//
-//    //Log::Debug(L"%s\"%s\": %s",
-//    //           logPrefix.c_str(),
-//    //           Utils::StringToWString(paramName).c_str(),
-//    //           ParameterValueToWstring(param).c_str());
-//
-//    return true;
-//};
-
-
-bool SceneMaterial::LoadFloatParam(float &materialParam,
-                                   const char *paramName,
-                                   const tinygltf::ParameterMap &params,
-                                   const std::wstring &logPrefix)
-{
-    auto paramIt = params.find(paramName);
-    if (paramIt == params.end())
-        return true;
-
-    auto &param = paramIt->second;
-    if (!param.has_number_value)
-    {
-        Log::Error(L"%sIncorrect \"%s\" material parameter type (must be float)!",
-                    logPrefix.c_str(),
-                    Utils::StringToWString(paramName).c_str());
-        return false;
-    }
-    materialParam = (float)param.number_value;
-
-    //Log::Debug(L"%s\"%s\": %s",
-    //           logPrefix.c_str(),
-    //           Utils::StringToWString(paramName).c_str(),
-    //           ParameterValueToWstring(param).c_str());
-
-    return true;
-};
-
 
 void SceneMaterial::PSSetShaderResources(IRenderingContext &ctx) const
 {

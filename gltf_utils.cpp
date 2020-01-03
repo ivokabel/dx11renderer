@@ -55,6 +55,88 @@ bool GltfUtils::LoadModel(tinygltf::Model &model, const std::wstring &filePath)
 }
 
 
+//bool GltfUtils::LoadFloat4Param(XMFLOAT4 &materialParam,
+//                                const char *paramName,
+//                                const tinygltf::ParameterMap &params,
+//                                const std::wstring &logPrefix)
+//{
+//    auto paramIt = params.find(paramName);
+//    if (paramIt == params.end())
+//        return true;
+//
+//    auto &param = paramIt->second;
+//    if (param.number_array.size() != 4)
+//    {
+//        Log::Error(L"%sCorrupted \"%s\" material parameter (size %d instead of 4)!",
+//                   logPrefix.c_str(),
+//                   Utils::StringToWString(paramName).c_str(),
+//                   param.number_array.size());
+//        return false;
+//    }
+//    materialParam = XMFLOAT4((float)param.number_array[0],
+//        (float)param.number_array[1],
+//                             (float)param.number_array[2],
+//                             (float)param.number_array[3]);
+//
+//    //Log::Debug(L"%s\"%s\": %s",
+//    //           logPrefix.c_str(),
+//    //           Utils::StringToWString(paramName).c_str(),
+//    //           GltfUtils::ParameterValueToWstring(param).c_str());
+//
+//    return true;
+//}
+
+
+bool GltfUtils::LoadFloatParam(float &materialParam,
+                               const char *paramName,
+                               const tinygltf::ParameterMap &params,
+                               const std::wstring &logPrefix)
+{
+    auto paramIt = params.find(paramName);
+    if (paramIt == params.end())
+        return true;
+
+    auto &param = paramIt->second;
+    if (!param.has_number_value)
+    {
+        Log::Error(L"%sIncorrect \"%s\" material parameter type (must be float)!",
+                   logPrefix.c_str(),
+                   Utils::StringToWString(paramName).c_str());
+        return false;
+    }
+    materialParam = (float)param.number_value;
+
+    //Log::Debug(L"%s\"%s\": %s",
+    //           logPrefix.c_str(),
+    //           Utils::StringToWString(paramName).c_str(),
+    //           GltfUtils::ParameterValueToWstring(param).c_str());
+
+    return true;
+}
+
+
+D3D11_PRIMITIVE_TOPOLOGY GltfUtils::ModeToTopology(int mode)
+{
+    switch (mode)
+    {
+    case TINYGLTF_MODE_POINTS:
+        return D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
+    case TINYGLTF_MODE_LINE:
+        return D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+    case TINYGLTF_MODE_LINE_STRIP:
+        return D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
+    case TINYGLTF_MODE_TRIANGLES:
+        return D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    case TINYGLTF_MODE_TRIANGLE_STRIP:
+        return D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+        //case TINYGLTF_MODE_LINE_LOOP:
+        //case TINYGLTF_MODE_TRIANGLE_FAN:
+    default:
+        return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    }
+}
+
+
 std::wstring GltfUtils::ModeToWString(int mode)
 {
     if (mode == TINYGLTF_MODE_POINTS)
@@ -72,3 +154,144 @@ std::wstring GltfUtils::ModeToWString(int mode)
     else
         return L"**UNKNOWN**";
 }
+
+
+std::wstring GltfUtils::StringIntMapToWString(const std::map<std::string, int> &m)
+{
+    std::stringstream ss;
+    bool first = true;
+    for (auto item : m)
+    {
+        if (!first)
+            ss << ", ";
+        else
+            first = false;
+        ss << item.first << ": " << item.second;
+    }
+    return Utils::StringToWString(ss.str());
+}
+
+
+std::wstring GltfUtils::TypeToWString(int ty)
+{
+    if (ty == TINYGLTF_TYPE_SCALAR)
+        return L"SCALAR";
+    else if (ty == TINYGLTF_TYPE_VECTOR)
+        return L"VECTOR";
+    else if (ty == TINYGLTF_TYPE_VEC2)
+        return L"VEC2";
+    else if (ty == TINYGLTF_TYPE_VEC3)
+        return L"VEC3";
+    else if (ty == TINYGLTF_TYPE_VEC4)
+        return L"VEC4";
+    else if (ty == TINYGLTF_TYPE_MATRIX)
+        return L"MATRIX";
+    else if (ty == TINYGLTF_TYPE_MAT2)
+        return L"MAT2";
+    else if (ty == TINYGLTF_TYPE_MAT3)
+        return L"MAT3";
+    else if (ty == TINYGLTF_TYPE_MAT4)
+        return L"MAT4";
+    return L"**UNKNOWN**";
+}
+
+
+std::wstring GltfUtils::ComponentTypeToWString(int ty)
+{
+    if (ty == TINYGLTF_COMPONENT_TYPE_BYTE)
+        return L"BYTE";
+    else if (ty == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
+        return L"UNSIGNED_BYTE";
+    else if (ty == TINYGLTF_COMPONENT_TYPE_SHORT)
+        return L"SHORT";
+    else if (ty == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
+        return L"UNSIGNED_SHORT";
+    else if (ty == TINYGLTF_COMPONENT_TYPE_INT)
+        return L"INT";
+    else if (ty == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
+        return L"UNSIGNED_INT";
+    else if (ty == TINYGLTF_COMPONENT_TYPE_FLOAT)
+        return L"FLOAT";
+    else if (ty == TINYGLTF_COMPONENT_TYPE_DOUBLE)
+        return L"DOUBLE";
+
+    return L"**UNKNOWN**";
+}
+
+
+//size_t GltfUtils::SizeOfComponentType(int ty)
+//{
+//    switch (ty)
+//    {
+//    case TINYGLTF_COMPONENT_TYPE_BYTE:              return sizeof(int8_t);
+//    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:     return sizeof(uint8_t);
+//    case TINYGLTF_COMPONENT_TYPE_SHORT:             return sizeof(int16_t);
+//    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:    return sizeof(uint16_t);
+//    case TINYGLTF_COMPONENT_TYPE_INT:               return sizeof(int32_t);
+//    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:      return sizeof(uint32_t);
+//    default:                                        return 0;
+//    }
+//}
+
+
+//std::wstring GltfUtils::TargetToWString(int target) {
+//    if (target == 34962)
+//        return L"GL_ARRAY_BUFFER";
+//    else if (target == 34963)
+//        return L"GL_ELEMENT_ARRAY_BUFFER";
+//    else
+//        return L"**UNKNOWN**";
+//}
+
+
+std::wstring GltfUtils::FloatArrayToWstring(const std::vector<double> &arr)
+{
+    if (arr.size() == 0)
+        return L"";
+
+    std::stringstream ss;
+    ss << "[ ";
+    for (size_t i = 0; i < arr.size(); i++)
+        ss << arr[i] << ((i != arr.size() - 1) ? ", " : "");
+    ss << " ]";
+
+    return Utils::StringToWString(ss.str());
+}
+
+
+std::wstring GltfUtils::StringDoubleMapToWstring(const std::map<std::string, double> &mp)
+{
+    if (mp.size() == 0)
+        return L"";
+
+    std::stringstream ss;
+    ss << "[";
+    bool first = true;
+    for (auto &item : mp)
+    {
+        ss << (first ? " " : ", ");
+        ss << item.first << ": " << item.second;
+        first = false;
+    }
+    ss << " ]";
+
+    return Utils::StringToWString(ss.str());
+}
+
+
+std::wstring GltfUtils::ParameterValueToWstring(const tinygltf::Parameter &param)
+{
+    if (!param.number_array.empty())
+        return FloatArrayToWstring(param.number_array);
+    else if (!param.json_double_value.empty())
+        return StringDoubleMapToWstring(param.json_double_value);
+    else if (param.has_number_value)
+    {
+        std::wstringstream ss;
+        ss << param.number_value;
+        return ss.str();
+    }
+    else
+        return Utils::StringToWString("\"" + param.string_value + "\"");
+}
+

@@ -182,18 +182,6 @@ public:
 
 private:
 
-    //static bool LoadFloat4Param(XMFLOAT4 &materialParam,
-    //                            const char *paramName,
-    //                            const tinygltf::ParameterMap &params,
-    //                            const std::wstring &logPrefix);
-
-    static bool LoadFloatParam(float &materialParam,
-                               const char *paramName,
-                               const tinygltf::ParameterMap &params,
-                               const std::wstring &logPrefix);
-
-private:
-
     // PBR metal/roughness workflow
     SceneTexture    mBaseColorTexture;
     float           mMetallicFactor = 1.f;
