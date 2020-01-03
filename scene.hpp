@@ -317,9 +317,9 @@ private:
     void AddTranslationToRoots(const std::vector<double> &vec);
     void AddMatrixToRoots(const std::vector<double> &vec);
 
-    void RenderNodeGeometry(IRenderingContext &ctx,
-                            const SceneNode &node,
-                            const XMMATRIX &parentWorldMtrx);
+    void RenderNode(IRenderingContext &ctx,
+                    const SceneNode &node,
+                    const XMMATRIX &parentWorldMtrx);
 
 private:
 

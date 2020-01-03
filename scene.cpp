@@ -1119,7 +1119,7 @@ void Scene::RenderFrame(IRenderingContext &ctx)
 
     // Scene geometry
     for (auto &node : mRootNodes)
-        RenderNodeGeometry(ctx, node, XMMatrixIdentity());
+        RenderNode(ctx, node, XMMatrixIdentity());
 
     // Proxy geometry for point lights
     for (int i = 0; i < mPointLights.size(); i++)
@@ -1183,9 +1183,9 @@ void Scene::AddMatrixToRoots(const std::vector<double> &vec)
 }
 
 
-void Scene::RenderNodeGeometry(IRenderingContext &ctx,
-                               const SceneNode &node,
-                               const XMMATRIX &parentWorldMtrx)
+void Scene::RenderNode(IRenderingContext &ctx,
+                       const SceneNode &node,
+                       const XMMATRIX &parentWorldMtrx)
 {
     if (!ctx.IsValid())
         return;
@@ -1214,7 +1214,7 @@ void Scene::RenderNodeGeometry(IRenderingContext &ctx,
 
     // Children
     for (auto &child : node.mChildren)
-        RenderNodeGeometry(ctx, child, worldMtrx);
+        RenderNode(ctx, child, worldMtrx);
 }
 
 bool Scene::GetAmbientColor(float(&rgba)[4])
