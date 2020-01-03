@@ -2116,78 +2116,20 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
 
 
 SceneMaterial::SceneMaterial() :
+    mSpecularTexture(XMFLOAT4(0.f, 0.f, 0.f, 1.f)),
     mBaseColorTexture(XMFLOAT4(.5f, .5f, .5f, 1.f))
 {}
-
-SceneMaterial::SceneMaterial(const SceneMaterial &src) :
-    mBaseColorTexture(src.mBaseColorTexture),
-    mMetallicFactor(src.mMetallicFactor),
-    mRoughnessFactor(src.mRoughnessFactor),
-    mSpecularSRV(src.mSpecularSRV)
-{
-    // We are creating new references of device resources
-    Utils::SafeAddRef(mSpecularSRV);
-}
-
-SceneMaterial::SceneMaterial(SceneMaterial &&src) :
-    mBaseColorTexture(std::move(src.mBaseColorTexture)),
-    mMetallicFactor(Utils::Exchange(src.mMetallicFactor, 1.f)),
-    mRoughnessFactor(Utils::Exchange(src.mRoughnessFactor, 1.f)),
-    mSpecularSRV(Utils::Exchange(src.mSpecularSRV, nullptr))
-{}
-
-SceneMaterial& SceneMaterial::operator =(const SceneMaterial &src)
-{
-    mBaseColorTexture = src.mBaseColorTexture;
-    mMetallicFactor   = src.mMetallicFactor;
-    mRoughnessFactor  = src.mRoughnessFactor;
-    mSpecularSRV     = src.mSpecularSRV;
-
-    // We are creating new references of device resources
-    Utils::SafeAddRef(mSpecularSRV);
-
-    return *this;
-}
-
-SceneMaterial& SceneMaterial::operator =(SceneMaterial &&src)
-{
-    mBaseColorTexture = std::move(src.mBaseColorTexture);
-    mMetallicFactor   = Utils::Exchange(src.mMetallicFactor, 1.f);
-    mRoughnessFactor  = Utils::Exchange(src.mRoughnessFactor, 1.f);
-    mSpecularSRV     = Utils::Exchange(src.mSpecularSRV, nullptr);
-
-    return *this;
-}
-
-SceneMaterial::~SceneMaterial()
-{
-    Utils::ReleaseAndMakeNull(mSpecularSRV);
-}
 
 
 bool SceneMaterial::Create(IRenderingContext &ctx,
                            const wchar_t *diffuseTexPath,
                            const wchar_t *specularTexPath)
 {
-    if (!mBaseColorTexture.Create(ctx, diffuseTexPath))
+    if (!mSpecularTexture.Create(ctx, specularTexPath))
         return false;
 
-    // Deprecated
-    if (specularTexPath)
-    {
-        auto device = ctx.GetDevice();
-        if (!device)
-            return false;
-
-        HRESULT hr = D3DX11CreateShaderResourceViewFromFile(device, specularTexPath, nullptr, nullptr, &mSpecularSRV, nullptr);
-        if (FAILED(hr))
-            return false;
-    }
-    else
-    {
-        static const auto blackColor = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
-        SceneUtils::CreateConstantTextureSRV(ctx, mSpecularSRV, blackColor);
-    }
+    if (!mBaseColorTexture.Create(ctx, diffuseTexPath))
+        return false;
 
     return true;
 }
@@ -2217,6 +2159,9 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
 
     auto &values = material.values;
 
+    if (!mSpecularTexture.Create(ctx, nullptr))
+        return false;
+
     if (!mBaseColorTexture.LoadFromGltf("baseColorFactor", "baseColorTexture", ctx, model, values, logPrefix))
         return false;
 
@@ -2226,10 +2171,6 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
     if (!GltfUtils::LoadFloatParam(mRoughnessFactor, "roughnessFactor", values, logPrefix))
         return false;
 
-    // Deprecated
-    static const auto blackColor = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
-    SceneUtils::CreateConstantTextureSRV(ctx, mSpecularSRV, blackColor);
-
     return true;
 };
 
@@ -2238,6 +2179,6 @@ void SceneMaterial::PSSetShaderResources(IRenderingContext &ctx) const
     if (auto immCtx = ctx.GetImmediateContext())
     {
         immCtx->PSSetShaderResources(0, 1, &mBaseColorTexture.srv);
-        immCtx->PSSetShaderResources(1, 1, &mSpecularSRV);
+        immCtx->PSSetShaderResources(1, 1, &mSpecularTexture.srv);
     }
 }

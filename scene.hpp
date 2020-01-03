@@ -162,11 +162,6 @@ class SceneMaterial
 public:
 
     SceneMaterial();
-    SceneMaterial(const SceneMaterial &src);
-    SceneMaterial(SceneMaterial &&src);
-    SceneMaterial& operator =(const SceneMaterial &src);
-    SceneMaterial& operator =(SceneMaterial &&src);
-    ~SceneMaterial();
 
 public:
 
@@ -182,14 +177,13 @@ public:
 
 private:
 
+    SceneTexture    mSpecularTexture; // Deprecated (blinn-phong workflow)
+
     // PBR metal/roughness workflow
     SceneTexture    mBaseColorTexture;
     float           mMetallicFactor = 1.f;
     float           mRoughnessFactor = 1.f;
     //TODO:         mMetallicRoughnessTexture
-
-    // Textures
-    ID3D11ShaderResourceView*   mSpecularSRV = nullptr; // Deprecated?
 };
 
 
