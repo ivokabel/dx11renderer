@@ -182,10 +182,10 @@ public:
 
 private:
 
-    static bool LoadFloat4Param(XMFLOAT4 &materialParam,
-                                const char *paramName,
-                                const tinygltf::ParameterMap &params,
-                                const std::wstring &logPrefix);
+    //static bool LoadFloat4Param(XMFLOAT4 &materialParam,
+    //                            const char *paramName,
+    //                            const tinygltf::ParameterMap &params,
+    //                            const std::wstring &logPrefix);
 
     static bool LoadFloatParam(float &materialParam,
                                const char *paramName,
@@ -294,6 +294,7 @@ private:
     // Loads the scene specified via constructor
     bool Load(IRenderingContext &ctx);
     bool LoadExternal(IRenderingContext &ctx, const std::wstring &filePath);
+    bool LoadGltfModel(tinygltf::Model &model, const std::wstring &filePath);
 
     // glTF loader
     bool LoadGLTF(IRenderingContext &ctx,

@@ -521,7 +521,7 @@ bool Scene::LoadExternal(IRenderingContext &ctx, const std::wstring &filePath)
 }
 
 
-bool LoadGltfModel(tinygltf::Model &model, const std::wstring &filePath)
+bool Scene::LoadGltfModel(tinygltf::Model &model, const std::wstring &filePath)
 {
     using namespace std;
 
@@ -2538,36 +2538,36 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
     return true;
 };
 
-bool SceneMaterial::LoadFloat4Param(XMFLOAT4 &materialParam,
-                                    const char *paramName,
-                                    const tinygltf::ParameterMap &params,
-                                    const std::wstring &logPrefix)
-{
-    auto paramIt = params.find(paramName);
-    if (paramIt == params.end())
-        return true;
-
-    auto &param = paramIt->second;
-    if (param.number_array.size() != 4)
-    {
-        Log::Error(L"%sCorrupted \"%s\" material parameter (size %d instead of 4)!",
-                    logPrefix.c_str(),
-                    Utils::StringToWString(paramName).c_str(),
-                    param.number_array.size());
-        return false;
-    }
-    materialParam = XMFLOAT4((float)param.number_array[0],
-                             (float)param.number_array[1],
-                             (float)param.number_array[2],
-                             (float)param.number_array[3]);
-
-    //Log::Debug(L"%s\"%s\": %s",
-    //           logPrefix.c_str(),
-    //           Utils::StringToWString(paramName).c_str(),
-    //           ParameterValueToWstring(param).c_str());
-
-    return true;
-};
+//bool SceneMaterial::LoadFloat4Param(XMFLOAT4 &materialParam,
+//                                    const char *paramName,
+//                                    const tinygltf::ParameterMap &params,
+//                                    const std::wstring &logPrefix)
+//{
+//    auto paramIt = params.find(paramName);
+//    if (paramIt == params.end())
+//        return true;
+//
+//    auto &param = paramIt->second;
+//    if (param.number_array.size() != 4)
+//    {
+//        Log::Error(L"%sCorrupted \"%s\" material parameter (size %d instead of 4)!",
+//                    logPrefix.c_str(),
+//                    Utils::StringToWString(paramName).c_str(),
+//                    param.number_array.size());
+//        return false;
+//    }
+//    materialParam = XMFLOAT4((float)param.number_array[0],
+//                             (float)param.number_array[1],
+//                             (float)param.number_array[2],
+//                             (float)param.number_array[3]);
+//
+//    //Log::Debug(L"%s\"%s\": %s",
+//    //           logPrefix.c_str(),
+//    //           Utils::StringToWString(paramName).c_str(),
+//    //           ParameterValueToWstring(param).c_str());
+//
+//    return true;
+//};
 
 
 bool SceneMaterial::LoadFloatParam(float &materialParam,
