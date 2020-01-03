@@ -26,7 +26,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
 
     auto scene = std::make_shared<Scene>(
         //Scene::eHardwiredSimpleDebugSphere
-        Scene::eHardwiredEarth
+        //Scene::eHardwiredEarth
         //Scene::eHardwiredThreePlanets
         //Scene::eExternalDebugTriangleWithoutIndices // Non-indexed geometry not yet supported!
         //Scene::eExternalDebugTriangle
@@ -48,7 +48,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eExternalSpotMiniRigged
         //Scene::eExternalMandaloriansHelmet
         //Scene::eExternalWeltron2001SpaceballRadio
-        //Scene::eExternalTheRocket
+        Scene::eExternalTheRocket
         //Scene::eExternalRoboV1
         );
     SimpleDX11Renderer renderer(scene);
