@@ -1,5 +1,6 @@
 #include "scene.hpp"
 
+#include "scene_utils.hpp"
 #include "gltf_utils.hpp"
 #include "utils.hpp"
 #include "log.hpp"
@@ -1902,92 +1903,6 @@ void SceneNode::Animate(IRenderingContext &ctx)
 }
 
 
-bool CreateTextureSrvFromData(IRenderingContext &ctx,
-                              ID3D11ShaderResourceView *&srv,
-                              const UINT width,
-                              const UINT height,
-                              const DXGI_FORMAT dataFormat,
-                              const void *data,
-                              const UINT lineMemPitch)
-{
-    auto device = ctx.GetDevice();
-    if (!device)
-        return false;
-    HRESULT hr = S_OK;
-    ID3D11Texture2D *tex = nullptr;
-
-    // Texture containing the data
-    D3D11_TEXTURE2D_DESC descTex;
-    ZeroMemory(&descTex, sizeof(D3D11_TEXTURE2D_DESC));
-    descTex.ArraySize = 1;
-    descTex.Usage = D3D11_USAGE_IMMUTABLE;
-    descTex.Format = dataFormat;
-    descTex.Width = width;
-    descTex.Height = height;
-    descTex.MipLevels = 1;
-    descTex.SampleDesc.Count = 1;
-    descTex.SampleDesc.Quality = 0;
-    descTex.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-    D3D11_SUBRESOURCE_DATA initData = { data, lineMemPitch, 0 };
-    hr = device->CreateTexture2D(&descTex, &initData, &tex);
-    if (FAILED(hr))
-        return false;
-
-    // Shader resource view
-    D3D11_SHADER_RESOURCE_VIEW_DESC descSRV;
-    descSRV.Format = descTex.Format;
-    descSRV.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-    descSRV.Texture2D.MipLevels = 1;
-    descSRV.Texture2D.MostDetailedMip = 0;
-    hr = device->CreateShaderResourceView(tex, &descSRV, &srv);
-    Utils::ReleaseAndMakeNull(tex);
-    if (FAILED(hr))
-        return false;
-
-    return true;
-}
-
-
-bool CreateConstantTextureSRV(IRenderingContext &ctx,
-                              ID3D11ShaderResourceView *&srv,
-                              XMFLOAT4 color)
-{
-    return CreateTextureSrvFromData(ctx, srv,
-                                    1, 1, DXGI_FORMAT_R32G32B32A32_FLOAT,
-                                    &color, sizeof(XMFLOAT4));
-}
-
-
-bool ConvertToFloatImage(std::vector<unsigned char> &floatImage,
-                         const tinygltf::Image &srcImage)
-{
-    const size_t floatDataSize = srcImage.width * srcImage.height * 4 * sizeof(float);
-    floatImage.resize(floatDataSize);
-    if (floatImage.size() != floatDataSize)
-        return false;
-
-    auto floatPtr = reinterpret_cast<float*>(floatImage.data());
-
-    if (srcImage.component == 4 &&
-        srcImage.bits == 8 &&
-        srcImage.pixel_type == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
-    {
-        auto srcPtr = reinterpret_cast<const uint8_t*>(srcImage.image.data());
-
-        for (size_t x = 0; x < srcImage.width; x++)
-            for (size_t y = 0; y < srcImage.height; y++)
-            {
-                for (size_t comp = 0; comp < srcImage.component; comp++, srcPtr++, floatPtr++)
-                    *floatPtr = *srcPtr / 255.f;
-            }
-
-        return true;
-    }
-    else
-        return false;
-}
-
-
 SceneTexture::SceneTexture(XMFLOAT4 defaultConstFactor) :
     mConstFactor(defaultConstFactor)
 {}
@@ -2045,7 +1960,7 @@ bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path)
             return false;
     }
     else
-        CreateConstantTextureSRV(ctx, srv, mConstFactor);
+        SceneUtils::CreateConstantTextureSRV(ctx, srv, mConstFactor);
 
     return true;
 }
@@ -2127,7 +2042,7 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
         }
 
         std::vector<unsigned char> floatImage;
-        if (!ConvertToFloatImage(floatImage, image))
+        if (!SceneUtils::ConvertImageToFloat(floatImage, image))
         {
             Log::Error(L"%sFailed to convert image \"%s\" to float format: \"%s\", %dx%d, %dx%db %s, data %dB",
                        logPrefix.c_str(),
@@ -2142,13 +2057,13 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
             return false;
         }
 
-        if (!CreateTextureSrvFromData(ctx,
-                                      srv,
-                                      image.width,
-                                      image.height,
-                                      DXGI_FORMAT_R32G32B32A32_FLOAT,
-                                      floatImage.data(),
-                                      image.width * 4 * sizeof(float)))
+        if (!SceneUtils::CreateTextureSrvFromData(ctx,
+                                                  srv,
+                                                  image.width,
+                                                  image.height,
+                                                  DXGI_FORMAT_R32G32B32A32_FLOAT,
+                                                  floatImage.data(),
+                                                  image.width * 4 * sizeof(float)))
         {
             Log::Error(L"%sFailed to create texture & SRV for image \"%s\": \"%s\", %dx%d",
                        logPrefix.c_str(),
@@ -2185,7 +2100,7 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
         //           Utils::StringToWstring(constParamName).c_str(),
         //           GltfUtils::ParameterValueToWstring(constParam).c_str());
 
-        if (!CreateConstantTextureSRV(ctx, srv, mConstFactor))
+        if (!SceneUtils::CreateConstantTextureSRV(ctx, srv, mConstFactor))
         {
             Log::Error(L"%sFailed to create constant texture for \"%s\"!",
                        logPrefix.c_str(),
@@ -2271,7 +2186,7 @@ bool SceneMaterial::Create(IRenderingContext &ctx,
     else
     {
         static const auto blackColor = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
-        CreateConstantTextureSRV(ctx, mSpecularSRV, blackColor);
+        SceneUtils::CreateConstantTextureSRV(ctx, mSpecularSRV, blackColor);
     }
 
     return true;
@@ -2313,7 +2228,7 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
 
     // Deprecated
     static const auto blackColor = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
-    CreateConstantTextureSRV(ctx, mSpecularSRV, blackColor);
+    SceneUtils::CreateConstantTextureSRV(ctx, mSpecularSRV, blackColor);
 
     return true;
 };
