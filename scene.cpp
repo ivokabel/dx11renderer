@@ -288,8 +288,8 @@ bool Scene::Load(IRenderingContext &ctx)
     case eExternalWeltron2001SpaceballRadio:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/ArneDC/Prinzsound SM8 - Weltron 2001 Spaceball Radio/scene.gltf"))
             return false;
-        AddScaleToRoots(.014);
-        AddTranslationToRoots({ 0., -3.1, 0. });
+        AddScaleToRoots(.016);
+        AddTranslationToRoots({ 0., -3.6, 0. });
         return true;
 
     case eExternalSpotMiniRigged:
@@ -303,7 +303,7 @@ bool Scene::Load(IRenderingContext &ctx)
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/arn204/The Mandalorian's Helmet/scene.gltf"))
             return false;
         AddTranslationToRoots({ -35., -70., 85. });
-        AddScaleToRoots(.15f);
+        AddScaleToRoots(.17f);
         return true;
 
     case eExternalRoboV1:
@@ -337,7 +337,7 @@ bool Scene::Load(IRenderingContext &ctx)
         if (!primitive->CreateSphere(ctx, 40, 80))
             return false;
         primitive->SetMaterialIdx(0);
-        node0.AddScale({ 3.2f, 3.2f, 3.2f });
+        node0.AddScale({ 3.4f, 3.4f, 3.4f });
 
         mAmbientLight.luminance     = XMFLOAT4(0.10f, 0.10f, 0.10f, 1.0f);
 
@@ -378,7 +378,7 @@ bool Scene::Load(IRenderingContext &ctx)
         if (!primitive->CreateSphere(ctx, 40, 80))
             return false;
         primitive->SetMaterialIdx(0);
-        node0.AddScale({ 3.2f, 3.2f, 3.2f });
+        node0.AddScale({ 3.4f, 3.4f, 3.4f });
 
         mAmbientLight.luminance     = XMFLOAT4(0.f, 0.f, 0.f, 1.0f);
 
