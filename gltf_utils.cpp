@@ -14,14 +14,14 @@ bool GltfUtils::LoadModel(tinygltf::Model &model, const std::wstring &filePath)
     using namespace std;
 
     // Convert to plain string for tinygltf
-    string filePathA = Utils::WStringToString(filePath);
+    string filePathA = Utils::WstringToString(filePath);
 
     // debug: tiny glTF test
     //{
     //    std::stringstream ss;
     //    cout_redirect cr(ss.rdbuf());
     //    TinyGltfTest(filePathA.c_str());
-    //    Log::Debug(L"Gltf::LoadModel: TinyGltfTest output:\n\n%s", Utils::StringToWString(ss.str()).c_str());
+    //    Log::Debug(L"Gltf::LoadModel: TinyGltfTest output:\n\n%s", Utils::StringToWstring(ss.str()).c_str());
     //}
 
     tinygltf::TinyGLTF tinyGltf;
@@ -41,10 +41,10 @@ bool GltfUtils::LoadModel(tinygltf::Model &model, const std::wstring &filePath)
     }
 
     if (!errA.empty())
-        Log::Debug(L"Gltf::LoadModel: Error: %s", Utils::StringToWString(errA).c_str());
+        Log::Debug(L"Gltf::LoadModel: Error: %s", Utils::StringToWstring(errA).c_str());
 
     if (!warnA.empty())
-        Log::Debug(L"Gltf::LoadModel: Warning: %s", Utils::StringToWString(warnA).c_str());
+        Log::Debug(L"Gltf::LoadModel: Warning: %s", Utils::StringToWstring(warnA).c_str());
 
     if (ret)
         Log::Debug(L"Gltf::LoadModel: Succesfully loaded model");
@@ -69,7 +69,7 @@ bool GltfUtils::LoadModel(tinygltf::Model &model, const std::wstring &filePath)
 //    {
 //        Log::Error(L"%sCorrupted \"%s\" material parameter (size %d instead of 4)!",
 //                   logPrefix.c_str(),
-//                   Utils::StringToWString(paramName).c_str(),
+//                   Utils::StringToWstring(paramName).c_str(),
 //                   param.number_array.size());
 //        return false;
 //    }
@@ -80,7 +80,7 @@ bool GltfUtils::LoadModel(tinygltf::Model &model, const std::wstring &filePath)
 //
 //    //Log::Debug(L"%s\"%s\": %s",
 //    //           logPrefix.c_str(),
-//    //           Utils::StringToWString(paramName).c_str(),
+//    //           Utils::StringToWstring(paramName).c_str(),
 //    //           GltfUtils::ParameterValueToWstring(param).c_str());
 //
 //    return true;
@@ -101,14 +101,14 @@ bool GltfUtils::LoadFloatParam(float &materialParam,
     {
         Log::Error(L"%sIncorrect \"%s\" material parameter type (must be float)!",
                    logPrefix.c_str(),
-                   Utils::StringToWString(paramName).c_str());
+                   Utils::StringToWstring(paramName).c_str());
         return false;
     }
     materialParam = (float)param.number_value;
 
     //Log::Debug(L"%s\"%s\": %s",
     //           logPrefix.c_str(),
-    //           Utils::StringToWString(paramName).c_str(),
+    //           Utils::StringToWstring(paramName).c_str(),
     //           GltfUtils::ParameterValueToWstring(param).c_str());
 
     return true;
@@ -137,7 +137,7 @@ D3D11_PRIMITIVE_TOPOLOGY GltfUtils::ModeToTopology(int mode)
 }
 
 
-std::wstring GltfUtils::ModeToWString(int mode)
+std::wstring GltfUtils::ModeToWstring(int mode)
 {
     if (mode == TINYGLTF_MODE_POINTS)
         return L"POINTS";
@@ -156,7 +156,7 @@ std::wstring GltfUtils::ModeToWString(int mode)
 }
 
 
-std::wstring GltfUtils::StringIntMapToWString(const std::map<std::string, int> &m)
+std::wstring GltfUtils::StringIntMapToWstring(const std::map<std::string, int> &m)
 {
     std::stringstream ss;
     bool first = true;
@@ -168,11 +168,11 @@ std::wstring GltfUtils::StringIntMapToWString(const std::map<std::string, int> &
             first = false;
         ss << item.first << ": " << item.second;
     }
-    return Utils::StringToWString(ss.str());
+    return Utils::StringToWstring(ss.str());
 }
 
 
-std::wstring GltfUtils::TypeToWString(int ty)
+std::wstring GltfUtils::TypeToWstring(int ty)
 {
     if (ty == TINYGLTF_TYPE_SCALAR)
         return L"SCALAR";
@@ -196,7 +196,7 @@ std::wstring GltfUtils::TypeToWString(int ty)
 }
 
 
-std::wstring GltfUtils::ComponentTypeToWString(int ty)
+std::wstring GltfUtils::ComponentTypeToWstring(int ty)
 {
     if (ty == TINYGLTF_COMPONENT_TYPE_BYTE)
         return L"BYTE";
@@ -234,7 +234,7 @@ std::wstring GltfUtils::ComponentTypeToWString(int ty)
 //}
 
 
-//std::wstring GltfUtils::TargetToWString(int target) {
+//std::wstring GltfUtils::TargetToWstring(int target) {
 //    if (target == 34962)
 //        return L"GL_ARRAY_BUFFER";
 //    else if (target == 34963)
@@ -255,7 +255,7 @@ std::wstring GltfUtils::FloatArrayToWstring(const std::vector<double> &arr)
         ss << arr[i] << ((i != arr.size() - 1) ? ", " : "");
     ss << " ]";
 
-    return Utils::StringToWString(ss.str());
+    return Utils::StringToWstring(ss.str());
 }
 
 
@@ -275,7 +275,7 @@ std::wstring GltfUtils::StringDoubleMapToWstring(const std::map<std::string, dou
     }
     ss << " ]";
 
-    return Utils::StringToWString(ss.str());
+    return Utils::StringToWstring(ss.str());
 }
 
 
@@ -292,6 +292,6 @@ std::wstring GltfUtils::ParameterValueToWstring(const tinygltf::Parameter &param
         return ss.str();
     }
     else
-        return Utils::StringToWString("\"" + param.string_value + "\"");
+        return Utils::StringToWstring("\"" + param.string_value + "\"");
 }
 

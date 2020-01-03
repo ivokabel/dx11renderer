@@ -535,7 +535,7 @@ const tinygltf::Accessor& GetPrimitiveAttrAccessor(bool &accessorLoaded,
         Log::Write(requiredData ? Log::eError : Log::eDebug,
                    L"%sNo %s attribute present in primitive %d!",
                    logPrefix.c_str(),
-                   Utils::StringToWString(attrName).c_str(),
+                   Utils::StringToWstring(attrName).c_str(),
                    primitiveIdx);
         accessorLoaded = false;
         return dummyAccessor;
@@ -546,7 +546,7 @@ const tinygltf::Accessor& GetPrimitiveAttrAccessor(bool &accessorLoaded,
     {
         Log::Error(L"%sInvalid %s accessor index (%d/%d)!",
                    logPrefix.c_str(),
-                   Utils::StringToWString(attrName).c_str(),
+                   Utils::StringToWstring(attrName).c_str(),
                    accessorIdx,
                    model.accessors.size());
         accessorLoaded = false;
@@ -569,11 +569,11 @@ bool IterateGltfAccesorData(const tinygltf::Model &model,
     Log::Debug(L"%s%s accesor \"%s\": view %d, offset %d, type %s<%s>, count %d",
                logPrefix,
                logDataName,
-               Utils::StringToWString(accessor.name).c_str(),
+               Utils::StringToWstring(accessor.name).c_str(),
                accessor.bufferView,
                accessor.byteOffset,
-               GltfUtils::TypeToWString(accessor.type).c_str(),
-               GltfUtils::ComponentTypeToWString(accessor.componentType).c_str(),
+               GltfUtils::TypeToWstring(accessor.type).c_str(),
+               GltfUtils::ComponentTypeToWstring(accessor.componentType).c_str(),
                accessor.count);
 
     // Buffer view
@@ -593,12 +593,12 @@ bool IterateGltfAccesorData(const tinygltf::Model &model,
     //           logPrefix,
     //           logDataName,
     //           bufferViewIdx,
-    //           Utils::StringToWString(bufferView.name).c_str(),
+    //           Utils::StringToWstring(bufferView.name).c_str(),
     //           bufferView.buffer,
     //           bufferView.byteOffset,
     //           bufferView.byteLength,
     //           bufferView.byteStride,
-    //           GltfUtils::TargetToWString(bufferView.target).c_str());
+    //           GltfUtils::TargetToWstring(bufferView.target).c_str());
 
     // Buffer
 
@@ -625,10 +625,10 @@ bool IterateGltfAccesorData(const tinygltf::Model &model,
     //           logPrefix,
     //           logDataName,
     //           bufferIdx,
-    //           Utils::StringToWString(buffer.name).c_str(),
+    //           Utils::StringToWstring(buffer.name).c_str(),
     //           buffer.data.data(),
     //           buffer.data.size(),
-    //           Utils::StringToWString(buffer.uri).c_str());
+    //           Utils::StringToWstring(buffer.uri).c_str());
 
     // TODO: Check that buffer view is large enough to contain all data from accessor?
 
@@ -706,7 +706,7 @@ bool Scene::LoadMaterialsFromGltf(IRenderingContext &ctx,
                    materialLogPrefix.c_str(),
                    matIdx,
                    materials.size(),
-                   Utils::StringToWString(material.name).c_str());
+                   Utils::StringToWstring(material.name).c_str());
 
         SceneMaterial sceneMaterial;
         if (!sceneMaterial.LoadFromGltf(ctx, model, material, valueLogPrefix))
@@ -734,7 +734,7 @@ bool Scene::LoadSceneFromGltf(IRenderingContext &ctx,
 
     Log::Debug(L"%sScene 0 \"%s\": %d root node(s)",
                logPrefix.c_str(),
-               Utils::StringToWString(scene.name).c_str(),
+               Utils::StringToWstring(scene.name).c_str(),
                scene.nodes.size());
 
     // Nodes hierarchy
@@ -785,7 +785,7 @@ bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
         //Log::Debug(L"%sLoading child %d \"%s\"",
         //           childLogPrefix.c_str(),
         //           childIdx,
-        //           Utils::StringToWString(model.nodes[childIdx].name).c_str());
+        //           Utils::StringToWstring(model.nodes[childIdx].name).c_str());
 
         SceneNode childNode;
         if (!LoadSceneNodeFromGLTF(ctx, childNode, model, childIdx, childLogPrefix))
@@ -1328,8 +1328,8 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
                logPrefix.c_str(),
                primitiveIdx,
                mesh.primitives.size(),
-               GltfUtils::ModeToWString(primitive.mode).c_str(),
-               GltfUtils::StringIntMapToWString(primitive.attributes).c_str(),
+               GltfUtils::ModeToWstring(primitive.mode).c_str(),
+               GltfUtils::StringIntMapToWstring(primitive.attributes).c_str(),
                primitive.indices,
                primitive.material);
 
@@ -1804,7 +1804,7 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
                    logPrefix.c_str(), 
                    nodeIdx,
                    model.nodes.size(),
-                   Utils::StringToWString(node.name).c_str(),
+                   Utils::StringToWstring(node.name).c_str(),
                    node.mesh,
                    transforms.c_str(),
                    node.children.size());
@@ -1824,19 +1824,19 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
                          logPrefix.c_str(),
                          nodeIdx,
                          model.nodes.size(),
-                         Utils::StringToWString(node.name).c_str());
+                         Utils::StringToWstring(node.name).c_str());
         if (!node.rotation.empty())
             Log::Warning(L"%sNode %d/%d \"%s\": node.rotation is not empty when tranformation matrix is provided. Ignoring.",
                          logPrefix.c_str(),
                          nodeIdx,
                          model.nodes.size(),
-                         Utils::StringToWString(node.name).c_str());
+                         Utils::StringToWstring(node.name).c_str());
         if (!node.translation.empty())
             Log::Warning(L"%sNode %d/%d \"%s\": node.translation is not empty when tranformation matrix is provided. Ignoring.",
                          logPrefix.c_str(),
                          nodeIdx,
                          model.nodes.size(),
-                         Utils::StringToWString(node.name).c_str());
+                         Utils::StringToWstring(node.name).c_str());
     }
     else
     {
@@ -1862,7 +1862,7 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
                    subItemsLogPrefix.c_str(),
                    meshIdx,
                    model.meshes.size(),
-                   Utils::StringToWString(mesh.name).c_str(),
+                   Utils::StringToWstring(mesh.name).c_str(),
                    mesh.primitives.size());
 
         // Primitives
@@ -2073,7 +2073,7 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
                        logPrefix.c_str(),
                        textureIndex,
                        textures.size(),
-                       Utils::StringToWString(textureParamName).c_str());
+                       Utils::StringToWstring(textureParamName).c_str());
             return false;
         }
 
@@ -2095,13 +2095,13 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
 
         Log::Debug(L"%sImage \"%s\": \"%s\", %dx%d, %dx%db %s, data %dB",
                    logPrefix.c_str(),
-                   Utils::StringToWString(image.name).c_str(),
-                   Utils::StringToWString(image.uri).c_str(),
+                   Utils::StringToWstring(image.name).c_str(),
+                   Utils::StringToWstring(image.uri).c_str(),
                    image.width,
                    image.height,
                    image.component,
                    image.bits,
-                   GltfUtils::ComponentTypeToWString(image.pixel_type).c_str(),
+                   GltfUtils::ComponentTypeToWstring(image.pixel_type).c_str(),
                    image.image.size());
 
         const auto srcPixelSize        = image.component * image.bits / 8;
@@ -2115,13 +2115,13 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
         {
             Log::Error(L"%sInvalid image \"%s\": \"%s\", %dx%d, %dx%db %s, data %dB",
                        logPrefix.c_str(),
-                       Utils::StringToWString(image.name).c_str(),
-                       Utils::StringToWString(image.uri).c_str(),
+                       Utils::StringToWstring(image.name).c_str(),
+                       Utils::StringToWstring(image.uri).c_str(),
                        image.width,
                        image.height,
                        image.component,
                        image.bits,
-                       GltfUtils::ComponentTypeToWString(image.pixel_type).c_str(),
+                       GltfUtils::ComponentTypeToWstring(image.pixel_type).c_str(),
                        image.image.size());
             return false;
         }
@@ -2131,13 +2131,13 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
         {
             Log::Error(L"%sFailed to convert image \"%s\" to float format: \"%s\", %dx%d, %dx%db %s, data %dB",
                        logPrefix.c_str(),
-                       Utils::StringToWString(image.name).c_str(),
-                       Utils::StringToWString(image.uri).c_str(),
+                       Utils::StringToWstring(image.name).c_str(),
+                       Utils::StringToWstring(image.uri).c_str(),
                        image.width,
                        image.height,
                        image.component,
                        image.bits,
-                       GltfUtils::ComponentTypeToWString(image.pixel_type).c_str(),
+                       GltfUtils::ComponentTypeToWstring(image.pixel_type).c_str(),
                        image.image.size());
             return false;
         }
@@ -2152,8 +2152,8 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
         {
             Log::Error(L"%sFailed to create texture & SRV for image \"%s\": \"%s\", %dx%d",
                        logPrefix.c_str(),
-                       Utils::StringToWString(image.name).c_str(),
-                       Utils::StringToWString(image.uri).c_str(),
+                       Utils::StringToWstring(image.name).c_str(),
+                       Utils::StringToWstring(image.uri).c_str(),
                        image.width,
                        image.height);
             return false;
@@ -2171,7 +2171,7 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
         {
             Log::Error(L"%sCorrupted \"%s\" material parameter (size %d instead of 4)!",
                         logPrefix.c_str(),
-                        Utils::StringToWString(constParamName).c_str(),
+                        Utils::StringToWstring(constParamName).c_str(),
                         constParam.number_array.size());
             return false;
         }
@@ -2182,14 +2182,14 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
 
         //Log::Debug(L"%s\"%s\": %s",
         //           logPrefix.c_str(),
-        //           Utils::StringToWString(constParamName).c_str(),
+        //           Utils::StringToWstring(constParamName).c_str(),
         //           GltfUtils::ParameterValueToWstring(constParam).c_str());
 
         if (!CreateConstantTextureSRV(ctx, srv, mConstFactor))
         {
             Log::Error(L"%sFailed to create constant texture for \"%s\"!",
                        logPrefix.c_str(),
-                       Utils::StringToWString(constParamName).c_str());
+                       Utils::StringToWstring(constParamName).c_str());
             return false;
         }
 
@@ -2288,14 +2288,14 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
         {
             Log::Debug(L"%s%s: %s",
                        logPrefix.c_str(),
-                       Utils::StringToWString(value.first).c_str(),
+                       Utils::StringToWstring(value.first).c_str(),
                        GltfUtils::ParameterValueToWstring(value.second).c_str());
         }
         for (const auto &value : material.additionalValues)
         {
             Log::Debug(L"%s%s*: %s",
                        logPrefix.c_str(),
-                       Utils::StringToWString(value.first).c_str(),
+                       Utils::StringToWstring(value.first).c_str(),
                        GltfUtils::ParameterValueToWstring(value.second).c_str());
         }
     }

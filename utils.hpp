@@ -34,6 +34,6 @@ namespace Utils
     std::wstring GetFilePathExt(const std::wstring &path);
     std::string  GetFilePathExt(const std::string  &path);
 
-    std::string  WStringToString(const std::wstring &wideString);
-    std::wstring StringToWString(const std::string &string);
+    std::string  WstringToString(const std::wstring &wideString);
+    std::wstring StringToWstring(const std::string &string);
 }

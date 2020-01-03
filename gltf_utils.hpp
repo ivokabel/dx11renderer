@@ -28,17 +28,17 @@ namespace GltfUtils
 
     D3D11_PRIMITIVE_TOPOLOGY ModeToTopology(int mode);
 
-    std::wstring ModeToWString(int mode);
+    std::wstring ModeToWstring(int mode);
 
-    std::wstring StringIntMapToWString(const std::map<std::string, int> &m);
+    std::wstring StringIntMapToWstring(const std::map<std::string, int> &m);
 
-    std::wstring TypeToWString(int ty);
+    std::wstring TypeToWstring(int ty);
 
-    std::wstring ComponentTypeToWString(int ty);
+    std::wstring ComponentTypeToWstring(int ty);
 
     //size_t SizeOfComponentType(int ty);
 
-    //std::wstring TargetToWString(int target);
+    //std::wstring TargetToWstring(int target);
 
     std::wstring FloatArrayToWstring(const std::vector<double> &arr);
 
