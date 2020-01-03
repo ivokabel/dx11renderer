@@ -151,6 +151,10 @@ LRESULT CALLBACK SimpleDX11Renderer::WndProc(HWND wnd,
             mIsPostProcessingActive = !mIsPostProcessingActive;
             Log::Debug(L"WM_KEYDOWN: Post-processing %s", mIsPostProcessingActive ? L"ON" : L"OFF");
             break;
+        case 'A':
+            mIsAnimationActive = !mIsAnimationActive;
+            Log::Debug(L"WM_KEYDOWN: Animation %s", mIsAnimationActive ? L"ON" : L"OFF");
+            break;
         }
         break;
     }
@@ -957,7 +961,7 @@ float SimpleDX11Renderer::GetCurrentAnimationTime() const
         time = (timeCur - timeStart) / 1000.0f;
     }
 
-    return time;
+    return mIsAnimationActive ? time : 0.;
 }
 
 

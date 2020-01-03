@@ -198,4 +198,5 @@ private: // Options
 
     const bool                  mUseMSAA = true;
     bool                        mIsPostProcessingActive = true;
+    bool                        mIsAnimationActive = true;
 };
