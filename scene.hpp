@@ -118,8 +118,8 @@ public:
 
 private:
     friend class Scene;
-    std::vector<ScenePrimitive> primitives;
-    std::vector<SceneNode>      children;
+    std::vector<ScenePrimitive> mPrimitives;
+    std::vector<SceneNode>      mChildren;
 
 private:
     bool        mIsRootNode;
@@ -148,11 +148,11 @@ public:
                       const std::wstring &logPrefix);
 
 private:
-    XMFLOAT4 constFactor;
+    XMFLOAT4 mConstFactor;
     // TODO: sampler, texCoord
 
 public:
-    ID3D11ShaderResourceView*   srv = nullptr;
+    ID3D11ShaderResourceView* srv = nullptr;
 };
 
 
@@ -195,10 +195,10 @@ private:
 private:
 
     // PBR metal/roughness workflow
-    SceneTexture    baseColorTexture;
-    float           metallicFactor = 1.f;
-    float           roughnessFactor = 1.f;
-    //TODO:         metallicRoughnessTexture
+    SceneTexture    mBaseColorTexture;
+    float           mMetallicFactor = 1.f;
+    float           mRoughnessFactor = 1.f;
+    //TODO:         mMetallicRoughnessTexture
 
     // Textures
     ID3D11ShaderResourceView*   mSpecularSRV = nullptr; // Deprecated?

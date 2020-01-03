@@ -959,8 +959,8 @@ bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
         return false;
 
     // Children
-    sceneNode.children.clear();
-    sceneNode.children.reserve(node.children.size());
+    sceneNode.mChildren.clear();
+    sceneNode.mChildren.reserve(node.children.size());
     const std::wstring &childLogPrefix = logPrefix + L"   ";
     for (const auto childIdx : node.children)
     {
@@ -978,7 +978,7 @@ bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
         SceneNode childNode;
         if (!LoadSceneNodeFromGLTF(ctx, childNode, model, childIdx, childLogPrefix))
             return false;
-        sceneNode.children.push_back(std::move(childNode));
+        sceneNode.mChildren.push_back(std::move(childNode));
     }
 
     return true;
@@ -1201,7 +1201,7 @@ void Scene::RenderNodeGeometry(IRenderingContext &ctx,
     immCtx->UpdateSubresource(mCbChangedPerSceneNode, 0, nullptr, &cbPerSceneNode, 0, 0);
 
     // Draw current node
-    for (auto &primitive : node.primitives)
+    for (auto &primitive : node.mPrimitives)
     {
         const int matIdx = primitive.GetMaterialIdx();
         if (matIdx >= 0 && matIdx < mMaterials.size())
@@ -1213,7 +1213,7 @@ void Scene::RenderNodeGeometry(IRenderingContext &ctx,
     }
 
     // Children
-    for (auto &child : node.children)
+    for (auto &child : node.mChildren)
         RenderNodeGeometry(ctx, child, worldMtrx);
 }
 
@@ -1915,12 +1915,12 @@ SceneNode::SceneNode(bool isRootNode) :
 
 ScenePrimitive* SceneNode::CreateEmptyPrimitive()
 {
-    primitives.clear();
-    primitives.resize(1);
-    if (primitives.size() != 1)
+    mPrimitives.clear();
+    mPrimitives.resize(1);
+    if (mPrimitives.size() != 1)
         return nullptr;
 
-    return &primitives[0];
+    return &mPrimitives[0];
 }
 
 void SceneNode::SetIdentity()
@@ -2087,13 +2087,13 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
 
         // Primitives
         const auto primitivesCount = mesh.primitives.size();
-        primitives.reserve(primitivesCount);
+        mPrimitives.reserve(primitivesCount);
         for (size_t i = 0; i < primitivesCount; ++i)
         {
             ScenePrimitive primitive;
             if (!primitive.LoadFromGLTF(ctx, model, mesh, (int)i, subItemsLogPrefix + L"   "))
                 return false;
-            primitives.push_back(std::move(primitive));
+            mPrimitives.push_back(std::move(primitive));
         }
     }
 
@@ -2117,7 +2117,7 @@ void SceneNode::Animate(IRenderingContext &ctx)
     else
         mWorldMtrx = mLocalMtrx;
 
-    for (auto &child : children)
+    for (auto &child : mChildren)
         child.Animate(ctx);
 }
 
@@ -2209,11 +2209,11 @@ bool ConvertToFloatImage(std::vector<unsigned char> &floatImage,
 
 
 SceneTexture::SceneTexture(XMFLOAT4 defaultConstFactor) :
-    constFactor(defaultConstFactor)
+    mConstFactor(defaultConstFactor)
 {}
 
 SceneTexture::SceneTexture(const SceneTexture &src) :
-    constFactor(src.constFactor),
+    mConstFactor(src.mConstFactor),
     srv(src.srv)
 {
     // We are creating new reference of device resource
@@ -2222,8 +2222,8 @@ SceneTexture::SceneTexture(const SceneTexture &src) :
 
 SceneTexture& SceneTexture::operator =(const SceneTexture &src)
 {
-    constFactor = src.constFactor;
-    srv         = src.srv;
+    mConstFactor = src.mConstFactor;
+    srv          = src.srv;
 
     // We are creating new reference of device resource
     Utils::SafeAddRef(srv);
@@ -2232,14 +2232,14 @@ SceneTexture& SceneTexture::operator =(const SceneTexture &src)
 }
 
 SceneTexture::SceneTexture(SceneTexture &&src) :
-    constFactor(Utils::Exchange(src.constFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f))),
+    mConstFactor(Utils::Exchange(src.mConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f))),
     srv(Utils::Exchange(src.srv, nullptr))
 {}
 
 SceneTexture& SceneTexture::operator =(SceneTexture &&src)
 {
-    constFactor = Utils::Exchange(src.constFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f));
-    srv         = Utils::Exchange(src.srv, nullptr);
+    mConstFactor = Utils::Exchange(src.mConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f));
+    srv          = Utils::Exchange(src.srv, nullptr);
 
     return *this;
 }
@@ -2265,7 +2265,7 @@ bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path)
             return false;
     }
     else
-        CreateConstantTextureSRV(ctx, srv, constFactor);
+        CreateConstantTextureSRV(ctx, srv, mConstFactor);
 
     return true;
 }
@@ -2395,8 +2395,8 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
                         constParam.number_array.size());
             return false;
         }
-        constFactor = XMFLOAT4((float)constParam.number_array[0],
-            (float)constParam.number_array[1],
+        mConstFactor = XMFLOAT4((float)constParam.number_array[0],
+                                (float)constParam.number_array[1],
                                 (float)constParam.number_array[2],
                                 (float)constParam.number_array[3]);
 
@@ -2405,7 +2405,7 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
         //           Utils::StringToWString(constParamName).c_str(),
         //           ParameterValueToWstring(constParam).c_str());
 
-        if (!CreateConstantTextureSRV(ctx, srv, constFactor))
+        if (!CreateConstantTextureSRV(ctx, srv, mConstFactor))
         {
             Log::Error(L"%sFailed to create constant texture for \"%s\"!",
                        logPrefix.c_str(),
@@ -2421,13 +2421,13 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
 
 
 SceneMaterial::SceneMaterial() :
-    baseColorTexture(XMFLOAT4(.5f, .5f, .5f, 1.f))
+    mBaseColorTexture(XMFLOAT4(.5f, .5f, .5f, 1.f))
 {}
 
 SceneMaterial::SceneMaterial(const SceneMaterial &src) :
-    baseColorTexture(src.baseColorTexture),
-    metallicFactor(src.metallicFactor),
-    roughnessFactor(src.roughnessFactor),
+    mBaseColorTexture(src.mBaseColorTexture),
+    mMetallicFactor(src.mMetallicFactor),
+    mRoughnessFactor(src.mRoughnessFactor),
     mSpecularSRV(src.mSpecularSRV)
 {
     // We are creating new references of device resources
@@ -2435,17 +2435,17 @@ SceneMaterial::SceneMaterial(const SceneMaterial &src) :
 }
 
 SceneMaterial::SceneMaterial(SceneMaterial &&src) :
-    baseColorTexture(std::move(src.baseColorTexture)),
-    metallicFactor(Utils::Exchange(src.metallicFactor, 1.f)),
-    roughnessFactor(Utils::Exchange(src.roughnessFactor, 1.f)),
+    mBaseColorTexture(std::move(src.mBaseColorTexture)),
+    mMetallicFactor(Utils::Exchange(src.mMetallicFactor, 1.f)),
+    mRoughnessFactor(Utils::Exchange(src.mRoughnessFactor, 1.f)),
     mSpecularSRV(Utils::Exchange(src.mSpecularSRV, nullptr))
 {}
 
 SceneMaterial& SceneMaterial::operator =(const SceneMaterial &src)
 {
-    baseColorTexture = src.baseColorTexture;
-    metallicFactor   = src.metallicFactor;
-    roughnessFactor  = src.roughnessFactor;
+    mBaseColorTexture = src.mBaseColorTexture;
+    mMetallicFactor   = src.mMetallicFactor;
+    mRoughnessFactor  = src.mRoughnessFactor;
     mSpecularSRV     = src.mSpecularSRV;
 
     // We are creating new references of device resources
@@ -2456,9 +2456,9 @@ SceneMaterial& SceneMaterial::operator =(const SceneMaterial &src)
 
 SceneMaterial& SceneMaterial::operator =(SceneMaterial &&src)
 {
-    baseColorTexture = std::move(src.baseColorTexture);
-    metallicFactor   = Utils::Exchange(src.metallicFactor, 1.f);
-    roughnessFactor  = Utils::Exchange(src.roughnessFactor, 1.f);
+    mBaseColorTexture = std::move(src.mBaseColorTexture);
+    mMetallicFactor   = Utils::Exchange(src.mMetallicFactor, 1.f);
+    mRoughnessFactor  = Utils::Exchange(src.mRoughnessFactor, 1.f);
     mSpecularSRV     = Utils::Exchange(src.mSpecularSRV, nullptr);
 
     return *this;
@@ -2474,7 +2474,7 @@ bool SceneMaterial::Create(IRenderingContext &ctx,
                            const wchar_t *diffuseTexPath,
                            const wchar_t *specularTexPath)
 {
-    if (!baseColorTexture.Create(ctx, diffuseTexPath))
+    if (!mBaseColorTexture.Create(ctx, diffuseTexPath))
         return false;
 
     // Deprecated
@@ -2522,14 +2522,13 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
 
     auto &values = material.values;
 
-    //if (!LoadFloat4Param(baseColorFactor, "baseColorFactor", values, logPrefix))
-    if (!baseColorTexture.LoadFromGltf("baseColorFactor", "baseColorTexture", ctx, model, values, logPrefix))
+    if (!mBaseColorTexture.LoadFromGltf("baseColorFactor", "baseColorTexture", ctx, model, values, logPrefix))
         return false;
 
-    if (!LoadFloatParam(metallicFactor, "metallicFactor", values, logPrefix))
+    if (!LoadFloatParam(mMetallicFactor, "metallicFactor", values, logPrefix))
         return false;
 
-    if (!LoadFloatParam(roughnessFactor, "roughnessFactor", values, logPrefix))
+    if (!LoadFloatParam(mRoughnessFactor, "roughnessFactor", values, logPrefix))
         return false;
 
     // Deprecated
@@ -2603,7 +2602,7 @@ void SceneMaterial::PSSetShaderResources(IRenderingContext &ctx) const
 {
     if (auto immCtx = ctx.GetImmediateContext())
     {
-        immCtx->PSSetShaderResources(0, 1, &baseColorTexture.srv);
+        immCtx->PSSetShaderResources(0, 1, &mBaseColorTexture.srv);
         immCtx->PSSetShaderResources(1, 1, &mSpecularSRV);
     }
 }
