@@ -299,17 +299,17 @@ private:
     // glTF loader
     bool LoadGLTF(IRenderingContext &ctx,
                   const std::wstring &filePath);
-    bool LoadScene(IRenderingContext &ctx,
-                   const tinygltf::Model &model,
-                   const std::wstring &logPrefix);
+    bool LoadMaterialsFromGltf(IRenderingContext &ctx,
+                               const tinygltf::Model &model,
+                               const std::wstring &logPrefix);
+    bool LoadSceneFromGltf(IRenderingContext &ctx,
+                           const tinygltf::Model &model,
+                           const std::wstring &logPrefix);
     bool LoadSceneNodeFromGLTF(IRenderingContext &ctx,
                                SceneNode &sceneNode,
                                const tinygltf::Model &model,
                                int nodeIdx,
                                const std::wstring &logPrefix);
-    bool LoadMaterials(IRenderingContext &ctx,
-                       const tinygltf::Model &model,
-                       const std::wstring &logPrefix);
 
     // Transformations
     void AddScaleToRoots(double scale);

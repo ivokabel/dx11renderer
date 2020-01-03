@@ -885,10 +885,10 @@ bool Scene::LoadGLTF(IRenderingContext &ctx,
 
     Log::Debug(L"");
 
-    if (!LoadMaterials(ctx, model, logPrefix))
+    if (!LoadMaterialsFromGltf(ctx, model, logPrefix))
         return false;
 
-    if (!LoadScene(ctx, model, logPrefix))
+    if (!LoadSceneFromGltf(ctx, model, logPrefix))
         return false;
 
     Log::Debug(L"");
@@ -907,9 +907,42 @@ bool Scene::LoadGLTF(IRenderingContext &ctx,
     return true;
 }
 
-bool Scene::LoadScene(IRenderingContext &ctx,
-                      const tinygltf::Model &model,
-                      const std::wstring &logPrefix)
+bool Scene::LoadMaterialsFromGltf(IRenderingContext &ctx,
+                                  const tinygltf::Model &model,
+                                  const std::wstring &logPrefix)
+{
+    const auto &materials = model.materials;
+
+    Log::Debug(L"%sMaterials: %d", logPrefix.c_str(), materials.size());
+
+    const std::wstring materialLogPrefix = logPrefix + L"   ";
+    const std::wstring valueLogPrefix = materialLogPrefix + L"   ";
+
+    mMaterials.clear();
+    mMaterials.reserve(materials.size());
+    for (size_t matIdx = 0; matIdx < materials.size(); ++matIdx)
+    {
+        const auto &material = materials[matIdx];
+
+        Log::Debug(L"%s%d/%d \"%s\"",
+                   materialLogPrefix.c_str(),
+                   matIdx,
+                   materials.size(),
+                   Utils::StringToWString(material.name).c_str());
+
+        SceneMaterial sceneMaterial;
+        if (!sceneMaterial.LoadFromGltf(ctx, model, material, valueLogPrefix))
+            return false;
+        mMaterials.push_back(std::move(sceneMaterial));
+    }
+
+    return true;
+}
+
+
+bool Scene::LoadSceneFromGltf(IRenderingContext &ctx,
+                              const tinygltf::Model &model,
+                              const std::wstring &logPrefix)
 {
     // Choose one scene
     if (model.scenes.size() < 1)
@@ -983,39 +1016,6 @@ bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
 
     return true;
 }
-
-bool Scene::LoadMaterials(IRenderingContext &ctx,
-                          const tinygltf::Model &model,
-                          const std::wstring &logPrefix)
-{
-    const auto &materials = model.materials;
-
-    Log::Debug(L"%sMaterials: %d", logPrefix.c_str(), materials.size());
-
-    const std::wstring materialLogPrefix = logPrefix + L"   ";
-    const std::wstring valueLogPrefix = materialLogPrefix + L"   ";
-
-    mMaterials.clear();
-    mMaterials.reserve(materials.size());
-    for (size_t matIdx = 0; matIdx < materials.size(); ++matIdx)
-    {
-        const auto &material = materials[matIdx];
-
-        Log::Debug(L"%s%d/%d \"%s\"",
-                   materialLogPrefix.c_str(),
-                   matIdx,
-                   materials.size(),
-                   Utils::StringToWString(material.name).c_str());
-
-        SceneMaterial sceneMaterial;
-        if (!sceneMaterial.LoadFromGltf(ctx, model, material, valueLogPrefix))
-            return false;
-        mMaterials.push_back(std::move(sceneMaterial));
-    }
-
-    return true;
-}
-
 
 void Scene::Destroy()
 {
