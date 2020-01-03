@@ -26,7 +26,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
 
     auto scene = std::make_shared<Scene>(
         //Scene::eHardwiredSimpleDebugSphere
-        //Scene::eHardwiredEarth
+        Scene::eHardwiredEarth
         //Scene::eHardwiredThreePlanets
         //Scene::eExternalDebugTriangleWithoutIndices // Non-indexed geometry not yet supported!
         //Scene::eExternalDebugTriangle
@@ -36,7 +36,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eExternalDebugBoxTextured
         //Scene::eExternalDebug2CylinderEngine
         //Scene::eExternalDebugDuck
-        Scene::eExternalDebugBoomBox
+        //Scene::eExternalDebugBoomBox
         //Scene::eExternalDebugBoomBoxWithAxes
         //Scene::eExternalDebugDamagedHelmet
         //Scene::eExternalDebugFlightHelmet
