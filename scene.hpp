@@ -254,6 +254,7 @@ public:
         eHardwiredSimpleDebugSphere,
         eHardwiredEarth,
         eHardwiredThreePlanets,
+
         eExternalDebugTriangleWithoutIndices, // Non-indexed geometry not yet supported!
         eExternalDebugTriangle,
         eExternalDebugSimpleMeshes,
@@ -262,6 +263,11 @@ public:
         eExternalDebugBoxTextured,
         eExternalDebug2CylinderEngine,
         eExternalDebugDuck,
+        eExternalDebugBoomBox,
+        eExternalDebugBoomBoxWithAxes,
+        eExternalDebugDamagedHelmet,
+        eExternalDebugFlightHelmet,
+
         eExternalTeslaCybertruck,
         eExternalLowPolyDrifter,
         eExternalWolfBaseMesh,

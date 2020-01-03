@@ -36,6 +36,11 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eExternalDebugBoxTextured
         //Scene::eExternalDebug2CylinderEngine
         //Scene::eExternalDebugDuck
+        Scene::eExternalDebugBoomBox
+        //Scene::eExternalDebugBoomBoxWithAxes
+        //Scene::eExternalDebugDamagedHelmet
+        //Scene::eExternalDebugFlightHelmet
+
         //Scene::eExternalWolfBaseMesh
         //Scene::eExternalNintendoGameBoyClassic
         //Scene::eExternalLowPolyDrifter
@@ -43,7 +48,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eExternalSpotMiniRigged
         //Scene::eExternalMandaloriansHelmet
         //Scene::eExternalWeltron2001SpaceballRadio
-        Scene::eExternalTheRocket
+        //Scene::eExternalTheRocket
         //Scene::eExternalRoboV1
         );
     SimpleDX11Renderer renderer(scene);

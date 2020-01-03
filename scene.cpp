@@ -257,6 +257,34 @@ bool Scene::Load(IRenderingContext &ctx)
         AddTranslationToRoots({ -0.5, -3.3, 0. });
         return true;
 
+    case eExternalDebugBoomBox:
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoomBox/BoomBox.gltf"))
+            return false;
+        AddScaleToRoots(330.);
+        AddTranslationToRoots({ 0., 0., 0. });
+        return true;
+
+    case eExternalDebugBoomBoxWithAxes:
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoomBoxWithAxes/BoomBoxWithAxes.gltf"))
+            return false;
+        AddScaleToRoots(230.);
+        AddTranslationToRoots({ 0., -2.2, 0. });
+        return true;
+
+    case eExternalDebugDamagedHelmet:
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/DamagedHelmet/DamagedHelmet.gltf"))
+            return false;
+        AddScaleToRoots(3.5);
+        AddTranslationToRoots({ 0., 0.4, 0.3 });
+        return true;
+
+    case eExternalDebugFlightHelmet:
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/FlightHelmet/FlightHelmet.gltf"))
+            return false;
+        AddScaleToRoots(11.0);
+        AddTranslationToRoots({ 0., 1.2, 0. });
+        return true;
+
     case eExternalTeslaCybertruck:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/PolyDucky/Tesla Cybertruck/scene.gltf"))
             return false;
