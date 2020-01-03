@@ -269,6 +269,7 @@ public:
         eExternalWeltron2001SpaceballRadio,
         eExternalSpotMiniRigged,
         eExternalMandaloriansHelmet,
+        eExternalTheRocket,
         eExternalRoboV1,
     };
 

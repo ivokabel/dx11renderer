@@ -306,6 +306,13 @@ bool Scene::Load(IRenderingContext &ctx)
         AddScaleToRoots(.17f);
         return true;
 
+    case eExternalTheRocket:
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/TuppsM/The Rocket/scene.gltf"))
+            return false;
+        AddScaleToRoots(.011);
+        AddTranslationToRoots({ 0.1, -1., 0. });
+        return true;
+
     case eExternalRoboV1:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/_Sef_/Robo_V1/scene.gltf"))
             return false;
