@@ -1,6 +1,5 @@
 #pragma once
 
-#include "gltf_utils.hpp"
 #include "iscene.hpp"
 #include "constants.hpp"
 
@@ -295,7 +294,6 @@ private:
     // Loads the scene specified via constructor
     bool Load(IRenderingContext &ctx);
     bool LoadExternal(IRenderingContext &ctx, const std::wstring &filePath);
-    bool LoadGltfModel(tinygltf::Model &model, const std::wstring &filePath);
 
     // glTF loader
     bool LoadGLTF(IRenderingContext &ctx,

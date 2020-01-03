@@ -6,5 +6,7 @@
 
 namespace GltfUtils
 {
-    std::wstring GltfModeToWString(int mode);
+    bool LoadModel(tinygltf::Model &model, const std::wstring &filePath);
+
+    std::wstring ModeToWString(int mode);
 }

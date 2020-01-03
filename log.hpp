@@ -1,5 +1,7 @@
 #pragma once
 
+#include <windows.h>
+
 namespace Log
 {
     enum ELoggingLevel
