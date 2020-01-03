@@ -567,26 +567,6 @@ bool Scene::LoadGltfModel(tinygltf::Model &model, const std::wstring &filePath)
 }
 
 
-// debug
-static std::string GltfModeToString(int mode)
-{
-    if (mode == TINYGLTF_MODE_POINTS)
-        return "POINTS";
-    else if (mode == TINYGLTF_MODE_LINE)
-        return "LINE";
-    else if (mode == TINYGLTF_MODE_LINE_LOOP)
-        return "LINE_LOOP";
-    else if (mode == TINYGLTF_MODE_TRIANGLES)
-        return "TRIANGLES";
-    else if (mode == TINYGLTF_MODE_TRIANGLE_FAN)
-        return "TRIANGLE_FAN";
-    else if (mode == TINYGLTF_MODE_TRIANGLE_STRIP)
-        return "TRIANGLE_STRIP";
-    else
-        return "**UNKNOWN**";
-}
-
-
 static D3D11_PRIMITIVE_TOPOLOGY GltfModeToTopology(int mode)
 {
     switch (mode)
@@ -907,6 +887,7 @@ bool Scene::LoadGLTF(IRenderingContext &ctx,
     return true;
 }
 
+
 bool Scene::LoadMaterialsFromGltf(IRenderingContext &ctx,
                                   const tinygltf::Model &model,
                                   const std::wstring &logPrefix)
@@ -973,6 +954,7 @@ bool Scene::LoadSceneFromGltf(IRenderingContext &ctx,
     return true;
 }
 
+
 bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
                                   SceneNode &sceneNode,
                                   const tinygltf::Model &model,
@@ -1016,6 +998,7 @@ bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
 
     return true;
 }
+
 
 void Scene::Destroy()
 {
@@ -1548,7 +1531,7 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
                logPrefix.c_str(),
                primitiveIdx,
                mesh.primitives.size(),
-               Utils::StringToWString(GltfModeToString(primitive.mode)).c_str(),
+               GltfUtils::GltfModeToWString(primitive.mode).c_str(),
                Utils::StringToWString(StringIntMapToString(primitive.attributes)).c_str(),
                primitive.indices,
                primitive.material);

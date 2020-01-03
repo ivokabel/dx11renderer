@@ -18,6 +18,8 @@ set(RENDERER_SOURCES
     scene.hpp
     scene.cpp
     scene_shaders.fx
+    gltf_utils.hpp
+    gltf_utils.cpp
     log.hpp
     log.cpp
     utils.hpp

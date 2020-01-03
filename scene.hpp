@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gltf_utils.hpp"
 #include "iscene.hpp"
 #include "constants.hpp"
 
