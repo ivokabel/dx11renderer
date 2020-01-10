@@ -28,10 +28,28 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eHardwiredSimpleDebugSphere
         //Scene::eHardwiredEarth
         //Scene::eHardwiredThreePlanets
-        //Scene::eExternalDebugTriangleWithoutIndices
+        //Scene::eExternalDebugTriangleWithoutIndices // Non-indexed geometry not yet supported!
         //Scene::eExternalDebugTriangle
-        Scene::eExternalDebugSimpleMeshes
+        //Scene::eExternalDebugSimpleMeshes
         //Scene::eExternalDebugBox
+        //Scene::eExternalDebugBoxInterleaved
+        //Scene::eExternalDebugBoxTextured
+        //Scene::eExternalDebug2CylinderEngine
+        //Scene::eExternalDebugDuck
+        //Scene::eExternalDebugBoomBox
+        //Scene::eExternalDebugBoomBoxWithAxes
+        //Scene::eExternalDebugDamagedHelmet
+        //Scene::eExternalDebugFlightHelmet
+
+        //Scene::eExternalWolfBaseMesh
+        //Scene::eExternalNintendoGameBoyClassic
+        //Scene::eExternalLowPolyDrifter
+        //Scene::eExternalTeslaCybertruck
+        //Scene::eExternalSpotMiniRigged
+        //Scene::eExternalMandaloriansHelmet
+        //Scene::eExternalWeltron2001SpaceballRadio
+        Scene::eExternalTheRocket
+        //Scene::eExternalRoboV1
         );
     SimpleDX11Renderer renderer(scene);
 

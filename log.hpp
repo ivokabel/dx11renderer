@@ -1,12 +1,15 @@
 #pragma once
 
+#include <windows.h>
+
 namespace Log
 {
     enum ELoggingLevel
     {
-        eDebug,
-        eWarning,
+        eNone,
         eError,
+        eWarning,
+        eDebug,
     };
 
 
@@ -17,16 +20,16 @@ namespace Log
 
 
     template <typename... Args>
-    void Write(ELoggingLevel level, const wchar_t *msg, Args... args)
+    void Write(ELoggingLevel msgLevel, const wchar_t *msg, Args... args)
     {
-        if (level < sLoggingLevel)
+        if (sLoggingLevel < msgLevel)
             return;
 
         wchar_t tmpBuff1[100000] = {};
         swprintf_s(tmpBuff1, msg, args...);
 
         wchar_t tmpBuff2[100000] = {};
-        swprintf_s(tmpBuff2, L"[% 7s] %s\n", LogLevelToString(level), tmpBuff1);
+        swprintf_s(tmpBuff2, L"[% 7s] %s\n", LogLevelToString(msgLevel), tmpBuff1);
 
         OutputDebugString(tmpBuff2);
     }

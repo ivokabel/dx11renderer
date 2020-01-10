@@ -1,14 +1,11 @@
 #include "scene.hpp"
 
-#include "log.hpp"
+#include "scene_utils.hpp"
+#include "gltf_utils.hpp"
 #include "utils.hpp"
-#include "constants.hpp"
+#include "log.hpp"
 
-#define TINYGLTF_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#define STBI_MSC_SECURE_CRT
-#include "Libs/tinygltf-2.2.0/tiny_gltf.h"
+#include "Libs/tinygltf-2.2.0/tiny_gltf.h" // just the interfaces (no implementation)
 
 #include <cassert>
 #include <array>
@@ -45,124 +42,6 @@ const std::array<InputElmDesc, 3> sVertexLayout =
 };
 
 
-struct SceneVertex
-{
-    XMFLOAT3 Pos;
-    XMFLOAT3 Normal;
-    XMFLOAT2 Tex;
-};
-
-
-class ScenePrimitive
-{
-public:
-
-    ScenePrimitive();
-    ScenePrimitive(const ScenePrimitive &);
-    ScenePrimitive(ScenePrimitive &&);
-    ~ScenePrimitive();
-
-    ScenePrimitive& operator = (const ScenePrimitive&);
-    ScenePrimitive& operator = (ScenePrimitive&&);
-
-    bool CreateCube(IRenderingContext & ctx,
-                    const wchar_t * diffuseTexPath = nullptr);
-    bool CreateOctahedron(IRenderingContext & ctx,
-                          const wchar_t * diffuseTexPath = nullptr);
-    bool CreateSphere(IRenderingContext & ctx,
-                      const WORD vertSegmCount = 40,
-                      const WORD stripCount = 80,
-                      const wchar_t * diffuseTexPath = nullptr,
-                      const wchar_t * specularTexPath = nullptr);
-
-    bool LoadFromGLTF(IRenderingContext & ctx,
-                      const tinygltf::Model &model,
-                      const tinygltf::Mesh &mesh,
-                      const int primitiveIdx);
-
-    void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout *vertexLayout);
-
-    ID3D11ShaderResourceView* const* GetDiffuseSRV()  const { return &mDiffuseSRV; };
-    ID3D11ShaderResourceView* const* GetSpecularSRV() const { return &mSpecularSRV; };
-
-    void Destroy();
-
-private:
-
-    bool GenerateCubeGeometry();
-    bool GenerateOctahedronGeometry();
-    bool GenerateSphereGeometry(const WORD vertSegmCount, const WORD stripCount);
-
-    bool LoadGeometryFromGLTF(const tinygltf::Model &model,
-                              const tinygltf::Mesh &mesh,
-                              const int primitiveIdx);
-
-    bool CreateDeviceBuffers(IRenderingContext &ctx);
-    bool LoadTextures(IRenderingContext &ctx,
-                      const wchar_t * diffuseTexPath = nullptr,
-                      const wchar_t * specularTexPath = nullptr);
-
-    static bool CreateConstantTextureShaderResourceView(IRenderingContext &ctx,
-                                                        ID3D11ShaderResourceView *&srv,
-                                                        XMFLOAT4 color);
-
-
-    void DestroyGeomData();
-    void DestroyDeviceBuffers();
-    void DestroyTextures();
-
-private:
-
-    // Geometry data
-    std::vector<SceneVertex>    mVertices;
-    std::vector<WORD>           mIndices;
-    D3D11_PRIMITIVE_TOPOLOGY    mTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-
-    // Device geometry data
-    ID3D11Buffer*               mVertexBuffer = nullptr;
-    ID3D11Buffer*               mIndexBuffer = nullptr;
-
-    // Textures
-    ID3D11ShaderResourceView*   mDiffuseSRV = nullptr;
-    ID3D11ShaderResourceView*   mSpecularSRV = nullptr;
-};
-
-
-class SceneNode
-{
-public:
-    SceneNode();
-
-    ScenePrimitive* CreateEmptyPrimitive();
-
-    void SetIdentity();
-    void AddScale(const std::vector<double> &vec);
-    void AddRotationQuaternion(const std::vector<double> &vec);
-    void AddTranslation(const std::vector<double> &vec);
-
-    bool LoadFromGLTF(IRenderingContext & ctx,
-                      const tinygltf::Model &model,
-                      int nodeIdx);
-
-    void Animate(IRenderingContext &ctx);
-
-    XMMATRIX GetWorldMtrx() const { return mWorldMtrx; }
-
-public://private:
-    // Exposed for now because Render() needs access to it.
-    // Might get encapsulated later when transformations/animations architecture is resolved.
-    std::vector<ScenePrimitive> primitives;
-
-private:
-    XMMATRIX    mLocalMtrx;
-    XMMATRIX    mWorldMtrx;
-};
-
-
-std::vector<SceneNode> sSceneNodes;
-ScenePrimitive sPointLightProxy;
-
-
 struct {
     XMVECTOR eye;
     XMVECTOR at;
@@ -172,50 +51,6 @@ struct {
     XMVectorSet(0.0f, -0.2f, 0.0f, 1.0f),
     XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f),
 };
-
-
-struct AmbientLight
-{
-    XMFLOAT4 luminance; // omnidirectional luminance: lm * sr-1 * m-2
-
-    AmbientLight() :
-        luminance{}
-    {}
-};
-
-
-// Directional light
-struct DirectLight
-{
-    XMFLOAT4 dir;
-    XMFLOAT4 dirTransf;
-    XMFLOAT4 luminance; // lm * sr-1 * m-2
-
-    DirectLight() :
-        dir{},
-        dirTransf{},
-        luminance{}
-    {}
-};
-
-
-struct PointLight
-{
-    XMFLOAT4 pos;
-    XMFLOAT4 posTransf;
-    XMFLOAT4 intensity; // luminuous intensity [cd = lm * sr-1] = luminuous flux / 4Pi
-
-    PointLight() :
-        pos{},
-        posTransf{},
-        intensity{}
-    {}
-};
-
-
-AmbientLight sAmbientLight;
-std::array<DirectLight, DIRECT_LIGHTS_COUNT> sDirectLights;
-std::array<PointLight, POINT_LIGHTS_COUNT> sPointLights;
 
 
 struct CbNeverChanged
@@ -351,7 +186,10 @@ bool Scene::Init(IRenderingContext &ctx)
     if (!Load(ctx))
         return false;
 
-    if (!sPointLightProxy.CreateSphere(ctx, 8, 16))
+    if (!mPointLightProxy.CreateSphere(ctx, 8, 16))
+        return false;
+
+    if (!mDefaultMaterial.Create(ctx))
         return false;
 
     return true;
@@ -363,127 +201,298 @@ bool Scene::Load(IRenderingContext &ctx)
     switch (mSceneId)
     {
     case eExternalDebugTriangleWithoutIndices:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/TriangleWithoutIndices/TriangleWithoutIndices.gltf");
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/TriangleWithoutIndices/TriangleWithoutIndices.gltf"))
+            return false;
+        AddScaleToRoots(3.);
+        return true;
 
     case eExternalDebugTriangle:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Triangle/Triangle.gltf");
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Triangle/Triangle.gltf"))
+            return false;
+        AddScaleToRoots(4.5);
+        AddTranslationToRoots({ 0., -1.5, 0. });
+        return true;
 
     case eExternalDebugSimpleMeshes:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/SimpleMeshes/SimpleMeshes.gltf");
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/SimpleMeshes/SimpleMeshes.gltf"))
+            return false;
+        AddScaleToRoots(2.5);
+        AddTranslationToRoots({ 0., -0.5, 0. });
+        return true;
 
     case eExternalDebugBox:
-        return LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Box/Box.gltf");
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Box/Box.gltf"))
+            return false;
+        AddScaleToRoots(4.);
+        AddTranslationToRoots({ 0., 0., 0. });
+        return true;
+
+    case eExternalDebugBoxInterleaved:
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoxInterleaved/BoxInterleaved.gltf"))
+            return false;
+        AddScaleToRoots(4.);
+        AddTranslationToRoots({ 0., 0., 0. });
+        return true;
+
+    case eExternalDebugBoxTextured:
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoxTextured/BoxTextured.gltf"))
+            return false;
+        AddScaleToRoots(4.);
+        AddTranslationToRoots({ 0., 0., 0. });
+        return true;
+
+    case eExternalDebug2CylinderEngine:
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/2CylinderEngine/2CylinderEngine.gltf"))
+            return false;
+        AddScaleToRoots(0.009f);
+        AddTranslationToRoots({ 0., 0.2, 0. });
+        return true;
+
+    case eExternalDebugDuck:
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Duck/Duck.gltf"))
+            return false;
+        AddScaleToRoots(3.8);
+        AddTranslationToRoots({ -0.5, -3.3, 0. });
+        return true;
+
+    case eExternalDebugBoomBox:
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoomBox/BoomBox.gltf"))
+            return false;
+        AddScaleToRoots(330.);
+        AddTranslationToRoots({ 0., 0., 0. });
+        return true;
+
+    case eExternalDebugBoomBoxWithAxes:
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoomBoxWithAxes/BoomBoxWithAxes.gltf"))
+            return false;
+        AddScaleToRoots(230.);
+        AddTranslationToRoots({ 0., -2.2, 0. });
+        return true;
+
+    case eExternalDebugDamagedHelmet:
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/DamagedHelmet/DamagedHelmet.gltf"))
+            return false;
+        AddScaleToRoots(3.5);
+        AddTranslationToRoots({ 0., 0.4, 0.3 });
+        return true;
+
+    case eExternalDebugFlightHelmet:
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/FlightHelmet/FlightHelmet.gltf"))
+            return false;
+        AddScaleToRoots(11.0);
+        AddTranslationToRoots({ 0., 1.2, 0. });
+        return true;
+
+    case eExternalTeslaCybertruck:
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/PolyDucky/Tesla Cybertruck/scene.gltf"))
+            return false;
+        AddScaleToRoots(2.6);
+        AddTranslationToRoots({ 0.3, 0., 0. });
+        return true;
+
+    case eExternalLowPolyDrifter:
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Ivan Norman/Low-poly truck (car Drifter)/scene.gltf"))
+            return false;
+        AddScaleToRoots(0.015);
+        AddTranslationToRoots({ 0.5, -1.2, 0. });
+        return true;
+
+    case eExternalWolfBaseMesh:
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/TheCharliEZM/Wolf base mesh/scene.gltf"))
+            return false;
+        AddScaleToRoots(0.008);
+        AddTranslationToRoots({ 0.7, -2.4, 0. });
+        return true;
+
+    case eExternalNintendoGameBoyClassic:
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/hunter333d/Nintendo Game Boy Classic/scene.gltf"))
+            return false;
+        AddScaleToRoots(0.50);
+        AddTranslationToRoots({ 0., -1.7, 0. });
+        return true;
+
+    case eExternalWeltron2001SpaceballRadio:
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/ArneDC/Prinzsound SM8 - Weltron 2001 Spaceball Radio/scene.gltf"))
+            return false;
+        AddScaleToRoots(.016);
+        AddTranslationToRoots({ 0., -3.6, 0. });
+        return true;
+
+    case eExternalSpotMiniRigged:
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Greg McKechnie/Spot Mini (Rigged)/scene.gltf"))
+            return false;
+        AddScaleToRoots(.00024f);
+        AddTranslationToRoots({ 0., 0., 2.8 });
+        return true;
+
+    case eExternalMandaloriansHelmet:
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/arn204/The Mandalorian's Helmet/scene.gltf"))
+            return false;
+        AddTranslationToRoots({ -35., -70., 85. });
+        AddScaleToRoots(.17f);
+        return true;
+
+    case eExternalTheRocket:
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/TuppsM/The Rocket/scene.gltf"))
+            return false;
+        AddScaleToRoots(.011);
+        AddTranslationToRoots({ 0.1, -1., 0. });
+        return true;
+
+    case eExternalRoboV1:
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/_Sef_/Robo_V1/scene.gltf"))
+            return false;
+        AddScaleToRoots(.001);
+        AddTranslationToRoots({ 0., -1., 0. });
+        return true;
 
     case eHardwiredSimpleDebugSphere:
     {
-        sSceneNodes.clear();
-        sSceneNodes.resize(1);
-        if (sSceneNodes.size() != 1)
+        mMaterials.clear();
+        mMaterials.resize(1, SceneMaterial());
+        if (mMaterials.size() != 1)
             return false;
 
-        auto &node0 = sSceneNodes[0];
+        auto &material0 = mMaterials[0];
+        if (!material0.Create(ctx, L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png"))
+            return false;
+
+        mRootNodes.clear();
+        mRootNodes.resize(1, SceneNode(true));
+        if (mRootNodes.size() != 1)
+            return false;
+
+        auto &node0 = mRootNodes[0];
         auto primitive = node0.CreateEmptyPrimitive();
         if (!primitive)
             return false;
 
-        if (!primitive->CreateSphere(ctx, 40, 80,
-                                     L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png"))
+        if (!primitive->CreateSphere(ctx, 40, 80))
             return false;
-        node0.AddScale({ 3.2f, 3.2f, 3.2f });
+        primitive->SetMaterialIdx(0);
+        node0.AddScale({ 3.4f, 3.4f, 3.4f });
 
-        sAmbientLight.luminance     = XMFLOAT4(0.10f, 0.10f, 0.10f, 1.0f);
+        mAmbientLight.luminance     = XMFLOAT4(0.10f, 0.10f, 0.10f, 1.0f);
 
-        sDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
-        sDirectLights[0].luminance  = XMFLOAT4(2.6f, 2.6f, 2.6f, 1.0f);
+        mDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance  = XMFLOAT4(2.6f, 2.6f, 2.6f, 1.0f);
 
         // coloured point lights
-        sPointLights[0].intensity   = XMFLOAT4(4.000f, 1.800f, 1.200f, 1.0f); // red
-        sPointLights[1].intensity   = XMFLOAT4(1.000f, 2.500f, 1.100f, 1.0f); // green
-        sPointLights[2].intensity   = XMFLOAT4(1.200f, 1.800f, 4.000f, 1.0f); // blue
+        mPointLights[0].intensity   = XMFLOAT4(4.000f, 1.800f, 1.200f, 1.0f); // red
+        mPointLights[1].intensity   = XMFLOAT4(1.000f, 2.500f, 1.100f, 1.0f); // green
+        mPointLights[2].intensity   = XMFLOAT4(1.200f, 1.800f, 4.000f, 1.0f); // blue
 
         return true;
     }
 
     case eHardwiredEarth:
     {
-        sSceneNodes.clear();
-        sSceneNodes.resize(1);
-        if (sSceneNodes.size() != 1)
+        mMaterials.clear();
+        mMaterials.resize(1, SceneMaterial());
+        if (mMaterials.size() != 1)
             return false;
 
-        auto &node0 = sSceneNodes[0];
+        auto &material0 = mMaterials[0];
+        if (!material0.Create(ctx,
+                              L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
+                              L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
+            return false;
+
+        mRootNodes.clear();
+        mRootNodes.resize(1, SceneNode(true));
+        if (mRootNodes.size() != 1)
+            return false;
+
+        auto &node0 = mRootNodes[0];
         auto primitive = node0.CreateEmptyPrimitive();
         if (!primitive)
             return false;
 
-        if (!primitive->CreateSphere(ctx, 40, 80,
-                                     L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
-                                     L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
+        if (!primitive->CreateSphere(ctx, 40, 80))
             return false;
-        node0.AddScale({ 3.2f, 3.2f, 3.2f });
+        primitive->SetMaterialIdx(0);
+        node0.AddScale({ 3.4f, 3.4f, 3.4f });
 
-        sAmbientLight.luminance     = XMFLOAT4(0.f, 0.f, 0.f, 1.0f);
+        mAmbientLight.luminance     = XMFLOAT4(0.f, 0.f, 0.f, 1.0f);
 
         const double lum = 3.5f;
-        sDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
-        sDirectLights[0].luminance  = XMFLOAT4(lum, lum, lum, 1.0f);
+        mDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance  = XMFLOAT4(lum, lum, lum, 1.0f);
 
         const double ints = 3.5f;
-        sPointLights[0].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
-        sPointLights[1].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
-        sPointLights[2].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[0].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[1].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[2].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
 
         return true;
     }
 
     case eHardwiredThreePlanets:
     {
-        sSceneNodes.clear();
-        sSceneNodes.resize(3);
-        if (sSceneNodes.size() != 3)
+        mMaterials.clear();
+        mMaterials.resize(3, SceneMaterial());
+        if (mMaterials.size() != 3)
             return false;
 
-        auto &node0 = sSceneNodes[0];
-        auto primitive0 = sSceneNodes[0].CreateEmptyPrimitive();
+        mRootNodes.clear();
+        mRootNodes.resize(3, SceneNode(true));
+        if (mRootNodes.size() != 3)
+            return false;
+
+        auto &material0 = mMaterials[0];
+        if (!material0.Create(ctx,
+                              L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
+                              L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
+            return false;
+
+        auto &node0 = mRootNodes[0];
+        auto primitive0 = node0.CreateEmptyPrimitive();
         if (!primitive0)
             return false;
-        if (!primitive0->CreateSphere(ctx, 40, 80,
-                                      L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
-                                      L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
+        if (!primitive0->CreateSphere(ctx, 40, 80))
             return false;
+        primitive0->SetMaterialIdx(0);
         node0.AddScale({ 2.2f, 2.2f, 2.2f });
         node0.AddTranslation({ 0.f, 0.f, -1.5f });
 
-        auto &node1 = sSceneNodes[1];
-        auto primitive1 = sSceneNodes[1].CreateEmptyPrimitive();
+        auto &material1 = mMaterials[1];
+        if (!material1.Create(ctx, L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
+            return false;
+
+        auto &node1 = mRootNodes[1];
+        auto primitive1 = node1.CreateEmptyPrimitive();
         if (!primitive1)
             return false;
-        if (!primitive1->CreateSphere(ctx, 20, 40,
-                                      L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
+        if (!primitive1->CreateSphere(ctx, 20, 40))
             return false;
+        primitive1->SetMaterialIdx(1);
         node1.AddScale({ 1.2f, 1.2f, 1.2f });
         node1.AddTranslation({ -2.5f, 0.f, 2.0f });
 
-        auto &node2 = sSceneNodes[2];
-        auto primitive2 = sSceneNodes[2].CreateEmptyPrimitive();
+        auto &material2 = mMaterials[2];
+        if (!material2.Create(ctx, L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
+            return false;
+
+        auto &node2 = mRootNodes[2];
+        auto primitive2 = node2.CreateEmptyPrimitive();
         if (!primitive2)
             return false;
-        if (!primitive2->CreateSphere(ctx, 20, 40,
-                                      L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
+        if (!primitive2->CreateSphere(ctx, 20, 40))
             return false;
+        primitive2->SetMaterialIdx(2);
         node2.AddScale({ 1.2f, 1.2f, 1.2f });
         node2.AddTranslation({ 2.5f, 0.f, 2.0f });
 
-        sAmbientLight.luminance     = XMFLOAT4(0.00f, 0.00f, 0.00f, 1.0f);
+        mAmbientLight.luminance     = XMFLOAT4(0.00f, 0.00f, 0.00f, 1.0f);
 
         const double lum = 3.0f;
-        sDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
-        sDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+        mDirectLights[0].dir       = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
 
         const double ints = 4.0f;
-        sPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
-        sPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
-        sPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
 
         return true;
     }
@@ -510,166 +519,12 @@ bool Scene::LoadExternal(IRenderingContext &ctx, const std::wstring &filePath)
 }
 
 
-bool LoadGltfModel(tinygltf::Model &model, const std::wstring &filePath)
-{
-    using namespace std;
-
-    // Convert to plain string for tinygltf
-    string filePathA = Utils::WStringToString(filePath);
-
-    // debug: tiny glTF test
-    //{
-    //    std::stringstream ss;
-    //    cout_redirect cr(ss.rdbuf());
-    //    TinyGltfTest(filePathA.c_str());
-    //    Log::Debug(L"LoadGltfModel: TinyGltfTest output:\n\n%s", Utils::StringToWString(ss.str()).c_str());
-    //}
-
-    tinygltf::TinyGLTF tinyGltf;
-    string errA, warnA;
-    wstring ext = Utils::GetFilePathExt(filePath);
-
-    bool ret = false;
-    if (ext.compare(L"glb") == 0)
-    {
-        Log::Debug(L"LoadGltfModel: Reading binary glTF from \"%s\"", filePath.c_str());
-        ret = tinyGltf.LoadBinaryFromFile(&model, &errA, &warnA, filePathA);
-    }
-    else
-    {
-        Log::Debug(L"LoadGltfModel: Reading ASCII glTF from \"%s\"", filePath.c_str());
-        ret = tinyGltf.LoadASCIIFromFile(&model, &errA, &warnA, filePathA);
-    }
-
-    if (!errA.empty())
-        Log::Debug(L"LoadGltfModel: Error: %s", Utils::StringToWString(errA).c_str());
-
-    if (!warnA.empty())
-        Log::Debug(L"LoadGltfModel: Warning: %s", Utils::StringToWString(warnA).c_str());
-
-    if (ret)
-        Log::Debug(L"LoadGltfModel: Succesfully loaded model");
-    else
-        Log::Error(L"LoadGltfModel: Failed to parse glTF file \"%s\"", filePath.c_str());
-
-    return ret;
-}
-
-
-// debug
-static std::string ModeToString(int mode)
-{
-    if (mode == TINYGLTF_MODE_POINTS)
-        return "POINTS";
-    else if (mode == TINYGLTF_MODE_LINE)
-        return "LINE";
-    else if (mode == TINYGLTF_MODE_LINE_LOOP)
-        return "LINE_LOOP";
-    else if (mode == TINYGLTF_MODE_TRIANGLES)
-        return "TRIANGLES";
-    else if (mode == TINYGLTF_MODE_TRIANGLE_FAN)
-        return "TRIANGLE_FAN";
-    else if (mode == TINYGLTF_MODE_TRIANGLE_STRIP)
-        return "TRIANGLE_STRIP";
-    else
-        return "**UNKNOWN**";
-}
-
-
-static D3D11_PRIMITIVE_TOPOLOGY GltfModeToTopology(int mode)
-{
-    switch (mode)
-    {
-    case TINYGLTF_MODE_POINTS:
-        return D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
-    case TINYGLTF_MODE_LINE:
-        return D3D_PRIMITIVE_TOPOLOGY_LINELIST;
-    case TINYGLTF_MODE_LINE_STRIP:
-        return D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
-    case TINYGLTF_MODE_TRIANGLES:
-        return D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-    case TINYGLTF_MODE_TRIANGLE_STRIP:
-        return D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
-    //case TINYGLTF_MODE_LINE_LOOP:
-    //case TINYGLTF_MODE_TRIANGLE_FAN:
-    default:
-        return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-    }
-}
-
-
-static std::string StringIntMapToString(const std::map<std::string, int> &m)
-{
-    std::stringstream ss;
-    bool first = true;
-    for (auto item : m)
-    {
-        if (!first)
-            ss << ", ";
-        else
-            first = false;
-        ss << item.first << ": " << item.second;
-    }
-    return ss.str();
-}
-
-static std::string TypeToString(int ty) {
-    if (ty == TINYGLTF_TYPE_SCALAR)
-        return "SCALAR";
-    else if (ty == TINYGLTF_TYPE_VECTOR)
-        return "VECTOR";
-    else if (ty == TINYGLTF_TYPE_VEC2)
-        return "VEC2";
-    else if (ty == TINYGLTF_TYPE_VEC3)
-        return "VEC3";
-    else if (ty == TINYGLTF_TYPE_VEC4)
-        return "VEC4";
-    else if (ty == TINYGLTF_TYPE_MATRIX)
-        return "MATRIX";
-    else if (ty == TINYGLTF_TYPE_MAT2)
-        return "MAT2";
-    else if (ty == TINYGLTF_TYPE_MAT3)
-        return "MAT3";
-    else if (ty == TINYGLTF_TYPE_MAT4)
-        return "MAT4";
-    return "**UNKNOWN**";
-}
-
-static std::string ComponentTypeToString(int ty) {
-    if (ty == TINYGLTF_COMPONENT_TYPE_BYTE)
-        return "BYTE";
-    else if (ty == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
-        return "UNSIGNED_BYTE";
-    else if (ty == TINYGLTF_COMPONENT_TYPE_SHORT)
-        return "SHORT";
-    else if (ty == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
-        return "UNSIGNED_SHORT";
-    else if (ty == TINYGLTF_COMPONENT_TYPE_INT)
-        return "INT";
-    else if (ty == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
-        return "UNSIGNED_INT";
-    else if (ty == TINYGLTF_COMPONENT_TYPE_FLOAT)
-        return "FLOAT";
-    else if (ty == TINYGLTF_COMPONENT_TYPE_DOUBLE)
-        return "DOUBLE";
-
-    return "**UNKNOWN**";
-}
-
-static std::string TargetToString(int target) {
-    if (target == 34962)
-        return "GL_ARRAY_BUFFER";
-    else if (target == 34963)
-        return "GL_ELEMENT_ARRAY_BUFFER";
-    else
-        return "**UNKNOWN**";
-}
-
 
 const tinygltf::Accessor& GetPrimitiveAttrAccessor(bool &accessorLoaded,
                                                    const tinygltf::Model &model,
                                                    const std::map<std::string, int> &attributes,
                                                    const int primitiveIdx,
+                                                   bool requiredData,
                                                    const std::string &attrName,
                                                    const std::wstring &logPrefix)
 {
@@ -678,9 +533,10 @@ const tinygltf::Accessor& GetPrimitiveAttrAccessor(bool &accessorLoaded,
     const auto attrIt = attributes.find(attrName);
     if (attrIt == attributes.end())
     {
-        Log::Error(L"%sNo %s attribute present in primitive %d!",
+        Log::Write(requiredData ? Log::eError : Log::eDebug,
+                   L"%sNo %s attribute present in primitive %d!",
                    logPrefix.c_str(),
-                   Utils::StringToWString(attrName).c_str(),
+                   Utils::StringToWstring(attrName).c_str(),
                    primitiveIdx);
         accessorLoaded = false;
         return dummyAccessor;
@@ -691,7 +547,7 @@ const tinygltf::Accessor& GetPrimitiveAttrAccessor(bool &accessorLoaded,
     {
         Log::Error(L"%sInvalid %s accessor index (%d/%d)!",
                    logPrefix.c_str(),
-                   Utils::StringToWString(attrName).c_str(),
+                   Utils::StringToWstring(attrName).c_str(),
                    accessorIdx,
                    model.accessors.size());
         accessorLoaded = false;
@@ -714,11 +570,11 @@ bool IterateGltfAccesorData(const tinygltf::Model &model,
     Log::Debug(L"%s%s accesor \"%s\": view %d, offset %d, type %s<%s>, count %d",
                logPrefix,
                logDataName,
-               Utils::StringToWString(accessor.name).c_str(),
+               Utils::StringToWstring(accessor.name).c_str(),
                accessor.bufferView,
                accessor.byteOffset,
-               Utils::StringToWString(TypeToString(accessor.type)).c_str(),
-               Utils::StringToWString(ComponentTypeToString(accessor.componentType)).c_str(),
+               GltfUtils::TypeToWstring(accessor.type).c_str(),
+               GltfUtils::ComponentTypeToWstring(accessor.componentType).c_str(),
                accessor.count);
 
     // Buffer view
@@ -738,12 +594,12 @@ bool IterateGltfAccesorData(const tinygltf::Model &model,
     //           logPrefix,
     //           logDataName,
     //           bufferViewIdx,
-    //           Utils::StringToWString(bufferView.name).c_str(),
+    //           Utils::StringToWstring(bufferView.name).c_str(),
     //           bufferView.buffer,
     //           bufferView.byteOffset,
     //           bufferView.byteLength,
     //           bufferView.byteStride,
-    //           Utils::StringToWString(TargetToString(bufferView.target)).c_str());
+    //           GltfUtils::TargetToWstring(bufferView.target).c_str());
 
     // Buffer
 
@@ -770,10 +626,10 @@ bool IterateGltfAccesorData(const tinygltf::Model &model,
     //           logPrefix,
     //           logDataName,
     //           bufferIdx,
-    //           Utils::StringToWString(buffer.name).c_str(),
+    //           Utils::StringToWstring(buffer.name).c_str(),
     //           buffer.data.data(),
     //           buffer.data.size(),
-    //           Utils::StringToWString(buffer.uri).c_str());
+    //           Utils::StringToWstring(buffer.uri).c_str());
 
     // TODO: Check that buffer view is large enough to contain all data from accessor?
 
@@ -793,57 +649,150 @@ bool IterateGltfAccesorData(const tinygltf::Model &model,
 }
 
 
-bool Scene::LoadGLTF(IRenderingContext &ctx, const std::wstring &filePath)
+bool Scene::LoadGLTF(IRenderingContext &ctx,
+                     const std::wstring &filePath)
 {
     using namespace std;
 
     Log::Debug(L"");
+    const std::wstring logPrefix = L"LoadGLTF: ";
 
     tinygltf::Model model;
-    if (!LoadGltfModel(model, filePath))
+    if (!GltfUtils::LoadModel(model, filePath))
         return false;
-
-    // Scene
-    if (model.scenes.size() < 1)
-    {
-        Log::Error(L"LoadGLTF: No scenes present in the model!");
-        return false;
-    }
-    if (model.scenes.size() > 1)
-        Log::Warning(L"LoadGLTF: More scenes present in the model. Loading just the first one.");
-    const auto &scene = model.scenes[0];
 
     Log::Debug(L"");
-    Log::Debug(L"LoadGLTF: Scene 0 \"%s\": %d node(s)",
-               Utils::StringToWString(scene.name).c_str(),
-               scene.nodes.size());
 
-    // Nodes
-    // No children so far
-    sSceneNodes.clear();
-    sSceneNodes.reserve(model.nodes.size());
-    for (const auto nodeIdx : scene.nodes)
-    {
-        sSceneNodes.push_back(SceneNode());
-        if (!sSceneNodes.back().LoadFromGLTF(ctx, model, nodeIdx))
-        {
-            sSceneNodes.pop_back();
-            return false;
-        }
-    }
+    if (!LoadMaterialsFromGltf(ctx, model, logPrefix))
+        return false;
+
+    if (!LoadSceneFromGltf(ctx, model, logPrefix))
+        return false;
 
     Log::Debug(L"");
 
     // debug lights
     const double amb = 0.3f;
-    sAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
-    const double lum = 5.f;
-    sDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
-    sDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+    mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
+    const double lum = 2.f;
+    mDirectLights[0].dir       = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+    mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
     const double ints = 6.5f;
-    sPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
-    sPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
-    sPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+    mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+    mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+    mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+
+    return true;
+}
+
+
+bool Scene::LoadMaterialsFromGltf(IRenderingContext &ctx,
+                                  const tinygltf::Model &model,
+                                  const std::wstring &logPrefix)
+{
+    const auto &materials = model.materials;
+
+    Log::Debug(L"%sMaterials: %d", logPrefix.c_str(), materials.size());
+
+    const std::wstring materialLogPrefix = logPrefix + L"   ";
+    const std::wstring valueLogPrefix = materialLogPrefix + L"   ";
+
+    mMaterials.clear();
+    mMaterials.reserve(materials.size());
+    for (size_t matIdx = 0; matIdx < materials.size(); ++matIdx)
+    {
+        const auto &material = materials[matIdx];
+
+        Log::Debug(L"%s%d/%d \"%s\"",
+                   materialLogPrefix.c_str(),
+                   matIdx,
+                   materials.size(),
+                   Utils::StringToWstring(material.name).c_str());
+
+        SceneMaterial sceneMaterial;
+        if (!sceneMaterial.LoadFromGltf(ctx, model, material, valueLogPrefix))
+            return false;
+        mMaterials.push_back(std::move(sceneMaterial));
+    }
+
+    return true;
+}
+
+
+bool Scene::LoadSceneFromGltf(IRenderingContext &ctx,
+                              const tinygltf::Model &model,
+                              const std::wstring &logPrefix)
+{
+    // Choose one scene
+    if (model.scenes.size() < 1)
+    {
+        Log::Error(L"%sNo scenes present in the model!", logPrefix.c_str());
+        return false;
+    }
+    if (model.scenes.size() > 1)
+        Log::Warning(L"%sMore scenes present in the model. Loading just the first one.", logPrefix.c_str());
+    const auto &scene = model.scenes[0];
+
+    Log::Debug(L"%sScene 0 \"%s\": %d root node(s)",
+               logPrefix.c_str(),
+               Utils::StringToWstring(scene.name).c_str(),
+               scene.nodes.size());
+
+    // Nodes hierarchy
+    mRootNodes.clear();
+    mRootNodes.reserve(scene.nodes.size());
+    for (const auto nodeIdx : scene.nodes)
+    {
+        SceneNode sceneNode(true);
+        if (!LoadSceneNodeFromGLTF(ctx, sceneNode, model, nodeIdx, logPrefix + L"   "))
+            return false;
+        mRootNodes.push_back(std::move(sceneNode));
+    }
+
+    return true;
+}
+
+
+bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
+                                  SceneNode &sceneNode,
+                                  const tinygltf::Model &model,
+                                  int nodeIdx,
+                                  const std::wstring &logPrefix)
+{
+    if (nodeIdx >= model.nodes.size())
+    {
+        Log::Error(L"%sInvalid node index (%d/%d)!", logPrefix.c_str(), nodeIdx, model.nodes.size());
+        return false;
+    }
+
+    const auto &node = model.nodes[nodeIdx];
+
+    // Node itself
+    if (!sceneNode.LoadFromGLTF(ctx, model, node, nodeIdx, logPrefix))
+        return false;
+
+    // Children
+    sceneNode.mChildren.clear();
+    sceneNode.mChildren.reserve(node.children.size());
+    const std::wstring &childLogPrefix = logPrefix + L"   ";
+    for (const auto childIdx : node.children)
+    {
+        if ((childIdx < 0) || (childIdx >= model.nodes.size()))
+        {
+            Log::Error(L"%sInvalid child node index (%d/%d)!", childLogPrefix.c_str(), childIdx, model.nodes.size());
+            return false;
+        }
+
+        //Log::Debug(L"%sLoading child %d \"%s\"",
+        //           childLogPrefix.c_str(),
+        //           childIdx,
+        //           Utils::StringToWstring(model.nodes[childIdx].name).c_str());
+
+        SceneNode childNode;
+        if (!LoadSceneNodeFromGLTF(ctx, childNode, model, childIdx, childLogPrefix))
+            return false;
+        sceneNode.mChildren.push_back(std::move(childNode));
+    }
 
     return true;
 }
@@ -861,39 +810,40 @@ void Scene::Destroy()
     Utils::ReleaseAndMakeNull(mCbChangedPerSceneNode);
     Utils::ReleaseAndMakeNull(mSamplerLinear);
 
-    sSceneNodes.clear();
-    sPointLightProxy.Destroy();
+    mRootNodes.clear();
+    mPointLightProxy.Destroy();
 }
 
 
-void Scene::Animate(IRenderingContext &ctx)
+void Scene::AnimateFrame(IRenderingContext &ctx)
 {
     if (!ctx.IsValid())
         return;
 
-    for (auto &node : sSceneNodes)
+    // Scene geometry
+    for (auto &node : mRootNodes)
         node.Animate(ctx);
 
-    // Directional lights are steady (for now)
-    for (auto &dirLight : sDirectLights)
+    // Directional lights (are steady for now)
+    for (auto &dirLight : mDirectLights)
         dirLight.dirTransf = dirLight.dir;
 
     // Animate point lights
 
-    const float time = ctx.GetCurrentAnimationTime();
+    const float time = ctx.GetFrameAnimationTime();
     const float period = 15.f; //seconds
     const float totalAnimPos = time / period;
     const float angle = totalAnimPos * XM_2PI;
 
-    const auto pointCount = sPointLights.size();
+    const auto pointCount = mPointLights.size();
     for (int i = 0; i < pointCount; i++)
     {
         const float lightRelOffset = (float)i / pointCount;
 
         const float orbitRadius =
             (mSceneId == eHardwiredThreePlanets)
-            ? 4.8f
-            : 4.4f;
+            ? 5.2f
+            : 5.5f;
         const float rotationAngle = -2.f * angle - lightRelOffset * XM_2PI;
         const float orbitInclination =
             (mSceneId == eHardwiredThreePlanets)
@@ -905,14 +855,14 @@ void Scene::Animate(IRenderingContext &ctx)
         const XMMATRIX inclinationMtrx  = XMMatrixRotationZ(orbitInclination);
         const XMMATRIX transfMtrx = translationMtrx * rotationMtrx * inclinationMtrx;
 
-        const XMVECTOR lightVec = XMLoadFloat4(&sPointLights[i].pos);
+        const XMVECTOR lightVec = XMLoadFloat4(&mPointLights[i].pos);
         const XMVECTOR lightVecTransf = XMVector3Transform(lightVec, transfMtrx);
-        XMStoreFloat4(&sPointLights[i].posTransf, lightVecTransf);
+        XMStoreFloat4(&mPointLights[i].posTransf, lightVecTransf);
     }
 }
 
 
-void Scene::Render(IRenderingContext &ctx)
+void Scene::RenderFrame(IRenderingContext &ctx)
 {
     if (!ctx.IsValid())
         return;
@@ -921,16 +871,16 @@ void Scene::Render(IRenderingContext &ctx)
 
     // Frame constant buffer
     CbChangedEachFrame cbEachFrame;
-    cbEachFrame.AmbientLightLuminance = sAmbientLight.luminance;
-    for (int i = 0; i < sDirectLights.size(); i++)
+    cbEachFrame.AmbientLightLuminance = mAmbientLight.luminance;
+    for (int i = 0; i < mDirectLights.size(); i++)
     {
-        cbEachFrame.DirectLightDirs[i]       = sDirectLights[i].dirTransf;
-        cbEachFrame.DirectLightLuminances[i] = sDirectLights[i].luminance;
+        cbEachFrame.DirectLightDirs[i]       = mDirectLights[i].dirTransf;
+        cbEachFrame.DirectLightLuminances[i] = mDirectLights[i].luminance;
     }
-    for (int i = 0; i < sPointLights.size(); i++)
+    for (int i = 0; i < mPointLights.size(); i++)
     {
-        cbEachFrame.PointLightPositions[i]   = sPointLights[i].posTransf;
-        cbEachFrame.PointLightIntensities[i] = sPointLights[i].intensity;
+        cbEachFrame.PointLightPositions[i]   = mPointLights[i].posTransf;
+        cbEachFrame.PointLightIntensities[i] = mPointLights[i].intensity;
     }
     immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
 
@@ -948,56 +898,112 @@ void Scene::Render(IRenderingContext &ctx)
     immCtx->PSSetConstantBuffers(3, 1, &mCbChangedPerSceneNode);
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
 
-    // Draw all scene nodes
-    for (auto &node : sSceneNodes)
-    {
-        // Update per-node constant buffer
-        CbChangedPerSceneNode cbPerSceneNode;
-        cbPerSceneNode.WorldMtrx = XMMatrixTranspose(node.GetWorldMtrx());
-        cbPerSceneNode.MeshColor = { 0.f, 1.f, 0.f, 1.f, };
-        immCtx->UpdateSubresource(mCbChangedPerSceneNode, 0, nullptr, &cbPerSceneNode, 0, 0);
-
-        // Draw
-        for (auto &primitive : node.primitives)
-        {
-            immCtx->PSSetShaderResources(0, 1, primitive.GetDiffuseSRV());
-            immCtx->PSSetShaderResources(1, 1, primitive.GetSpecularSRV());
-            primitive.DrawGeometry(ctx, mVertexLayout);
-        }
-    }
+    // Scene geometry
+    for (auto &node : mRootNodes)
+        RenderNode(ctx, node, XMMatrixIdentity());
 
     // Proxy geometry for point lights
-    for (int i = 0; i < sPointLights.size(); i++)
+    for (int i = 0; i < mPointLights.size(); i++)
     {
         CbChangedPerSceneNode cbPerSceneNode;
 
         const float radius = 0.07f;
         XMMATRIX lightScaleMtrx = XMMatrixScaling(radius, radius, radius);
-        XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(XMLoadFloat4(&sPointLights[i].posTransf));
+        XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(XMLoadFloat4(&mPointLights[i].posTransf));
         XMMATRIX lightMtrx = lightScaleMtrx * lightTrnslMtrx;
         cbPerSceneNode.WorldMtrx = XMMatrixTranspose(lightMtrx);
 
         const float radius2 = radius * radius;
         cbPerSceneNode.MeshColor = {
-            sPointLights[i].intensity.x / radius2,
-            sPointLights[i].intensity.y / radius2,
-            sPointLights[i].intensity.z / radius2,
-            sPointLights[i].intensity.w / radius2,
+            mPointLights[i].intensity.x / radius2,
+            mPointLights[i].intensity.y / radius2,
+            mPointLights[i].intensity.z / radius2,
+            mPointLights[i].intensity.w / radius2,
         };
 
         immCtx->UpdateSubresource(mCbChangedPerSceneNode, 0, nullptr, &cbPerSceneNode, 0, 0);
 
         immCtx->PSSetShader(mPixelShaderSolid, nullptr, 0);
-        sPointLightProxy.DrawGeometry(ctx, mVertexLayout);
+        mPointLightProxy.DrawGeometry(ctx, mVertexLayout);
     }
+}
+
+
+void Scene::AddScaleToRoots(double scale)
+{
+    for (auto &rootNode : mRootNodes)
+        rootNode.AddScale(scale);
+}
+
+
+void Scene::AddScaleToRoots(const std::vector<double> &vec)
+{
+    for (auto &rootNode : mRootNodes)
+        rootNode.AddScale(vec);
+}
+
+
+void Scene::AddRotationQuaternionToRoots(const std::vector<double> &vec)
+{
+    for (auto &rootNode : mRootNodes)
+        rootNode.AddRotationQuaternion(vec);
+}
+
+
+void Scene::AddTranslationToRoots(const std::vector<double> &vec)
+{
+    for (auto &rootNode : mRootNodes)
+        rootNode.AddTranslation(vec);
+}
+
+
+void Scene::AddMatrixToRoots(const std::vector<double> &vec)
+{
+    for (auto &rootNode : mRootNodes)
+        rootNode.AddMatrix(vec);
+}
+
+
+void Scene::RenderNode(IRenderingContext &ctx,
+                       const SceneNode &node,
+                       const XMMATRIX &parentWorldMtrx)
+{
+    if (!ctx.IsValid())
+        return;
+
+    auto immCtx = ctx.GetImmediateContext();
+
+    const auto worldMtrx = node.GetWorldMtrx() * parentWorldMtrx;
+
+    // Update per-node constant buffer
+    CbChangedPerSceneNode cbPerSceneNode;
+    cbPerSceneNode.WorldMtrx = XMMatrixTranspose(worldMtrx);
+    cbPerSceneNode.MeshColor = { 0.f, 1.f, 0.f, 1.f, };
+    immCtx->UpdateSubresource(mCbChangedPerSceneNode, 0, nullptr, &cbPerSceneNode, 0, 0);
+
+    // Draw current node
+    for (auto &primitive : node.mPrimitives)
+    {
+        const int matIdx = primitive.GetMaterialIdx();
+        if (matIdx >= 0 && matIdx < mMaterials.size())
+            mMaterials[matIdx].PSSetShaderResources(ctx);
+        else
+            mDefaultMaterial.PSSetShaderResources(ctx);
+
+        primitive.DrawGeometry(ctx, mVertexLayout);
+    }
+
+    // Children
+    for (auto &child : node.mChildren)
+        RenderNode(ctx, child, worldMtrx);
 }
 
 bool Scene::GetAmbientColor(float(&rgba)[4])
 {
-    rgba[0] = sAmbientLight.luminance.x;
-    rgba[1] = sAmbientLight.luminance.y;
-    rgba[2] = sAmbientLight.luminance.z;
-    rgba[3] = sAmbientLight.luminance.w;
+    rgba[0] = mAmbientLight.luminance.x;
+    rgba[1] = mAmbientLight.luminance.y;
+    rgba[2] = mAmbientLight.luminance.z;
+    rgba[3] = mAmbientLight.luminance.w;
     return true;
 }
 
@@ -1011,14 +1017,11 @@ ScenePrimitive::ScenePrimitive(const ScenePrimitive &src) :
     mTopology(src.mTopology),
     mVertexBuffer(src.mVertexBuffer),
     mIndexBuffer(src.mIndexBuffer),
-    mDiffuseSRV(src.mDiffuseSRV),
-    mSpecularSRV(src.mSpecularSRV)
+    mMaterialIdx(src.mMaterialIdx)
 {
     // We are creating new references of device resources
-    Utils::SaveAddRef(mVertexBuffer);
-    Utils::SaveAddRef(mIndexBuffer);
-    Utils::SaveAddRef(mDiffuseSRV);
-    Utils::SaveAddRef(mSpecularSRV);
+    Utils::SafeAddRef(mVertexBuffer);
+    Utils::SafeAddRef(mIndexBuffer);
 }
 
 ScenePrimitive::ScenePrimitive(ScenePrimitive &&src) :
@@ -1027,8 +1030,7 @@ ScenePrimitive::ScenePrimitive(ScenePrimitive &&src) :
     mTopology(Utils::Exchange(src.mTopology, D3D_PRIMITIVE_TOPOLOGY_UNDEFINED)),
     mVertexBuffer(Utils::Exchange(src.mVertexBuffer, nullptr)),
     mIndexBuffer(Utils::Exchange(src.mIndexBuffer, nullptr)),
-    mDiffuseSRV(Utils::Exchange(src.mDiffuseSRV, nullptr)),
-    mSpecularSRV(Utils::Exchange(src.mSpecularSRV, nullptr))
+    mMaterialIdx(Utils::Exchange(src.mMaterialIdx, -1))
 {}
 
 ScenePrimitive& ScenePrimitive::operator =(const ScenePrimitive &src)
@@ -1038,14 +1040,12 @@ ScenePrimitive& ScenePrimitive::operator =(const ScenePrimitive &src)
     mTopology = src.mTopology;
     mVertexBuffer = src.mVertexBuffer;
     mIndexBuffer = src.mIndexBuffer;
-    mDiffuseSRV = src.mDiffuseSRV;
-    mSpecularSRV = src.mSpecularSRV;
 
     // We are creating new references of device resources
-    Utils::SaveAddRef(mVertexBuffer);
-    Utils::SaveAddRef(mIndexBuffer);
-    Utils::SaveAddRef(mDiffuseSRV);
-    Utils::SaveAddRef(mSpecularSRV);
+    Utils::SafeAddRef(mVertexBuffer);
+    Utils::SafeAddRef(mIndexBuffer);
+
+    mMaterialIdx = src.mMaterialIdx;
 
     return *this;
 }
@@ -1057,8 +1057,8 @@ ScenePrimitive& ScenePrimitive::operator =(ScenePrimitive &&src)
     mTopology = Utils::Exchange(src.mTopology, D3D_PRIMITIVE_TOPOLOGY_UNDEFINED);
     mVertexBuffer = Utils::Exchange(src.mVertexBuffer, nullptr);
     mIndexBuffer = Utils::Exchange(src.mIndexBuffer, nullptr);
-    mDiffuseSRV = Utils::Exchange(src.mDiffuseSRV, nullptr);
-    mSpecularSRV = Utils::Exchange(src.mSpecularSRV, nullptr);
+
+    mMaterialIdx = Utils::Exchange(src.mMaterialIdx, -1);
 
     return *this;
 }
@@ -1069,28 +1069,22 @@ ScenePrimitive::~ScenePrimitive()
 }
 
 
-bool ScenePrimitive::CreateCube(IRenderingContext & ctx,
-                                const wchar_t * diffuseTexPath)
+bool ScenePrimitive::CreateCube(IRenderingContext & ctx)
 {
     if (!GenerateCubeGeometry())
         return false;
     if (!CreateDeviceBuffers(ctx))
-        return false;
-    if (!LoadTextures(ctx, diffuseTexPath))
         return false;
 
     return true;
 }
 
 
-bool ScenePrimitive::CreateOctahedron(IRenderingContext & ctx,
-                                      const wchar_t * diffuseTexPath)
+bool ScenePrimitive::CreateOctahedron(IRenderingContext & ctx)
 {
     if (!GenerateOctahedronGeometry())
         return false;
     if (!CreateDeviceBuffers(ctx))
-        return false;
-    if (!LoadTextures(ctx, diffuseTexPath))
         return false;
 
     return true;
@@ -1099,15 +1093,11 @@ bool ScenePrimitive::CreateOctahedron(IRenderingContext & ctx,
 
 bool ScenePrimitive::CreateSphere(IRenderingContext & ctx,
                                   const WORD vertSegmCount,
-                                  const WORD stripCount,
-                                  const wchar_t * diffuseTexPath,
-                                  const wchar_t * specularTexPath)
+                                  const WORD stripCount)
 {
     if (!GenerateSphereGeometry(vertSegmCount, stripCount))
         return false;
     if (!CreateDeviceBuffers(ctx))
-        return false;
-    if (!LoadTextures(ctx, diffuseTexPath, specularTexPath))
         return false;
 
     return true;
@@ -1293,7 +1283,7 @@ bool ScenePrimitive::GenerateSphereGeometry(const WORD vertSegmCount, const WORD
             mIndices.push_back( idxOffset + line);
         }
         mIndices.push_back(idxOffset + vertexCountPerStrip - 1); // south pole
-        mIndices.push_back(static_cast<WORD>(-1)); // strip restart
+        mIndices.push_back(static_cast<uint32_t>(-1)); // strip restart
     }
 
     assert(mIndices.size() == indexCount);
@@ -1314,48 +1304,52 @@ bool ScenePrimitive::GenerateSphereGeometry(const WORD vertSegmCount, const WORD
 bool ScenePrimitive::LoadFromGLTF(IRenderingContext & ctx,
                                   const tinygltf::Model &model,
                                   const tinygltf::Mesh &mesh,
-                                  const int primitiveIdx)
+                                  const int primitiveIdx,
+                                  const std::wstring &logPrefix)
 {
-    if (!LoadGeometryFromGLTF(model, mesh, primitiveIdx))
+    if (!LoadDataFromGLTF(model, mesh, primitiveIdx, logPrefix))
         return false;
     if (!CreateDeviceBuffers(ctx))
-        return false;
-    if (!LoadTextures(ctx))
         return false;
 
     return true;
 }
 
 
-bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
-                                          const tinygltf::Mesh &mesh,
-                                          const int primitiveIdx)
+bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
+                                      const tinygltf::Mesh &mesh,
+                                      const int primitiveIdx,
+                                      const std::wstring &logPrefix)
 {
     bool success = false;
 
     const auto &primitive = mesh.primitives[primitiveIdx];
 
-    Log::Debug(L"LoadGLTF:    Primitive %d/%d: mode %s, attributes [%s], indices %d, material %d",
+    Log::Debug(L"%sPrimitive %d/%d: mode %s, attributes [%s], indices %d, material %d",
+               logPrefix.c_str(),
                primitiveIdx,
                mesh.primitives.size(),
-               Utils::StringToWString(ModeToString(primitive.mode)).c_str(),
-               Utils::StringToWString(StringIntMapToString(primitive.attributes)).c_str(),
+               GltfUtils::ModeToWstring(primitive.mode).c_str(),
+               GltfUtils::StringIntMapToWstring(primitive.attributes).c_str(),
                primitive.indices,
                primitive.material);
 
     const auto &attrs = primitive.attributes;
 
+    const std::wstring &subItemsLogPrefix = logPrefix + L"   ";
+    const std::wstring &dataConsumerLogPrefix = subItemsLogPrefix + L"   ";
+
     // Positions
 
     auto &posAccessor = GetPrimitiveAttrAccessor(success, model, attrs, primitiveIdx,
-                                                 "POSITION", L"LoadGLTF:     ");
+                                                 true, "POSITION", subItemsLogPrefix.c_str());
     if (!success)
         return false;
 
     if ((posAccessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) ||
         (posAccessor.type != TINYGLTF_TYPE_VEC3))
     {
-        Log::Error(L"LoadGLTF:     Unsupported POSITION data type!");
+        Log::Error(L"%sUnsupported POSITION data type!", subItemsLogPrefix.c_str());
         return false;
     }
 
@@ -1363,17 +1357,19 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
     mVertices.reserve(posAccessor.count);
     if (mVertices.capacity() < posAccessor.count)
     {
-        Log::Error(L"LoadGLTF:     Unable to allocate %d vertices!", posAccessor.count);
+        Log::Error(L"%sUnable to allocate %d vertices!", subItemsLogPrefix.c_str(), posAccessor.count);
         return false;
     }
 
-    auto PositionDataConsumer = [this](int itemIdx, const unsigned char *ptr)
+    auto PositionDataConsumer = [this, &dataConsumerLogPrefix](int itemIdx, const unsigned char *ptr)
     {
         auto pos = *reinterpret_cast<const XMFLOAT3*>(ptr);
 
-        Log::Debug(L"LoadGLTF:      %d: pos [%.1f, %.1f, %.1f]",
-                   itemIdx,
-                   pos.x, pos.y, pos.z);
+        itemIdx; // unused param
+        //Log::Debug(L"%s%d: pos [%.1f, %.1f, %.1f]",
+        //           dataConsumerLogPrefix.c_str(),
+        //           itemIdx,
+        //           pos.x, pos.y, pos.z);
 
         mVertices.push_back(SceneVertex{ XMFLOAT3(pos.x, pos.y, pos.z),
                                          XMFLOAT3(0.0f, 0.0f, 1.0f), // TODO: Leave invalid?
@@ -1383,36 +1379,37 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
     if (!IterateGltfAccesorData<float, 3>(model,
                                           posAccessor,
                                           PositionDataConsumer,
-                                          L"LoadGLTF:     ",
+                                          subItemsLogPrefix.c_str(),
                                           L"Position"))
         return false;
 
     // Normals
 
     auto &normalAccessor = GetPrimitiveAttrAccessor(success, model, attrs, primitiveIdx,
-                                                    "NORMAL", L"LoadGLTF:     ");
+                                                    false, "NORMAL", subItemsLogPrefix.c_str());
     if (success)
     {
         if ((normalAccessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) ||
             (normalAccessor.type != TINYGLTF_TYPE_VEC3))
         {
-            Log::Error(L"LoadGLTF:     Unsupported NORMAL data type!");
+            Log::Error(L"%sUnsupported NORMAL data type!", subItemsLogPrefix.c_str());
             return false;
         }
 
         if (normalAccessor.count != posAccessor.count)
         {
-            Log::Error(L"LoadGLTF:     Normals count (%d) is different from position count (%d)!",
-                       normalAccessor.count, posAccessor.count);
+            Log::Error(L"%sNormals count (%d) is different from position count (%d)!",
+                       subItemsLogPrefix.c_str(), normalAccessor.count, posAccessor.count);
             return false;
         }
 
-        auto NormalDataConsumer = [this](int itemIdx, const unsigned char *ptr)
+        auto NormalDataConsumer = [this, &dataConsumerLogPrefix](int itemIdx, const unsigned char *ptr)
         {
             auto normal = *reinterpret_cast<const XMFLOAT3*>(ptr);
 
-            Log::Debug(L"LoadGLTF:      %d: normal [%.1f, %.1f, %.1f]",
-                       itemIdx, normal.x, normal.y, normal.z);
+            //Log::Debug(L"%s%d: normal [%.1f, %.1f, %.1f]",
+            //           dataConsumerLogPrefix.c_str(),
+            //           itemIdx, normal.x, normal.y, normal.z);
 
             mVertices[itemIdx].Normal = normal;
         };
@@ -1420,7 +1417,7 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
         if (!IterateGltfAccesorData<float, 3>(model,
                                               normalAccessor,
                                               NormalDataConsumer,
-                                              L"LoadGLTF:     ",
+                                              subItemsLogPrefix.c_str(),
                                               L"Normal"))
             return false;
     }
@@ -1433,29 +1430,29 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
     // Texture coordinates
 
     auto &texCoord0Accessor = GetPrimitiveAttrAccessor(success, model, attrs, primitiveIdx,
-                                                       "TEXCOORD_0", L"LoadGLTF:     ");
+                                                       false, "TEXCOORD_0", subItemsLogPrefix.c_str());
     if (success)
     {
         if ((texCoord0Accessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) ||
             (texCoord0Accessor.type != TINYGLTF_TYPE_VEC2))
         {
-            Log::Error(L"LoadGLTF:     Unsupported TEXCOORD_0 data type!");
+            Log::Error(L"%sUnsupported TEXCOORD_0 data type!", subItemsLogPrefix.c_str());
             return false;
         }
 
         if (texCoord0Accessor.count != posAccessor.count)
         {
-            Log::Error(L"LoadGLTF:     Texture coords count (%d) is different from position count (%d)!",
-                       texCoord0Accessor.count, posAccessor.count);
+            Log::Error(L"%sTexture coords count (%d) is different from position count (%d)!",
+                       subItemsLogPrefix.c_str(), texCoord0Accessor.count, posAccessor.count);
             return false;
         }
 
-        auto TexCoord0DataConsumer = [this](int itemIdx, const unsigned char *ptr)
+        auto TexCoord0DataConsumer = [this, &dataConsumerLogPrefix](int itemIdx, const unsigned char *ptr)
         {
             auto texCoord0 = *reinterpret_cast<const XMFLOAT2*>(ptr);
 
-            Log::Debug(L"LoadGLTF:      %d: texCoord0 [%.1f, %.1f]",
-                       itemIdx, texCoord0.x, texCoord0.y);
+            //Log::Debug(L"%s%d: texCoord0 [%.1f, %.1f]",
+            //           dataConsumerLogPrefix.c_str(), itemIdx, texCoord0.x, texCoord0.y);
 
             mVertices[itemIdx].Tex = texCoord0;
         };
@@ -1463,7 +1460,7 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
         if (!IterateGltfAccesorData<float, 2>(model,
                                               texCoord0Accessor,
                                               TexCoord0DataConsumer,
-                                              L"LoadGLTF:     ",
+                                              subItemsLogPrefix.c_str(),
                                               L"Texture coordinates"))
             return false;
     }
@@ -1473,21 +1470,28 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
     const auto indicesAccessorIdx = primitive.indices;
     if (indicesAccessorIdx >= model.accessors.size())
     {
-        Log::Error(L"LoadGLTF:     Invalid indices accessor index (%d/%d)!", indicesAccessorIdx, model.accessors.size());
+        Log::Error(L"%sInvalid indices accessor index (%d/%d)!",
+                   subItemsLogPrefix.c_str(), indicesAccessorIdx, model.accessors.size());
         return false;
     }
     if (indicesAccessorIdx < 0)
     {
-        Log::Error(L"LoadGLTF:     Non-indexed geometry is not supported!");
+        Log::Error(L"%sNon-indexed geometry is not supported!", subItemsLogPrefix.c_str());
         return false;
     }
 
     const auto &indicesAccessor = model.accessors[indicesAccessorIdx];
 
-    if ((indicesAccessor.componentType != TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) ||
-        (indicesAccessor.type != TINYGLTF_TYPE_SCALAR))
+    if (indicesAccessor.type != TINYGLTF_TYPE_SCALAR)
     {
-        Log::Error(L"LoadGLTF:     Unsupported indices data type!");
+        Log::Error(L"%sUnsupported indices data type (must be scalar)!", subItemsLogPrefix.c_str());
+        return false;
+    }
+    if ((indicesAccessor.componentType < TINYGLTF_COMPONENT_TYPE_BYTE) ||
+        (indicesAccessor.componentType > TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT))
+    {
+        Log::Error(L"%sUnsupported indices data component type (%d)!",
+                   subItemsLogPrefix.c_str(), indicesAccessor.componentType);
         return false;
     }
 
@@ -1495,33 +1499,106 @@ bool ScenePrimitive::LoadGeometryFromGLTF(const tinygltf::Model &model,
     mIndices.reserve(indicesAccessor.count);
     if (mIndices.capacity() < indicesAccessor.count)
     {
-        Log::Error(L"LoadGLTF:     Unable to allocate %d indices!", indicesAccessor.count);
+        Log::Error(L"%sUnable to allocate %d indices!", subItemsLogPrefix.c_str(), indicesAccessor.count);
         return false;
     }
 
-    auto IndexDataConsumer = [this](int itemIdx, const unsigned char *ptr)
+    const auto indicesComponentType = indicesAccessor.componentType;
+    auto IndexDataConsumer =
+        [this, &dataConsumerLogPrefix, indicesComponentType]
+        (int itemIdx, const unsigned char *ptr)
     {
-        auto index = *reinterpret_cast<const unsigned short*>(ptr);
+        switch (indicesComponentType)
+        {
+        case TINYGLTF_COMPONENT_TYPE_BYTE:              mIndices.push_back(*reinterpret_cast<const int8_t*>(ptr)); break;
+        case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:     mIndices.push_back(*reinterpret_cast<const uint8_t*>(ptr)); break;
+        case TINYGLTF_COMPONENT_TYPE_SHORT:             mIndices.push_back(*reinterpret_cast<const int16_t*>(ptr)); break;
+        case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:    mIndices.push_back(*reinterpret_cast<const uint16_t*>(ptr)); break;
+        case TINYGLTF_COMPONENT_TYPE_INT:               mIndices.push_back(*reinterpret_cast<const int32_t*>(ptr)); break;
+        case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:      mIndices.push_back(*reinterpret_cast<const uint32_t*>(ptr)); break;
+        }
 
-        Log::Debug(L"LoadGLTF:      %d: %d", itemIdx, index);
-
-        mIndices.push_back(index);
+        // debug
+        itemIdx; // unused param
+        //Log::Debug(L"%s%d: %d",
+        //           dataConsumerLogPrefix.c_str(),
+        //           itemIdx,
+        //           mIndices.back());
     };
 
-    if (!IterateGltfAccesorData<unsigned short, 1>(model,
-                                                   indicesAccessor,
-                                                   IndexDataConsumer,
-                                                   L"LoadGLTF:     ",
-                                                   L"Indices"))
+    // TODO: Wrap into a function IterateGltfAccesorData(componentType, ...)? std::forward()?
+    switch (indicesComponentType)
+    {
+    case TINYGLTF_COMPONENT_TYPE_BYTE:
+        IterateGltfAccesorData<const int8_t, 1>(model,
+                                                indicesAccessor,
+                                                IndexDataConsumer,
+                                                subItemsLogPrefix.c_str(),
+                                                L"Indices");
+        break;
+    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+        IterateGltfAccesorData<uint8_t, 1>(model,
+                                           indicesAccessor,
+                                           IndexDataConsumer,
+                                           subItemsLogPrefix.c_str(),
+                                           L"Indices");
+        break;
+    case TINYGLTF_COMPONENT_TYPE_SHORT:
+        IterateGltfAccesorData<int16_t, 1>(model,
+                                           indicesAccessor,
+                                           IndexDataConsumer,
+                                           subItemsLogPrefix.c_str(),
+                                           L"Indices");
+        break;
+    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+        IterateGltfAccesorData<uint16_t, 1>(model,
+                                            indicesAccessor,
+                                            IndexDataConsumer,
+                                            subItemsLogPrefix.c_str(),
+                                            L"Indices");
+        break;
+    case TINYGLTF_COMPONENT_TYPE_INT:
+        IterateGltfAccesorData<int32_t, 1>(model,
+                                           indicesAccessor,
+                                           IndexDataConsumer,
+                                           subItemsLogPrefix.c_str(),
+                                           L"Indices");
+        break;
+    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+        IterateGltfAccesorData<uint32_t, 1>(model,
+                                            indicesAccessor,
+                                            IndexDataConsumer,
+                                            subItemsLogPrefix.c_str(),
+                                            L"Indices");
+        break;
+    }
+    if (mIndices.size() != indicesAccessor.count)
+    {
+        Log::Error(L"%sFailed to load indices (loaded %d instead of %d))!",
+                   subItemsLogPrefix.c_str(), mIndices.size(), indicesAccessor.count);
         return false;
+    }
 
     // DX primitive topology
-
-    mTopology = GltfModeToTopology(primitive.mode);
+    mTopology = GltfUtils::ModeToTopology(primitive.mode);
     if (mTopology == D3D_PRIMITIVE_TOPOLOGY_UNDEFINED)
     {
-        Log::Error(L"LoadGLTF:     Unsupported primitive topology!");
+        Log::Error(L"%sUnsupported primitive topology!", subItemsLogPrefix.c_str());
         return false;
+    }
+
+    // Material
+    const auto matIdx = primitive.material;
+    if (matIdx >= 0)
+    {
+        if (matIdx >= model.materials.size())
+        {
+            Log::Error(L"%sInvalid material index (%d/%d)!",
+                       subItemsLogPrefix.c_str(), matIdx, model.materials.size());
+            return false;
+        }
+
+        mMaterialIdx = matIdx;
     }
 
     return true;
@@ -1538,15 +1615,17 @@ bool ScenePrimitive::CreateDeviceBuffers(IRenderingContext & ctx)
 
     HRESULT hr = S_OK;
 
-    // Vertex buffer
     D3D11_BUFFER_DESC bd;
     ZeroMemory(&bd, sizeof(bd));
+
+    D3D11_SUBRESOURCE_DATA initData;
+    ZeroMemory(&initData, sizeof(initData));
+
+    // Vertex buffer
     bd.Usage = D3D11_USAGE_DEFAULT;
     bd.ByteWidth = (UINT)(sizeof(SceneVertex) * mVertices.size());
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bd.CPUAccessFlags = 0;
-    D3D11_SUBRESOURCE_DATA initData;
-    ZeroMemory(&initData, sizeof(initData));
     initData.pSysMem = mVertices.data();
     hr = device->CreateBuffer(&bd, &initData, &mVertexBuffer);
     if (FAILED(hr))
@@ -1557,7 +1636,7 @@ bool ScenePrimitive::CreateDeviceBuffers(IRenderingContext & ctx)
 
     // Index buffer
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(WORD) * (UINT)mIndices.size();
+    bd.ByteWidth = sizeof(uint32_t) * (UINT)mIndices.size();
     bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
     bd.CPUAccessFlags = 0;
     initData.pSysMem = mIndices.data();
@@ -1572,93 +1651,10 @@ bool ScenePrimitive::CreateDeviceBuffers(IRenderingContext & ctx)
 }
 
 
-bool ScenePrimitive::LoadTextures(IRenderingContext &ctx,
-                                  const wchar_t * diffuseTexPath,
-                                  const wchar_t * specularTexPath)
-{
-    HRESULT hr = S_OK;
-
-    auto device = ctx.GetDevice();
-    if (!device)
-        return false;
-
-    if (diffuseTexPath)
-    {
-        hr = D3DX11CreateShaderResourceViewFromFile(device, diffuseTexPath, nullptr, nullptr, &mDiffuseSRV, nullptr);
-        if (FAILED(hr))
-            return false;
-    }
-    else
-    {
-        static const auto grayColor = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.f);
-        CreateConstantTextureShaderResourceView(ctx, mDiffuseSRV, grayColor);
-    }
-
-    if (specularTexPath)
-    {
-        hr = D3DX11CreateShaderResourceViewFromFile(device, specularTexPath, nullptr, nullptr, &mSpecularSRV, nullptr);
-        if (FAILED(hr))
-            return false;
-    }
-    else
-    {
-        static const auto blackColor = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
-        CreateConstantTextureShaderResourceView(ctx, mSpecularSRV, blackColor);
-    }
-
-    return true;
-}
-
-
-bool ScenePrimitive::CreateConstantTextureShaderResourceView(IRenderingContext &ctx,
-                                                             ID3D11ShaderResourceView *&srv,
-                                                             XMFLOAT4 color)
-{
-    HRESULT hr = S_OK;
-    ID3D11Texture2D *tex = nullptr;
-
-    auto device = ctx.GetDevice();
-    if (!device)
-        return false;
-
-    // 1x1 constant-valued texture
-    D3D11_TEXTURE2D_DESC descTex;
-    ZeroMemory(&descTex, sizeof(D3D11_TEXTURE2D_DESC));
-    descTex.ArraySize = 1;
-    descTex.Usage = D3D11_USAGE_IMMUTABLE;
-    descTex.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    descTex.Width = 1;
-    descTex.Height = 1;
-    descTex.MipLevels = 1;
-    descTex.SampleDesc.Count = 1;
-    descTex.SampleDesc.Quality = 0;
-    descTex.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-    D3D11_SUBRESOURCE_DATA initData = { &color, sizeof(XMFLOAT4), 0 };
-    hr = device->CreateTexture2D(&descTex, &initData, &tex);
-    if (FAILED(hr))
-        return false;
-
-    // Shader resource view
-    D3D11_SHADER_RESOURCE_VIEW_DESC descSRV;
-    descSRV.Format = descTex.Format;
-    descSRV.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-    descSRV.Texture2D.MipLevels = 1;
-    descSRV.Texture2D.MostDetailedMip = 0;
-    hr = device->CreateShaderResourceView(tex, &descSRV, &srv);
-    Utils::ReleaseAndMakeNull(tex);
-    if (FAILED(hr))
-        return false;
-
-    return true;
-}
-
-
-
 void ScenePrimitive::Destroy()
 {
     DestroyGeomData();
     DestroyDeviceBuffers();
-    DestroyTextures();
 }
 
 
@@ -1677,14 +1673,7 @@ void ScenePrimitive::DestroyDeviceBuffers()
 }
 
 
-void ScenePrimitive::DestroyTextures()
-{
-    Utils::ReleaseAndMakeNull(mDiffuseSRV);
-    Utils::ReleaseAndMakeNull(mSpecularSRV);
-}
-
-
-void ScenePrimitive::DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout)
+void ScenePrimitive::DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout) const
 {
     auto immCtx = ctx.GetImmediateContext();
 
@@ -1692,26 +1681,27 @@ void ScenePrimitive::DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* ver
     UINT stride = sizeof(SceneVertex);
     UINT offset = 0;
     immCtx->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offset);
-    immCtx->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+    immCtx->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
     immCtx->IASetPrimitiveTopology(mTopology);
 
     immCtx->DrawIndexed((UINT)mIndices.size(), 0, 0);
 }
 
 
-SceneNode::SceneNode() : 
+SceneNode::SceneNode(bool isRootNode) :
+    mIsRootNode(isRootNode),
     mLocalMtrx(XMMatrixIdentity()),
     mWorldMtrx(XMMatrixIdentity())
 {}
 
 ScenePrimitive* SceneNode::CreateEmptyPrimitive()
 {
-    primitives.clear();
-    primitives.resize(1);
-    if (primitives.size() != 1)
+    mPrimitives.clear();
+    mPrimitives.resize(1);
+    if (mPrimitives.size() != 1)
         return nullptr;
 
-    return &primitives[0];
+    return &mPrimitives[0];
 }
 
 void SceneNode::SetIdentity()
@@ -1719,122 +1709,172 @@ void SceneNode::SetIdentity()
     mLocalMtrx = XMMatrixIdentity();
 }
 
+void SceneNode::AddScale(double scale)
+{
+    AddScale({ scale, scale, scale });
+}
+
 void SceneNode::AddScale(const std::vector<double> &vec)
 {
     if (vec.size() != 3)
+    {
+        if (vec.size() != 0)
+            Log::Warning(L"SceneNode::AddScale: vector of incorrect size (%d instead of 3)",
+                         vec.size());
         return;
+    }
 
-    const auto scaleMtrx = XMMatrixScaling((float)vec[0], (float)vec[1], (float)vec[2]);
-    mLocalMtrx = mLocalMtrx * scaleMtrx;
+    const auto mtrx = XMMatrixScaling((float)vec[0], (float)vec[1], (float)vec[2]);
+
+    mLocalMtrx = mLocalMtrx * mtrx;
 }
 
 void SceneNode::AddRotationQuaternion(const std::vector<double> &vec)
 {
     if (vec.size() != 4)
+    {
+        if (vec.size() != 0)
+            Log::Warning(L"SceneNode::AddRotationQuaternion: vector of incorrect size (%d instead of 4)",
+                         vec.size());
         return;
+    }
 
     const XMFLOAT4 quaternion((float)vec[0], (float)vec[1], (float)vec[2], (float)vec[3]);
-    const auto rotMtrx = XMMatrixRotationQuaternion(XMLoadFloat4(&quaternion));
-    mLocalMtrx = mLocalMtrx * rotMtrx;
+    const auto xmQuaternion = XMLoadFloat4(&quaternion);
+    const auto mtrx = XMMatrixRotationQuaternion(xmQuaternion);
+
+    mLocalMtrx = mLocalMtrx * mtrx;
 }
 
 void SceneNode::AddTranslation(const std::vector<double> &vec)
 {
     if (vec.size() != 3)
+    {
+        if (vec.size() != 0)
+            Log::Warning(L"SceneNode::AddTranslation: vector of incorrect size (%d instead of 3)",
+                         vec.size());
         return;
+    }
 
-    const auto translMtrx = XMMatrixTranslation((float)vec[0], (float)vec[1], (float)vec[2]);
-    mLocalMtrx = mLocalMtrx * translMtrx;
+    const auto mtrx = XMMatrixTranslation((float)vec[0], (float)vec[1], (float)vec[2]);
+
+    mLocalMtrx = mLocalMtrx * mtrx;
 }
+
+void SceneNode::AddMatrix(const std::vector<double> &vec)
+{
+    if (vec.size() != 16)
+    {
+        if (vec.size() != 0)
+            Log::Warning(L"SceneNode::AddMatrix: vector of incorrect size (%d instead of 16)",
+                         vec.size());
+        return;
+    }
+
+    const auto mtrx = XMMatrixSet(
+        (float)vec[0],  (float)vec[1],  (float)vec[2],  (float)vec[3],
+        (float)vec[4],  (float)vec[5],  (float)vec[6],  (float)vec[7],
+        (float)vec[8],  (float)vec[9],  (float)vec[10], (float)vec[11],
+        (float)vec[12], (float)vec[13], (float)vec[14], (float)vec[15]);
+
+    mLocalMtrx = mLocalMtrx * mtrx;
+}
+
 
 bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
                              const tinygltf::Model &model,
-                             int nodeIdx)
+                             const tinygltf::Node &node,
+                             int nodeIdx,
+                             const std::wstring &logPrefix)
 {
-    if (nodeIdx >= model.nodes.size())
+    // debug
+    if (Log::sLoggingLevel >= Log::eDebug)
     {
-        Log::Error(L"LoadGLTF:  Invalid node index (%d/%d)!", nodeIdx, model.nodes.size());
-        return false;
+        std::wstring transforms;
+        if (!node.rotation.empty())
+            transforms += L"rotation ";
+        if (!node.scale.empty())
+            transforms += L"scale ";
+        if (!node.translation.empty())
+            transforms += L"translation ";
+        if (!node.matrix.empty())
+            transforms += L"matrix ";
+        if (transforms.empty())
+            transforms = L"none";
+        Log::Debug(L"%sNode %d/%d \"%s\": mesh %d, transform %s, children %d",
+                   logPrefix.c_str(), 
+                   nodeIdx,
+                   model.nodes.size(),
+                   Utils::StringToWstring(node.name).c_str(),
+                   node.mesh,
+                   transforms.c_str(),
+                   node.children.size());
     }
 
-    const auto &node = model.nodes[nodeIdx];
-
-    std::wstring transforms;
-    if (!node.rotation.empty())
-        transforms += L"rotation ";
-    if (!node.scale.empty())
-        transforms += L"scale ";
-    if (!node.translation.empty())
-        transforms += L"translation ";
-    if (!node.matrix.empty())
-        transforms += L"matrix ";
-    if (transforms.empty())
-        transforms = L"none";
-    Log::Debug(L"LoadGLTF:  Node %d/%d \"%s\": mesh %d, %d children, transform: %s",
-               nodeIdx,
-               model.nodes.size(),
-               Utils::StringToWString(node.name).c_str(),
-               node.mesh,
-               node.children.size(),
-               transforms.c_str());
+    const std::wstring &subItemsLogPrefix = logPrefix + L"   ";
 
     // Local transformation
-    if (node.matrix.size() == 4)
+    SetIdentity();
+    if (node.matrix.size() == 16)
     {
-        // TODO
+        AddMatrix(node.matrix);
 
-        Log::Error(L"LoadGLTF:   Local transformation given by matrix is not yet supported!");
-        return false;
+        // Sanity checking
+        if (!node.scale.empty())
+            Log::Warning(L"%sNode %d/%d \"%s\": node.scale is not empty when tranformation matrix is provided. Ignoring.",
+                         logPrefix.c_str(),
+                         nodeIdx,
+                         model.nodes.size(),
+                         Utils::StringToWstring(node.name).c_str());
+        if (!node.rotation.empty())
+            Log::Warning(L"%sNode %d/%d \"%s\": node.rotation is not empty when tranformation matrix is provided. Ignoring.",
+                         logPrefix.c_str(),
+                         nodeIdx,
+                         model.nodes.size(),
+                         Utils::StringToWstring(node.name).c_str());
+        if (!node.translation.empty())
+            Log::Warning(L"%sNode %d/%d \"%s\": node.translation is not empty when tranformation matrix is provided. Ignoring.",
+                         logPrefix.c_str(),
+                         nodeIdx,
+                         model.nodes.size(),
+                         Utils::StringToWstring(node.name).c_str());
     }
     else
     {
-        SetIdentity();
         AddScale(node.scale);
         AddRotationQuaternion(node.rotation);
         AddTranslation(node.translation);
     }
 
-    // Children
-    for (const auto childIdx : node.children)
-    {
-        if ((childIdx < 0) || (childIdx >= model.nodes.size()))
-        {
-            Log::Error(L"LoadGLTF:   Invalid child node index (%d/%d)!", childIdx, model.nodes.size());
-            return false;
-        }
-
-        Log::Debug(L"LoadGLTF:   Ignoring child %d/%d \"%s\"",
-                   childIdx,
-                   model.nodes.size(),
-                   Utils::StringToWString(model.nodes[childIdx].name).c_str());
-    }
-
     // Mesh
+
     const auto meshIdx = node.mesh;
-    if (meshIdx >= model.meshes.size())
+    if (meshIdx >= (int)model.meshes.size())
     {
-        Log::Error(L"LoadGLTF:   Invalid mesh index (%d/%d)!", meshIdx, model.meshes.size());
+        Log::Error(L"%sInvalid mesh index (%d/%d)!", subItemsLogPrefix.c_str(), meshIdx, model.meshes.size());
         return false;
     }
 
-    const auto &mesh = model.meshes[meshIdx];
-
-    Log::Debug(L"LoadGLTF:   Mesh %d/%d \"%s\": %d primitive(s)",
-               meshIdx,
-               model.meshes.size(),
-               Utils::StringToWString(mesh.name).c_str(),
-               mesh.primitives.size());
-
-    // Primitives
-    const auto primitivesCount = mesh.primitives.size();
-    primitives.reserve(primitivesCount);
-    for (size_t i = 0; i < primitivesCount; ++i)
+    if (meshIdx >= 0)
     {
-        primitives.push_back(ScenePrimitive());
-        if (!primitives.back().LoadFromGLTF(ctx, model, mesh, (int)i))
+        const auto &mesh = model.meshes[meshIdx];
+
+        Log::Debug(L"%sMesh %d/%d \"%s\": %d primitive(s)",
+                   subItemsLogPrefix.c_str(),
+                   meshIdx,
+                   model.meshes.size(),
+                   Utils::StringToWstring(mesh.name).c_str(),
+                   mesh.primitives.size());
+
+        // Primitives
+        const auto primitivesCount = mesh.primitives.size();
+        mPrimitives.reserve(primitivesCount);
+        for (size_t i = 0; i < primitivesCount; ++i)
         {
-            primitives.pop_back();
-            return false;
+            ScenePrimitive primitive;
+            if (!primitive.LoadFromGLTF(ctx, model, mesh, (int)i, subItemsLogPrefix + L"   "))
+                return false;
+            mPrimitives.push_back(std::move(primitive));
         }
     }
 
@@ -1844,12 +1884,301 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
 
 void SceneNode::Animate(IRenderingContext &ctx)
 {
-    const float time = ctx.GetCurrentAnimationTime();
-    const float period = 15.f; //seconds
-    const float totalAnimPos = time / period;
-    const float angle = totalAnimPos * XM_2PI;
+    if (mIsRootNode)
+    {
+        const float time = ctx.GetFrameAnimationTime();
+        const float period = 15.f; //seconds
+        const float totalAnimPos = time / period;
+        const float angle = totalAnimPos * XM_2PI;
 
-    XMMATRIX rotMtrx = XMMatrixRotationY(angle);
+        const XMMATRIX rotMtrx = XMMatrixRotationY(angle);
 
-    mWorldMtrx = rotMtrx * mLocalMtrx;
+        mWorldMtrx = mLocalMtrx * rotMtrx;
+    }
+    else
+        mWorldMtrx = mLocalMtrx;
+
+    for (auto &child : mChildren)
+        child.Animate(ctx);
+}
+
+
+SceneTexture::SceneTexture(XMFLOAT4 defaultConstFactor) :
+    mConstFactor(defaultConstFactor)
+{}
+
+SceneTexture::SceneTexture(const SceneTexture &src) :
+    mConstFactor(src.mConstFactor),
+    srv(src.srv)
+{
+    // We are creating new reference of device resource
+    Utils::SafeAddRef(srv);
+}
+
+SceneTexture& SceneTexture::operator =(const SceneTexture &src)
+{
+    mConstFactor = src.mConstFactor;
+    srv          = src.srv;
+
+    // We are creating new reference of device resource
+    Utils::SafeAddRef(srv);
+
+    return *this;
+}
+
+SceneTexture::SceneTexture(SceneTexture &&src) :
+    mConstFactor(Utils::Exchange(src.mConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f))),
+    srv(Utils::Exchange(src.srv, nullptr))
+{}
+
+SceneTexture& SceneTexture::operator =(SceneTexture &&src)
+{
+    mConstFactor = Utils::Exchange(src.mConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f));
+    srv          = Utils::Exchange(src.srv, nullptr);
+
+    return *this;
+}
+
+SceneTexture::~SceneTexture()
+{
+    Utils::ReleaseAndMakeNull(srv);
+}
+
+
+bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path)
+{
+    auto device = ctx.GetDevice();
+    if (!device)
+        return false;
+
+    HRESULT hr = S_OK;
+
+    if (path)
+    {
+        hr = D3DX11CreateShaderResourceViewFromFile(device, path, nullptr, nullptr, &srv, nullptr);
+        if (FAILED(hr))
+            return false;
+    }
+    else
+        SceneUtils::CreateConstantTextureSRV(ctx, srv, mConstFactor);
+
+    return true;
+}
+
+
+bool SceneTexture::LoadFromGltf(const char *constParamName,
+                                const char *textureParamName,
+                                IRenderingContext &ctx,
+                                const tinygltf::Model &model,
+                                const tinygltf::ParameterMap &params,
+                                const std::wstring &logPrefix)
+{
+    // Try texture first
+    auto textureParamIt = params.find(textureParamName);
+    if (textureParamIt != params.end())
+    {
+        auto &textureParam = textureParamIt->second;
+        const auto &textures = model.textures;
+        const auto &images = model.images;
+
+        const auto textureIndex = textureParam.TextureIndex();
+        if ((textureIndex < 0) || (textureIndex >= textures.size()))
+        {
+            Log::Error(L"%sInvalid texture index (%d/%d) in \"%s\" parameter!",
+                       logPrefix.c_str(),
+                       textureIndex,
+                       textures.size(),
+                       Utils::StringToWstring(textureParamName).c_str());
+            return false;
+        }
+
+        const auto &texture = textures[textureIndex];
+        const auto texSource = texture.source;
+        if ((texSource < 0) || (texSource >= images.size()))
+        {
+            Log::Error(L"%sInvalid source image index (%d/%d) in texture %d!",
+                       logPrefix.c_str(),
+                       texSource,
+                       images.size(),
+                       textureIndex);
+            return false;
+        }
+
+        // TODO: Sampler
+
+        const auto &image = images[texSource];
+
+        Log::Debug(L"%sImage \"%s\": \"%s\", %dx%d, %dx%db %s, data %dB",
+                   logPrefix.c_str(),
+                   Utils::StringToWstring(image.name).c_str(),
+                   Utils::StringToWstring(image.uri).c_str(),
+                   image.width,
+                   image.height,
+                   image.component,
+                   image.bits,
+                   GltfUtils::ComponentTypeToWstring(image.pixel_type).c_str(),
+                   image.image.size());
+
+        const auto srcPixelSize        = image.component * image.bits / 8;
+        const auto expectedSrcDataSize = image.width * image.height * srcPixelSize;
+        if (image.width <= 0 ||
+            image.height <= 0 ||
+            image.component != 4 ||
+            image.bits != 8 ||
+            image.pixel_type != TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE ||
+            image.image.size() != expectedSrcDataSize)
+        {
+            Log::Error(L"%sInvalid image \"%s\": \"%s\", %dx%d, %dx%db %s, data %dB",
+                       logPrefix.c_str(),
+                       Utils::StringToWstring(image.name).c_str(),
+                       Utils::StringToWstring(image.uri).c_str(),
+                       image.width,
+                       image.height,
+                       image.component,
+                       image.bits,
+                       GltfUtils::ComponentTypeToWstring(image.pixel_type).c_str(),
+                       image.image.size());
+            return false;
+        }
+
+        std::vector<unsigned char> floatImage;
+        if (!SceneUtils::ConvertImageToFloat(floatImage, image))
+        {
+            Log::Error(L"%sFailed to convert image \"%s\" to float format: \"%s\", %dx%d, %dx%db %s, data %dB",
+                       logPrefix.c_str(),
+                       Utils::StringToWstring(image.name).c_str(),
+                       Utils::StringToWstring(image.uri).c_str(),
+                       image.width,
+                       image.height,
+                       image.component,
+                       image.bits,
+                       GltfUtils::ComponentTypeToWstring(image.pixel_type).c_str(),
+                       image.image.size());
+            return false;
+        }
+
+        if (!SceneUtils::CreateTextureSrvFromData(ctx,
+                                                  srv,
+                                                  image.width,
+                                                  image.height,
+                                                  DXGI_FORMAT_R32G32B32A32_FLOAT,
+                                                  floatImage.data(),
+                                                  image.width * 4 * sizeof(float)))
+        {
+            Log::Error(L"%sFailed to create texture & SRV for image \"%s\": \"%s\", %dx%d",
+                       logPrefix.c_str(),
+                       Utils::StringToWstring(image.name).c_str(),
+                       Utils::StringToWstring(image.uri).c_str(),
+                       image.width,
+                       image.height);
+            return false;
+        }
+
+        return true;
+    }
+
+    // If there's no texture, try constant factor
+    auto constParamIt = params.find(constParamName);
+    if (constParamIt != params.end())
+    {
+        auto &constParam = constParamIt->second;
+        if (constParam.number_array.size() != 4)
+        {
+            Log::Error(L"%sCorrupted \"%s\" material parameter (size %d instead of 4)!",
+                        logPrefix.c_str(),
+                        Utils::StringToWstring(constParamName).c_str(),
+                        constParam.number_array.size());
+            return false;
+        }
+        mConstFactor = XMFLOAT4((float)constParam.number_array[0],
+                                (float)constParam.number_array[1],
+                                (float)constParam.number_array[2],
+                                (float)constParam.number_array[3]);
+
+        //Log::Debug(L"%s\"%s\": %s",
+        //           logPrefix.c_str(),
+        //           Utils::StringToWstring(constParamName).c_str(),
+        //           GltfUtils::ParameterValueToWstring(constParam).c_str());
+
+        if (!SceneUtils::CreateConstantTextureSRV(ctx, srv, mConstFactor))
+        {
+            Log::Error(L"%sFailed to create constant texture for \"%s\"!",
+                       logPrefix.c_str(),
+                       Utils::StringToWstring(constParamName).c_str());
+            return false;
+        }
+
+        return true;
+    }
+
+    return true; // Use default constant factor
+}
+
+
+SceneMaterial::SceneMaterial() :
+    mSpecularTexture(XMFLOAT4(0.f, 0.f, 0.f, 1.f)),
+    mBaseColorTexture(XMFLOAT4(.5f, .5f, .5f, 1.f))
+{}
+
+
+bool SceneMaterial::Create(IRenderingContext &ctx,
+                           const wchar_t *diffuseTexPath,
+                           const wchar_t *specularTexPath)
+{
+    if (!mSpecularTexture.Create(ctx, specularTexPath))
+        return false;
+
+    if (!mBaseColorTexture.Create(ctx, diffuseTexPath))
+        return false;
+
+    return true;
+}
+
+bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx, 
+                                 const tinygltf::Model &model,
+                                 const tinygltf::Material &material,
+                                 const std::wstring &logPrefix)
+{
+    if (Log::sLoggingLevel >= Log::eDebug)
+    {
+        for (const auto &value : material.values)
+        {
+            Log::Debug(L"%s%s: %s",
+                       logPrefix.c_str(),
+                       Utils::StringToWstring(value.first).c_str(),
+                       GltfUtils::ParameterValueToWstring(value.second).c_str());
+        }
+        for (const auto &value : material.additionalValues)
+        {
+            Log::Debug(L"%s%s*: %s",
+                       logPrefix.c_str(),
+                       Utils::StringToWstring(value.first).c_str(),
+                       GltfUtils::ParameterValueToWstring(value.second).c_str());
+        }
+    }
+
+    auto &values = material.values;
+
+    if (!mSpecularTexture.Create(ctx, nullptr))
+        return false;
+
+    if (!mBaseColorTexture.LoadFromGltf("baseColorFactor", "baseColorTexture", ctx, model, values, logPrefix))
+        return false;
+
+    if (!GltfUtils::LoadFloatParam(mMetallicFactor, "metallicFactor", values, logPrefix))
+        return false;
+
+    if (!GltfUtils::LoadFloatParam(mRoughnessFactor, "roughnessFactor", values, logPrefix))
+        return false;
+
+    return true;
+};
+
+void SceneMaterial::PSSetShaderResources(IRenderingContext &ctx) const
+{
+    if (auto immCtx = ctx.GetImmediateContext())
+    {
+        immCtx->PSSetShaderResources(0, 1, &mBaseColorTexture.srv);
+        immCtx->PSSetShaderResources(1, 1, &mSpecularTexture.srv);
+    }
 }

@@ -561,13 +561,11 @@ static void Dump(const tinygltf::Model &model) {
     }
 
     {
-        std::cout << "materials(count=" << model.materials.size() << ")"
-            << std::endl;
+        std::cout << "materials(count=" << model.materials.size() << ")" << std::endl;
         for (size_t i = 0; i < model.materials.size(); i++) {
             const tinygltf::Material &material = model.materials[i];
             std::cout << Indent(1) << "name : " << material.name << std::endl;
-            std::cout << Indent(1) << "values(count=" << material.values.size() << ")"
-                << std::endl;
+            std::cout << Indent(1) << "values(count=" << material.values.size() << ")" << std::endl;
 
             tinygltf::ParameterMap::const_iterator p(material.values.begin());
             tinygltf::ParameterMap::const_iterator pEnd(material.values.end());

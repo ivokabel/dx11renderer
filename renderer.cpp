@@ -151,6 +151,10 @@ LRESULT CALLBACK SimpleDX11Renderer::WndProc(HWND wnd,
             mIsPostProcessingActive = !mIsPostProcessingActive;
             Log::Debug(L"WM_KEYDOWN: Post-processing %s", mIsPostProcessingActive ? L"ON" : L"OFF");
             break;
+        case 'A':
+            mIsAnimationActive = !mIsAnimationActive;
+            Log::Debug(L"WM_KEYDOWN: Animation %s", mIsAnimationActive ? L"ON" : L"OFF");
+            break;
         }
         break;
     }
@@ -182,7 +186,7 @@ int SimpleDX11Renderer::Run()
         }
         else
         {
-            Render();
+            RenderFrame();
             //Sleep(32);
             frameCount++;
         }
@@ -699,8 +703,10 @@ bool SimpleDX11Renderer::CreatePixelShader(WCHAR* szFileName,
 }
 
 
-void SimpleDX11Renderer::Render()
+void SimpleDX11Renderer::RenderFrame()
 {
+    StartFrame();
+
     ID3D11RenderTargetView* swapChainRTV = nullptr;
     ID3D11DepthStencilView* swapChainDSV = nullptr;
     mImmediateContext->OMGetRenderTargets(1, &swapChainRTV, &swapChainDSV);
@@ -733,8 +739,8 @@ void SimpleDX11Renderer::Render()
     // Render scene
     if (mScene)
     {
-        mScene->Animate(*this);
-        mScene->Render(*this);
+        mScene->AnimateFrame(*this);
+        mScene->RenderFrame(*this);
     }
 
     // Resolve multisampled buffer into single sampled before post processing
@@ -955,7 +961,19 @@ float SimpleDX11Renderer::GetCurrentAnimationTime() const
         time = (timeCur - timeStart) / 1000.0f;
     }
 
-    return time;
+    return mIsAnimationActive ? time : 0.f;
+}
+
+
+void SimpleDX11Renderer::StartFrame()
+{
+    mFrameAnimationTime = GetCurrentAnimationTime();
+}
+
+
+float SimpleDX11Renderer::GetFrameAnimationTime() const
+{
+    return mFrameAnimationTime;
 }
 
 

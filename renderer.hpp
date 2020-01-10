@@ -61,7 +61,10 @@ public:
     virtual bool                    UsesMSAA() const;
     virtual uint32_t                GetMsaaCount() const;
     virtual uint32_t                GetMsaaQuality() const;
-    virtual float                   GetCurrentAnimationTime() const override; // In seconds
+
+    virtual float                   GetCurrentAnimationTime() const; // In seconds
+    virtual void                    StartFrame(); // Saves time of the current frame
+    virtual float                   GetFrameAnimationTime() const override; // In seconds
 
 
 private:
@@ -82,7 +85,7 @@ private:
     void DestroyDevice();
     bool InitScene();
     void DestroyScene();
-    void Render();
+    void RenderFrame();
 
     bool                            CompileShader(WCHAR* szFileName,
                                                   LPCSTR szEntryPoint,
@@ -131,6 +134,8 @@ private:
     ID3D11RenderTargetView*     mSwapChainRTV = nullptr;
     ID3D11Texture2D*            mSwapChainDSTex = nullptr;
     ID3D11DepthStencilView*     mSwapChainDSV = nullptr;
+
+    float                       mFrameAnimationTime = 0;
 
     class PassBuffer
     {
@@ -193,4 +198,5 @@ private: // Options
 
     const bool                  mUseMSAA = true;
     bool                        mIsPostProcessingActive = true;
+    bool                        mIsAnimationActive = true;
 };
