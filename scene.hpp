@@ -156,6 +156,13 @@ public:
 };
 
 
+enum class MaterialWorkflow
+{
+    eNone,
+    kPbrMetalness,
+    kPbrSpecularity,
+};
+
 
 class SceneMaterial
 {
@@ -173,17 +180,24 @@ public:
                       const tinygltf::Material &material,
                       const std::wstring &logPrefix);
 
-    void PSSetShaderResources(IRenderingContext &ctx) const;
+    MaterialWorkflow GetWorkflow() const { return mWorkflow; }
+
+    ID3D11ShaderResourceView * const * GetBaseColorSRV() const { return &mBaseColorTexture.srv; };
+    ID3D11ShaderResourceView * const * GetSpecularSRV()  const { return &mSpecularTexture.srv; };
 
 private:
 
-    SceneTexture    mSpecularTexture; // Deprecated (blinn-phong workflow)
+    MaterialWorkflow    mWorkflow;
 
     // PBR metal/roughness workflow
-    SceneTexture    mBaseColorTexture;
-    float           mMetallicFactor = 1.f;
-    float           mRoughnessFactor = 1.f;
-    //TODO:         mMetallicRoughnessTexture
+    SceneTexture        mBaseColorTexture;
+    float               mMetallicFactor = 1.f;
+    float               mRoughnessFactor = 1.f;
+    //TODO:             mMetallicRoughnessTexture
+
+    // PBR specularity workflow
+    SceneTexture        mSpecularTexture;
+    //TODO...
 };
 
 
@@ -327,6 +341,7 @@ private:
     // Shaders
 
     ID3D11VertexShader*         mVertexShader = nullptr;
+    ID3D11PixelShader*          mPsPbrMetalness = nullptr;
     ID3D11PixelShader*          mPsPbrSpecularity = nullptr;
     ID3D11PixelShader*          mPsConstEmmisive = nullptr;
     ID3D11InputLayout*          mVertexLayout = nullptr;

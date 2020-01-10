@@ -119,11 +119,11 @@ bool Scene::Init(IRenderingContext &ctx)
     if (FAILED(hr))
         return false;
 
-    // Pixel shader - illuminated surface
+    // Pixel shaders
+    if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsPbrMetalness", "ps_4_0", mPsPbrMetalness))
+        return false;
     if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsPbrSpecularity", "ps_4_0", mPsPbrSpecularity))
         return false;
-
-    // Light-emitting pixel shader
     if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsConstEmissive", "ps_4_0", mPsConstEmmisive))
         return false;
 
@@ -801,6 +801,7 @@ bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
 void Scene::Destroy()
 {
     Utils::ReleaseAndMakeNull(mVertexShader);
+    Utils::ReleaseAndMakeNull(mPsPbrMetalness);
     Utils::ReleaseAndMakeNull(mPsPbrSpecularity);
     Utils::ReleaseAndMakeNull(mPsConstEmmisive);
     Utils::ReleaseAndMakeNull(mVertexLayout);
@@ -891,8 +892,7 @@ void Scene::RenderFrame(IRenderingContext &ctx)
     immCtx->VSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
     immCtx->VSSetConstantBuffers(3, 1, &mCbChangedPerSceneNode);
 
-    // Setup pixel shader
-    immCtx->PSSetShader(mPsPbrSpecularity, nullptr, 0);
+    // Setup pixel shader data (shader itself is chosen later for each material)
     immCtx->PSSetConstantBuffers(0, 1, &mCbNeverChanged);
     immCtx->PSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
     immCtx->PSSetConstantBuffers(3, 1, &mCbChangedPerSceneNode);
@@ -984,11 +984,30 @@ void Scene::RenderNode(IRenderingContext &ctx,
     // Draw current node
     for (auto &primitive : node.mPrimitives)
     {
-        const int matIdx = primitive.GetMaterialIdx();
-        if (matIdx >= 0 && matIdx < mMaterials.size())
-            mMaterials[matIdx].PSSetShaderResources(ctx);
-        else
-            mDefaultMaterial.PSSetShaderResources(ctx);
+        const SceneMaterial &material = [&]()
+        {
+            const int matIdx = primitive.GetMaterialIdx();
+            if (matIdx >= 0 && matIdx < mMaterials.size())
+                return mMaterials[matIdx];
+            else
+                return mDefaultMaterial;
+        }();
+
+        switch (material.GetWorkflow())
+        {
+        case MaterialWorkflow::kPbrMetalness:
+            immCtx->PSSetShader(mPsPbrMetalness, nullptr, 0);
+            //immCtx->PSSetShaderResources(0, 1, material.GetBaseColorSRV());
+            //immCtx->PSSetShaderResources(1, 1, material.GetSpecularSRV());
+            break;
+        case MaterialWorkflow::kPbrSpecularity:
+            immCtx->PSSetShader(mPsPbrSpecularity, nullptr, 0);
+            immCtx->PSSetShaderResources(0, 1, material.GetBaseColorSRV());
+            immCtx->PSSetShaderResources(1, 1, material.GetSpecularSRV());
+            break;
+        default:
+            continue;
+        }
 
         primitive.DrawGeometry(ctx, mVertexLayout);
     }
@@ -2116,6 +2135,7 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
 
 
 SceneMaterial::SceneMaterial() :
+    mWorkflow(MaterialWorkflow::eNone),
     mSpecularTexture(XMFLOAT4(0.f, 0.f, 0.f, 1.f)),
     mBaseColorTexture(XMFLOAT4(.5f, .5f, .5f, 1.f))
 {}
@@ -2130,6 +2150,8 @@ bool SceneMaterial::Create(IRenderingContext &ctx,
 
     if (!mBaseColorTexture.Create(ctx, diffuseTexPath))
         return false;
+
+    mWorkflow = MaterialWorkflow::kPbrSpecularity;
 
     return true;
 }
@@ -2171,14 +2193,7 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
     if (!GltfUtils::LoadFloatParam(mRoughnessFactor, "roughnessFactor", values, logPrefix))
         return false;
 
+    mWorkflow = MaterialWorkflow::kPbrMetalness;
+
     return true;
 };
-
-void SceneMaterial::PSSetShaderResources(IRenderingContext &ctx) const
-{
-    if (auto immCtx = ctx.GetImmediateContext())
-    {
-        immCtx->PSSetShaderResources(0, 1, &mBaseColorTexture.srv);
-        immCtx->PSSetShaderResources(1, 1, &mSpecularTexture.srv);
-    }
-}
