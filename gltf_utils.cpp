@@ -87,32 +87,32 @@ bool GltfUtils::LoadModel(tinygltf::Model &model, const std::wstring &filePath)
 //}
 
 
-bool GltfUtils::LoadFloatParam(float &materialParam,
-                               const char *paramName,
-                               const tinygltf::ParameterMap &params,
-                               const std::wstring &logPrefix)
-{
-    auto paramIt = params.find(paramName);
-    if (paramIt == params.end())
-        return true;
-
-    auto &param = paramIt->second;
-    if (!param.has_number_value)
-    {
-        Log::Error(L"%sIncorrect \"%s\" material parameter type (must be float)!",
-                   logPrefix.c_str(),
-                   Utils::StringToWstring(paramName).c_str());
-        return false;
-    }
-    materialParam = (float)param.number_value;
-
-    //Log::Debug(L"%s\"%s\": %s",
-    //           logPrefix.c_str(),
-    //           Utils::StringToWstring(paramName).c_str(),
-    //           GltfUtils::ParameterValueToWstring(param).c_str());
-
-    return true;
-}
+//bool GltfUtils::LoadFloatParam(float &materialParam,
+//                               const char *paramName,
+//                               const tinygltf::ParameterMap &params,
+//                               const std::wstring &logPrefix)
+//{
+//    auto paramIt = params.find(paramName);
+//    if (paramIt == params.end())
+//        return true;
+//
+//    auto &param = paramIt->second;
+//    if (!param.has_number_value)
+//    {
+//        Log::Error(L"%sIncorrect \"%s\" material parameter type (must be float)!",
+//                   logPrefix.c_str(),
+//                   Utils::StringToWstring(paramName).c_str());
+//        return false;
+//    }
+//    materialParam = (float)param.number_value;
+//
+//    //Log::Debug(L"%s\"%s\": %s",
+//    //           logPrefix.c_str(),
+//    //           Utils::StringToWstring(paramName).c_str(),
+//    //           GltfUtils::ParameterValueToWstring(param).c_str());
+//
+//    return true;
+//}
 
 
 D3D11_PRIMITIVE_TOPOLOGY GltfUtils::ModeToTopology(int mode)

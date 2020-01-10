@@ -140,7 +140,7 @@ public:
 
     bool Create(IRenderingContext &ctx,
                 const wchar_t *path);
-    bool LoadFromGltf(const char *constParamName,
+    bool LoadFromGltf(const char *factorParamName,
                       const char *textureParamName,
                       IRenderingContext &ctx,
                       const tinygltf::Model &model,
@@ -152,7 +152,7 @@ private:
     // TODO: sampler, texCoord
 
 public:
-    ID3D11ShaderResourceView* srv = nullptr;
+    ID3D11ShaderResourceView* srv;
 };
 
 
@@ -182,8 +182,10 @@ public:
 
     MaterialWorkflow GetWorkflow() const { return mWorkflow; }
 
-    ID3D11ShaderResourceView * const * GetBaseColorSRV() const { return &mBaseColorTexture.srv; };
-    ID3D11ShaderResourceView * const * GetSpecularSRV()  const { return &mSpecularTexture.srv; };
+    ID3D11ShaderResourceView * const * GetBaseColorSRV()         const { return &mBaseColorTexture.srv; };
+    ID3D11ShaderResourceView * const * GetMetallicRoughnessSRV() const { return &mMetallicRoughnessTexture.srv; };
+
+    ID3D11ShaderResourceView * const * GetSpecularSRV() const { return &mSpecularTexture.srv; };
 
 private:
 
@@ -191,9 +193,9 @@ private:
 
     // PBR metal/roughness workflow
     SceneTexture        mBaseColorTexture;
-    float               mMetallicFactor = 1.f;
-    float               mRoughnessFactor = 1.f;
-    //TODO:             mMetallicRoughnessTexture
+    SceneTexture        mMetallicRoughnessTexture;
+    //float               mMetallicFactor = 1.f;
+    //float               mRoughnessFactor = 1.f;
 
     // PBR specularity workflow
     SceneTexture        mSpecularTexture;

@@ -243,8 +243,15 @@ float4 PsPbrMetalness(PS_INPUT input) : SV_Target
 
     //output.a = 1;
 
-    float4 diffuseColor = BaseColorTexture.Sample(LinearSampler, input.Tex);
-    float4 output = diffuseColor;
+    const float4 diffuseColor = BaseColorTexture.Sample(LinearSampler, input.Tex);
+    const float4 metalRoughness = MetalRoughnessTexture.Sample(LinearSampler, input.Tex);
+    const float metalness = metalRoughness.b;
+    const float roughness = metalRoughness.g;
+
+    float4 output = metalRoughness;
+    output.r = 0;
+    output.g = roughness;
+    output.b = metalness;
     output.a = 1;
 
     return output;

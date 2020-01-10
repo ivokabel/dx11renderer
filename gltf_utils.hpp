@@ -21,10 +21,10 @@ namespace GltfUtils
     //                     const tinygltf::ParameterMap &params,
     //                     const std::wstring &logPrefix);
 
-    bool LoadFloatParam(float &materialParam,
-                        const char *paramName,
-                        const tinygltf::ParameterMap &params,
-                        const std::wstring &logPrefix);
+    //bool LoadFloatParam(float &materialParam,
+    //                    const char *paramName,
+    //                    const tinygltf::ParameterMap &params,
+    //                    const std::wstring &logPrefix);
 
     D3D11_PRIMITIVE_TOPOLOGY ModeToTopology(int mode);
 

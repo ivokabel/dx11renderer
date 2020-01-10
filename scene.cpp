@@ -998,7 +998,7 @@ void Scene::RenderNode(IRenderingContext &ctx,
         case MaterialWorkflow::kPbrMetalness:
             immCtx->PSSetShader(mPsPbrMetalness, nullptr, 0);
             immCtx->PSSetShaderResources(0, 1, material.GetBaseColorSRV());
-            immCtx->PSSetShaderResources(1, 1, material.GetSpecularSRV());
+            immCtx->PSSetShaderResources(1, 1, material.GetMetallicRoughnessSRV());
             break;
         case MaterialWorkflow::kPbrSpecularity:
             immCtx->PSSetShader(mPsPbrSpecularity, nullptr, 0);
@@ -1923,7 +1923,8 @@ void SceneNode::Animate(IRenderingContext &ctx)
 
 
 SceneTexture::SceneTexture(XMFLOAT4 defaultConstFactor) :
-    mConstFactor(defaultConstFactor)
+    mConstFactor(defaultConstFactor),
+    srv(nullptr)
 {}
 
 SceneTexture::SceneTexture(const SceneTexture &src) :
@@ -1985,7 +1986,7 @@ bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path)
 }
 
 
-bool SceneTexture::LoadFromGltf(const char *constParamName,
+bool SceneTexture::LoadFromGltf(const char *factorParamName,
                                 const char *textureParamName,
                                 IRenderingContext &ctx,
                                 const tinygltf::Model &model,
@@ -2097,7 +2098,7 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
     }
 
     // If there's no texture, try constant factor
-    auto constParamIt = params.find(constParamName);
+    auto constParamIt = params.find(factorParamName);
     if (constParamIt != params.end())
     {
         auto &constParam = constParamIt->second;
@@ -2105,7 +2106,7 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
         {
             Log::Error(L"%sCorrupted \"%s\" material parameter (size %d instead of 4)!",
                         logPrefix.c_str(),
-                        Utils::StringToWstring(constParamName).c_str(),
+                        Utils::StringToWstring(factorParamName).c_str(),
                         constParam.number_array.size());
             return false;
         }
@@ -2116,14 +2117,14 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
 
         //Log::Debug(L"%s\"%s\": %s",
         //           logPrefix.c_str(),
-        //           Utils::StringToWstring(constParamName).c_str(),
+        //           Utils::StringToWstring(factorParamName).c_str(),
         //           GltfUtils::ParameterValueToWstring(constParam).c_str());
 
         if (!SceneUtils::CreateConstantTextureSRV(ctx, srv, mConstFactor))
         {
             Log::Error(L"%sFailed to create constant texture for \"%s\"!",
                        logPrefix.c_str(),
-                       Utils::StringToWstring(constParamName).c_str());
+                       Utils::StringToWstring(factorParamName).c_str());
             return false;
         }
 
@@ -2136,8 +2137,9 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
 
 SceneMaterial::SceneMaterial() :
     mWorkflow(MaterialWorkflow::eNone),
-    mSpecularTexture(XMFLOAT4(0.f, 0.f, 0.f, 1.f)),
-    mBaseColorTexture(XMFLOAT4(.5f, .5f, .5f, 1.f))
+    mBaseColorTexture(XMFLOAT4(.5f, .5f, .5f, 1.f)),
+    mMetallicRoughnessTexture(XMFLOAT4(0.f, 0.f, 0.f, 1.f)),
+    mSpecularTexture(XMFLOAT4(0.f, 0.f, 0.f, 1.f))
 {}
 
 
@@ -2181,17 +2183,19 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
 
     auto &values = material.values;
 
-    if (!mSpecularTexture.Create(ctx, nullptr))
+    if (!mBaseColorTexture.LoadFromGltf("baseColorFactor", "baseColorTexture",
+                                        ctx, model, values, logPrefix))
         return false;
 
-    if (!mBaseColorTexture.LoadFromGltf("baseColorFactor", "baseColorTexture", ctx, model, values, logPrefix))
+    if (!mMetallicRoughnessTexture.LoadFromGltf("metallic", /*"roughness",*/ "metallicRoughnessTexture",
+                                                ctx, model, values, logPrefix))
         return false;
 
-    if (!GltfUtils::LoadFloatParam(mMetallicFactor, "metallicFactor", values, logPrefix))
-        return false;
-
-    if (!GltfUtils::LoadFloatParam(mRoughnessFactor, "roughnessFactor", values, logPrefix))
-        return false;
+    //if (!GltfUtils::LoadFloatParam(mMetallicFactor, "metallicFactor", values, logPrefix))
+    //    return false;
+    //
+    //if (!GltfUtils::LoadFloatParam(mRoughnessFactor, "roughnessFactor", values, logPrefix))
+    //    return false;
 
     mWorkflow = MaterialWorkflow::kPbrMetalness;
 
