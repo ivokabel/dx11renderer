@@ -327,8 +327,8 @@ private:
     // Shaders
 
     ID3D11VertexShader*         mVertexShader = nullptr;
-    ID3D11PixelShader*          mPixelShaderIllum = nullptr;
-    ID3D11PixelShader*          mPixelShaderSolid = nullptr;
+    ID3D11PixelShader*          mPsPbrSpecularity = nullptr;
+    ID3D11PixelShader*          mPsConstEmmisive = nullptr;
     ID3D11InputLayout*          mVertexLayout = nullptr;
 
     ID3D11Buffer*               mCbNeverChanged = nullptr;

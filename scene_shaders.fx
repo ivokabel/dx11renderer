@@ -148,7 +148,7 @@ LightContrib PointLightContrib(float3 surfPos,
 }
 
 
-float4 PsIllumSurf(PS_INPUT input) : SV_Target
+float4 PsPbrSpecularity(PS_INPUT input) : SV_Target
 {
     const float3 normal  = normalize(input.Normal); // normal is interpolated - renormalize 
     const float3 viewDir = normalize((float3)CameraPos - (float3)input.PosWorld);
@@ -195,7 +195,7 @@ float4 PsIllumSurf(PS_INPUT input) : SV_Target
 }
 
 
-float4 PsEmissiveSurf(PS_INPUT input) : SV_Target
+float4 PsConstEmissive(PS_INPUT input) : SV_Target
 {
     return MeshColor;
 }

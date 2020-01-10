@@ -120,11 +120,11 @@ bool Scene::Init(IRenderingContext &ctx)
         return false;
 
     // Pixel shader - illuminated surface
-    if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsIllumSurf", "ps_4_0", mPixelShaderIllum))
+    if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsPbrSpecularity", "ps_4_0", mPsPbrSpecularity))
         return false;
 
-    // Pixel shader - light-emitting surface
-    if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsEmissiveSurf", "ps_4_0", mPixelShaderSolid))
+    // Light-emitting pixel shader
+    if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsConstEmissive", "ps_4_0", mPsConstEmmisive))
         return false;
 
     // Create constant buffers
@@ -801,8 +801,8 @@ bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
 void Scene::Destroy()
 {
     Utils::ReleaseAndMakeNull(mVertexShader);
-    Utils::ReleaseAndMakeNull(mPixelShaderIllum);
-    Utils::ReleaseAndMakeNull(mPixelShaderSolid);
+    Utils::ReleaseAndMakeNull(mPsPbrSpecularity);
+    Utils::ReleaseAndMakeNull(mPsConstEmmisive);
     Utils::ReleaseAndMakeNull(mVertexLayout);
     Utils::ReleaseAndMakeNull(mCbNeverChanged);
     Utils::ReleaseAndMakeNull(mCbChangedOnResize);
@@ -892,7 +892,7 @@ void Scene::RenderFrame(IRenderingContext &ctx)
     immCtx->VSSetConstantBuffers(3, 1, &mCbChangedPerSceneNode);
 
     // Setup pixel shader
-    immCtx->PSSetShader(mPixelShaderIllum, nullptr, 0);
+    immCtx->PSSetShader(mPsPbrSpecularity, nullptr, 0);
     immCtx->PSSetConstantBuffers(0, 1, &mCbNeverChanged);
     immCtx->PSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
     immCtx->PSSetConstantBuffers(3, 1, &mCbChangedPerSceneNode);
@@ -923,7 +923,7 @@ void Scene::RenderFrame(IRenderingContext &ctx)
 
         immCtx->UpdateSubresource(mCbChangedPerSceneNode, 0, nullptr, &cbPerSceneNode, 0, 0);
 
-        immCtx->PSSetShader(mPixelShaderSolid, nullptr, 0);
+        immCtx->PSSetShader(mPsConstEmmisive, nullptr, 0);
         mPointLightProxy.DrawGeometry(ctx, mVertexLayout);
     }
 }
