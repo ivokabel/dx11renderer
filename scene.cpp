@@ -2191,12 +2191,6 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
                                                 ctx, model, values, logPrefix))
         return false;
 
-    //if (!GltfUtils::LoadFloatParam(mMetallicFactor, "metallicFactor", values, logPrefix))
-    //    return false;
-    //
-    //if (!GltfUtils::LoadFloatParam(mRoughnessFactor, "roughnessFactor", values, logPrefix))
-    //    return false;
-
     mWorkflow = MaterialWorkflow::kPbrMetalness;
 
     return true;

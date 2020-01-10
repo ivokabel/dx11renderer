@@ -194,8 +194,6 @@ private:
     // PBR metal/roughness workflow
     SceneTexture        mBaseColorTexture;
     SceneTexture        mMetallicRoughnessTexture;
-    //float               mMetallicFactor = 1.f;
-    //float               mRoughnessFactor = 1.f;
 
     // PBR specularity workflow
     SceneTexture        mSpecularTexture;
