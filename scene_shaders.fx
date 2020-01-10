@@ -2,10 +2,15 @@
 
 static const float PI = 3.14159265f;
 
+// Metalness workflow
+Texture2D BaseColorTexture      : register(t0);
+Texture2D MetalRoughnessTexture : register(t1);
 
-Texture2D DiffuseTexture    : register(t0);
-Texture2D SpecularTexture   : register(t1);
-SamplerState LinearSampler  : register(s0);
+// Specularity workflow
+Texture2D DiffuseTexture        : register(t2);
+Texture2D SpecularTexture       : register(t3);
+
+SamplerState LinearSampler : register(s0);
 
 cbuffer cbNeverChanges : register(b0)
 {
@@ -197,15 +202,64 @@ float4 PsPbrSpecularity(PS_INPUT input) : SV_Target
 
 float4 PsPbrMetalness(PS_INPUT input) : SV_Target
 {
-    const float3 normal = normalize(input.Normal); // normal is interpolated - renormalize 
+    const float3 normal  = normalize(input.Normal); // normal is interpolated - renormalize 
+    const float3 viewDir = normalize((float3)CameraPos - (float3)input.PosWorld);
 
-    const float3 positiveNormal = (normal + float3(1.f, 1.f, 1.f)) / 2.;
+    LightContrib lightContribs = { {0, 0, 0, 0}, {0, 0, 0, 0} };
 
-    return float4(positiveNormal.x, positiveNormal.y, positiveNormal.z, 1.);
+    const float specPower = 100.f;
+
+    //lightContribs = AmbLightContrib(AmbientLightLuminance);
+
+    //for (int i = 0; i < DIRECT_LIGHTS_COUNT; i++)
+    //{
+    //    LightContrib contrib = DirLightContrib((float3)DirectLightDirs[i],
+    //                                           normal,
+    //                                           viewDir,
+    //                                           DirectLightLuminances[i],
+    //                                           specPower);
+    //    lightContribs.Diffuse  += contrib.Diffuse;
+    //    lightContribs.Specular += contrib.Specular;
+    //}
+
+    //for (int i = 0; i < POINT_LIGHTS_COUNT; i++)
+    //{
+    //    LightContrib contrib = PointLightContrib((float3)input.PosWorld,
+    //                                             (float3)PointLightPositions[i],
+    //                                             normal,
+    //                                             viewDir,
+    //                                             PointLightIntensities[i],
+    //                                             specPower);
+    //    lightContribs.Diffuse  += contrib.Diffuse;
+    //    lightContribs.Specular += contrib.Specular;
+    //}
+
+    //float4 diffuseColor     = BaseColorTexture.Sample(LinearSampler, input.Tex);
+    //float4 specularColor    = MetalRoughnessTexture.Sample(LinearSampler, input.Tex);
+
+    //float4 output =
+    //      lightContribs.Diffuse  * diffuseColor
+    //    + lightContribs.Specular * specularColor;
+
+    //output.a = 1;
+
+    float4 diffuseColor = BaseColorTexture.Sample(LinearSampler, input.Tex);
+    float4 output = diffuseColor;
+    output.a = 1;
+
+    return output;
 }
 
 
 float4 PsConstEmissive(PS_INPUT input) : SV_Target
 {
     return MeshColor;
+}
+
+
+float4 PsNormalVisualizer(PS_INPUT input) : SV_Target
+{
+    const float3 normal = normalize(input.Normal); // normal is interpolated - renormalize 
+    const float3 positiveNormal = (normal + float3(1.f, 1.f, 1.f)) / 2.;
+    return float4(positiveNormal.x, positiveNormal.y, positiveNormal.z, 1.);
 }

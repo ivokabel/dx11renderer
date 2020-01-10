@@ -997,13 +997,13 @@ void Scene::RenderNode(IRenderingContext &ctx,
         {
         case MaterialWorkflow::kPbrMetalness:
             immCtx->PSSetShader(mPsPbrMetalness, nullptr, 0);
-            //immCtx->PSSetShaderResources(0, 1, material.GetBaseColorSRV());
-            //immCtx->PSSetShaderResources(1, 1, material.GetSpecularSRV());
+            immCtx->PSSetShaderResources(0, 1, material.GetBaseColorSRV());
+            immCtx->PSSetShaderResources(1, 1, material.GetSpecularSRV());
             break;
         case MaterialWorkflow::kPbrSpecularity:
             immCtx->PSSetShader(mPsPbrSpecularity, nullptr, 0);
-            immCtx->PSSetShaderResources(0, 1, material.GetBaseColorSRV());
-            immCtx->PSSetShaderResources(1, 1, material.GetSpecularSRV());
+            immCtx->PSSetShaderResources(2, 1, material.GetBaseColorSRV());
+            immCtx->PSSetShaderResources(3, 1, material.GetSpecularSRV());
             break;
         default:
             continue;
