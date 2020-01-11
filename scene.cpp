@@ -248,7 +248,7 @@ bool Scene::Load(IRenderingContext &ctx)
     case eExternalDebug2CylinderEngine:
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/2CylinderEngine/2CylinderEngine.gltf"))
             return false;
-        AddScaleToRoots(0.009f);
+        AddScaleToRoots(0.012f);
         AddTranslationToRoots({ 0., 0.2, 0. });
         return true;
 
@@ -346,8 +346,8 @@ bool Scene::Load(IRenderingContext &ctx)
     case eExternalRoboV1:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/_Sef_/Robo_V1/scene.gltf"))
             return false;
-        AddScaleToRoots(.001);
-        AddTranslationToRoots({ 0., -1., 0. });
+        AddTranslationToRoots({ 0., -100., -240. });
+        AddScaleToRoots(.10);
         return true;
 
     case eHardwiredSimpleDebugSphere:
