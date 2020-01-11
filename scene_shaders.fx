@@ -200,8 +200,18 @@ float4 PsPbrSpecularity(PS_INPUT input) : SV_Target
 }
 
 
+float4 PsNormalVisualizer(PS_INPUT input) : SV_Target
+{
+    const float3 normal = normalize(input.Normal); // normal is interpolated - renormalize 
+    const float3 positiveNormal = (normal + float3(1.f, 1.f, 1.f)) / 2.;
+    return float4(positiveNormal.x, positiveNormal.y, positiveNormal.z, 1.);
+}
+
+
 float4 PsPbrMetalness(PS_INPUT input) : SV_Target
 {
+    //return PsNormalVisualizer(input);
+
     const float3 normal  = normalize(input.Normal); // normal is interpolated - renormalize 
     const float3 viewDir = normalize((float3)CameraPos - (float3)input.PosWorld);
 
@@ -261,12 +271,4 @@ float4 PsPbrMetalness(PS_INPUT input) : SV_Target
 float4 PsConstEmissive(PS_INPUT input) : SV_Target
 {
     return MeshColor;
-}
-
-
-float4 PsNormalVisualizer(PS_INPUT input) : SV_Target
-{
-    const float3 normal = normalize(input.Normal); // normal is interpolated - renormalize 
-    const float3 positiveNormal = (normal + float3(1.f, 1.f, 1.f)) / 2.;
-    return float4(positiveNormal.x, positiveNormal.y, positiveNormal.z, 1.);
 }
