@@ -269,6 +269,7 @@ public:
         eExternalDebugBox,
         eExternalDebugBoxInterleaved,
         eExternalDebugBoxTextured,
+        eExternalDebugMetalRoughSpheres,
         eExternalDebug2CylinderEngine,
         eExternalDebugDuck,
         eExternalDebugBoomBox,

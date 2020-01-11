@@ -245,6 +245,27 @@ bool Scene::Load(IRenderingContext &ctx)
         AddTranslationToRoots({ 0., 0., 0. });
         return true;
 
+    case eExternalDebugMetalRoughSpheres:
+    {
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/MetalRoughSpheres/MetalRoughSpheres.gltf"))
+            return false;
+        AddTranslationToRoots({ 0., 0.7, 1. });
+        AddScaleToRoots(0.7);
+
+        // debug lights
+        const double amb = 0.f;//0.3f;
+        mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
+        const double lum = 2.f;
+        mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+        const double ints = 0.f;//6.5f;
+        mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+
+        return true;
+    }
+
     case eExternalDebug2CylinderEngine:
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/2CylinderEngine/2CylinderEngine.gltf"))
             return false;

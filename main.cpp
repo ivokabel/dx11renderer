@@ -34,11 +34,12 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eExternalDebugBox
         //Scene::eExternalDebugBoxInterleaved
         //Scene::eExternalDebugBoxTextured
+        Scene::eExternalDebugMetalRoughSpheres
         //Scene::eExternalDebug2CylinderEngine
         //Scene::eExternalDebugDuck
         //Scene::eExternalDebugBoomBox
         //Scene::eExternalDebugBoomBoxWithAxes
-        Scene::eExternalDebugDamagedHelmet
+        //Scene::eExternalDebugDamagedHelmet
         //Scene::eExternalDebugFlightHelmet
 
         //Scene::eExternalWolfBaseMesh
