@@ -189,6 +189,7 @@ bool Scene::Init(IRenderingContext &ctx)
     if (!mPointLightProxy.CreateSphere(ctx, 8, 16))
         return false;
 
+    // TODO: Default params
     if (!mDefaultMaterial.Create(ctx))
         return false;
 
@@ -1986,33 +1987,106 @@ bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path)
 }
 
 
-bool SceneTexture::LoadFromGltf(const char *factorParamName,
-                                const char *textureParamName,
-                                IRenderingContext &ctx,
-                                const tinygltf::Model &model,
-                                const tinygltf::ParameterMap &params,
-                                const std::wstring &logPrefix)
+bool SceneTexture::LoadFloat4FactorFromGltf(const char *paramName,
+                                            const tinygltf::ParameterMap &params,
+                                            const std::wstring &logPrefix)
 {
-    // Try texture first
-    auto textureParamIt = params.find(textureParamName);
-    if (textureParamIt != params.end())
+    auto paramIt = params.find(paramName);
+    if (paramIt != params.end())
     {
-        auto &textureParam = textureParamIt->second;
+        auto &param = paramIt->second;
+        if (param.number_array.size() != 4)
+        {
+            Log::Error(L"%sIncorrect \"%s\" material parameter (size %d instead of 4)!",
+                       logPrefix.c_str(),
+                       Utils::StringToWstring(paramName).c_str(),
+                       param.number_array.size());
+            return false;
+        }
+
+        mConstFactor = XMFLOAT4((float)param.number_array[0],
+                                (float)param.number_array[1],
+                                (float)param.number_array[2],
+                                (float)param.number_array[3]);
+
+        Log::Debug(L"%s%s: %s",
+                   logPrefix.c_str(),
+                   Utils::StringToWstring(paramName).c_str(),
+                   GltfUtils::ParameterValueToWstring(param).c_str());
+    }
+
+    return true;
+}
+
+
+bool SceneTexture::LoadFloatFactorFromGltf(const char *paramName,
+                                           uint32_t component,
+                                           const tinygltf::ParameterMap &params,
+                                           const std::wstring &logPrefix)
+{
+    auto paramIt = params.find(paramName);
+    if (paramIt != params.end())
+    {
+        auto &param = paramIt->second;
+        if (!param.has_number_value)
+        {
+            Log::Error(L"%sIncorrect \"%s\" material parameter type (must be float)!",
+                       logPrefix.c_str(),
+                       Utils::StringToWstring(paramName).c_str());
+            return false;
+        }
+
+        switch (component)
+        {
+        case 0: mConstFactor.x = (float)param.number_value; break;
+        case 1: mConstFactor.y = (float)param.number_value; break;
+        case 2: mConstFactor.z = (float)param.number_value; break;
+        case 3: mConstFactor.w = (float)param.number_value; break;
+        default:
+            Log::Error(L"%sIncorrect component index for \"%s\" material parameter (%d >= 4)!",
+                       logPrefix.c_str(),
+                       Utils::StringToWstring(paramName).c_str(),
+                       component);
+            return false;
+        }
+
+        Log::Debug(L"%s%s: %s",
+                   logPrefix.c_str(),
+                   Utils::StringToWstring(paramName).c_str(),
+                   GltfUtils::ParameterValueToWstring(param).c_str());
+    }
+
+    return true;
+}
+
+
+// Multiplies the values with const factor and creates texture
+bool SceneTexture::LoadTextureFromGltf(const char *paramName,
+                                       IRenderingContext &ctx,
+                                       const tinygltf::Model &model,
+                                       const tinygltf::ParameterMap &params,
+                                       const std::wstring &logPrefix)
+{
+    auto paramIt = params.find(paramName);
+    if (paramIt != params.end())
+    {
+        const auto &param = paramIt->second;
         const auto &textures = model.textures;
         const auto &images = model.images;
 
-        const auto textureIndex = textureParam.TextureIndex();
+        const auto textureIndex = param.TextureIndex();
         if ((textureIndex < 0) || (textureIndex >= textures.size()))
         {
             Log::Error(L"%sInvalid texture index (%d/%d) in \"%s\" parameter!",
                        logPrefix.c_str(),
                        textureIndex,
                        textures.size(),
-                       Utils::StringToWstring(textureParamName).c_str());
+                       Utils::StringToWstring(paramName).c_str());
             return false;
         }
 
         const auto &texture = textures[textureIndex];
+
         const auto texSource = texture.source;
         if ((texSource < 0) || (texSource >= images.size()))
         {
@@ -2024,12 +2098,11 @@ bool SceneTexture::LoadFromGltf(const char *factorParamName,
             return false;
         }
 
-        // TODO: Sampler
-
         const auto &image = images[texSource];
 
-        Log::Debug(L"%sImage \"%s\": \"%s\", %dx%d, %dx%db %s, data %dB",
+        Log::Debug(L"%s%s: \"%s\"/\"%s\", %dx%d, %dx%db %s, data %dB",
                    logPrefix.c_str(),
+                   Utils::StringToWstring(paramName).c_str(),
                    Utils::StringToWstring(image.name).c_str(),
                    Utils::StringToWstring(image.uri).c_str(),
                    image.width,
@@ -2039,7 +2112,7 @@ bool SceneTexture::LoadFromGltf(const char *factorParamName,
                    GltfUtils::ComponentTypeToWstring(image.pixel_type).c_str(),
                    image.image.size());
 
-        const auto srcPixelSize        = image.component * image.bits / 8;
+        const auto srcPixelSize = image.component * image.bits / 8;
         const auto expectedSrcDataSize = image.width * image.height * srcPixelSize;
         if (image.width <= 0 ||
             image.height <= 0 ||
@@ -2062,7 +2135,7 @@ bool SceneTexture::LoadFromGltf(const char *factorParamName,
         }
 
         std::vector<unsigned char> floatImage;
-        if (!SceneUtils::ConvertImageToFloat(floatImage, image))
+        if (!SceneUtils::ConvertImageToFloat(floatImage, image, mConstFactor))
         {
             Log::Error(L"%sFailed to convert image \"%s\" to float format: \"%s\", %dx%d, %dx%db %s, data %dB",
                        logPrefix.c_str(),
@@ -2094,52 +2167,31 @@ bool SceneTexture::LoadFromGltf(const char *factorParamName,
             return false;
         }
 
-        return true;
+        // TODO: Sampler
     }
-
-    // If there's no texture, try constant factor
-    auto constParamIt = params.find(factorParamName);
-    if (constParamIt != params.end())
+    else
     {
-        auto &constParam = constParamIt->second;
-        if (constParam.number_array.size() != 4)
-        {
-            Log::Error(L"%sCorrupted \"%s\" material parameter (size %d instead of 4)!",
-                        logPrefix.c_str(),
-                        Utils::StringToWstring(factorParamName).c_str(),
-                        constParam.number_array.size());
-            return false;
-        }
-        mConstFactor = XMFLOAT4((float)constParam.number_array[0],
-                                (float)constParam.number_array[1],
-                                (float)constParam.number_array[2],
-                                (float)constParam.number_array[3]);
-
-        //Log::Debug(L"%s\"%s\": %s",
-        //           logPrefix.c_str(),
-        //           Utils::StringToWstring(factorParamName).c_str(),
-        //           GltfUtils::ParameterValueToWstring(constParam).c_str());
-
+        // Constant texture
         if (!SceneUtils::CreateConstantTextureSRV(ctx, srv, mConstFactor))
         {
             Log::Error(L"%sFailed to create constant texture for \"%s\"!",
                        logPrefix.c_str(),
-                       Utils::StringToWstring(factorParamName).c_str());
+                       Utils::StringToWstring(paramName).c_str());
             return false;
         }
-
-        return true;
     }
 
-    return true; // Use default constant factor
+    return true;
 }
 
 
 SceneMaterial::SceneMaterial() :
     mWorkflow(MaterialWorkflow::eNone),
-    mBaseColorTexture(XMFLOAT4(.5f, .5f, .5f, 1.f)),
-    mMetallicRoughnessTexture(XMFLOAT4(0.f, 0.f, 0.f, 1.f)),
-    mSpecularTexture(XMFLOAT4(0.f, 0.f, 0.f, 1.f))
+
+    mBaseColorTexture(XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
+    mMetallicRoughnessTexture(XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
+
+    mSpecularTexture(XMFLOAT4(1.f, 1.f, 1.f, 1.f))
 {}
 
 
@@ -2179,16 +2231,21 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
                        Utils::StringToWstring(value.first).c_str(),
                        GltfUtils::ParameterValueToWstring(value.second).c_str());
         }
+        Log::Debug(L"%s---", logPrefix.c_str());
     }
 
     auto &values = material.values;
 
-    if (!mBaseColorTexture.LoadFromGltf("baseColorFactor", "baseColorTexture",
-                                        ctx, model, values, logPrefix))
+    if (!mBaseColorTexture.LoadFloat4FactorFromGltf("baseColorFactor", values, logPrefix))
+        return false;
+    if (!mBaseColorTexture.LoadTextureFromGltf("baseColorTexture", ctx, model, values, logPrefix))
         return false;
 
-    if (!mMetallicRoughnessTexture.LoadFromGltf("metallic", /*"roughness",*/ "metallicRoughnessTexture",
-                                                ctx, model, values, logPrefix))
+    if (!mMetallicRoughnessTexture.LoadFloatFactorFromGltf("metallicFactor", 2, values, logPrefix))
+        return false;
+    if (!mMetallicRoughnessTexture.LoadFloatFactorFromGltf("roughnessFactor", 1, values, logPrefix))
+        return false;
+    if (!mMetallicRoughnessTexture.LoadTextureFromGltf("metallicRoughnessTexture", ctx, model, values, logPrefix))
         return false;
 
     mWorkflow = MaterialWorkflow::kPbrMetalness;

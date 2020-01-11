@@ -140,12 +140,21 @@ public:
 
     bool Create(IRenderingContext &ctx,
                 const wchar_t *path);
-    bool LoadFromGltf(const char *factorParamName,
-                      const char *textureParamName,
-                      IRenderingContext &ctx,
-                      const tinygltf::Model &model,
-                      const tinygltf::ParameterMap &params,
-                      const std::wstring &logPrefix);
+
+    bool LoadFloat4FactorFromGltf(const char *factorParamName,
+                                  const tinygltf::ParameterMap &params,
+                                  const std::wstring &logPrefix);
+    bool LoadFloatFactorFromGltf(const char *factorParamName,
+                                 uint32_t component,
+                                 const tinygltf::ParameterMap &params,
+                                 const std::wstring &logPrefix);
+
+    // Multiplies the values with const factor and creates the texture
+    bool LoadTextureFromGltf(const char *textureParamName,
+                             IRenderingContext &ctx,
+                             const tinygltf::Model &model,
+                             const tinygltf::ParameterMap &params,
+                             const std::wstring &logPrefix);
 
 private:
     XMFLOAT4 mConstFactor;
