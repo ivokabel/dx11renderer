@@ -208,6 +208,35 @@ float4 PsNormalVisualizer(PS_INPUT input) : SV_Target
 }
 
 
+struct PbrMetalnessInputs
+{
+    float4 diffuse;
+    float4 f0;
+    float alpha;
+};
+
+
+PbrMetalnessInputs ComputePbrMetalnessInputs(PS_INPUT input)
+{
+    const float4 baseColor      = BaseColorTexture.Sample(LinearSampler, input.Tex);
+    const float4 metalRoughness = MetalRoughnessTexture.Sample(LinearSampler, input.Tex);
+    const float4 metalness      = float4(metalRoughness.bbb, 1);
+    const float  roughness      = metalRoughness.g;
+
+    const float4 white = float4(1, 1, 1, 1);
+    const float4 black = float4(0, 0, 0, 1);
+
+    const float4 dielectricSpecular = float4(0.04, 0.04, 0.04, 1);
+    const float4 dielectricDiffuse  = (white - dielectricSpecular) * baseColor;
+
+    PbrMetalnessInputs inputs;
+    inputs.diffuse  = lerp(dielectricDiffuse,  black,     metalness);
+    inputs.f0       = lerp(dielectricSpecular, baseColor, metalness);
+    inputs.alpha    = roughness * roughness;
+    return inputs;
+}
+
+
 float4 PsPbrMetalness(PS_INPUT input) : SV_Target
 {
     //return PsNormalVisualizer(input);
@@ -253,18 +282,19 @@ float4 PsPbrMetalness(PS_INPUT input) : SV_Target
 
     //output.a = 1;
 
-    const float4 diffuseColor = BaseColorTexture.Sample(LinearSampler, input.Tex);
-    const float4 metalRoughness = MetalRoughnessTexture.Sample(LinearSampler, input.Tex);
-    const float metalness = metalRoughness.b;
-    const float roughness = metalRoughness.g;
 
-    float4 output = metalRoughness;
-    output.r = 0;
-    output.g = roughness;
-    output.b = metalness;
-    output.a = 1;
+    PbrMetalnessInputs inputs = ComputePbrMetalnessInputs(input);
+    return inputs.diffuse;
+    //return inputs.f0;
+    //return float4(0, inputs.alpha, 0, 1);
 
-    return output;
+
+
+    // debug
+    ////float4 output = baseColor;
+    //float4 output = float4(0, roughness, metalness, 1);
+    //output.a = 1;
+    //return output;
 }
 
 
