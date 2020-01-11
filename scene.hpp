@@ -139,7 +139,8 @@ public:
     ~SceneTexture();
 
     bool Create(IRenderingContext &ctx,
-                const wchar_t *path);
+                const wchar_t *path,
+                XMFLOAT4 constFactor);
 
     bool LoadFloat4FactorFromGltf(const char *factorParamName,
                                   const tinygltf::ParameterMap &params,
@@ -182,8 +183,10 @@ public:
 public:
 
     bool Create(IRenderingContext &ctx,
-                const wchar_t * diffuseTexPath = nullptr,
-                const wchar_t * specularTexPath = nullptr);
+                const wchar_t * diffuseTexPath,
+                XMFLOAT4 diffuseConstFactor,
+                const wchar_t * specularTexPath,
+                XMFLOAT4 specularConstFactor);
     bool LoadFromGltf(IRenderingContext &ctx,
                       const tinygltf::Model &model,
                       const tinygltf::Material &material,
