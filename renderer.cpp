@@ -631,12 +631,16 @@ bool SimpleDX11Renderer::CompileShader(WCHAR* szFileName,
     if (FAILED(hr))
     {
         if (pErrorBlob)
-            Log::Error(L"CompileShader: D3DX11CompileFromFile failed: \"%S\"",
+            Log::Error(L"CompileShader: D3DX11CompileFromFile failed: \n%S",
                        (char*)pErrorBlob->GetBufferPointer());
         if (pErrorBlob)
             pErrorBlob->Release();
         return false;
     }
+
+    if (pErrorBlob)
+        Log::Debug(L"CompileShader: D3DX11CompileFromFile error message: \n%S",
+                   (char*)pErrorBlob->GetBufferPointer());
 
     if (pErrorBlob)
         pErrorBlob->Release();

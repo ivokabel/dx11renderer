@@ -72,7 +72,7 @@ PS_INPUT VS(VS_INPUT input)
 }
 
 
-float4 ThetaCos(float3 normal, float3 lightDir)
+float ThetaCos(float3 normal, float3 lightDir)
 {
     return max(dot(normal, lightDir), 0.);
 }
@@ -164,7 +164,8 @@ float4 PsPbrSpecularity(PS_INPUT input) : SV_Target
 
     lightContribs = AmbLightContrib(AmbientLightLuminance);
 
-    for (int i = 0; i < DIRECT_LIGHTS_COUNT; i++)
+    int i;
+    for (i = 0; i < DIRECT_LIGHTS_COUNT; i++)
     {
         LightContrib contrib = DirLightContrib((float3)DirectLightDirs[i],
                                                normal,
@@ -175,7 +176,7 @@ float4 PsPbrSpecularity(PS_INPUT input) : SV_Target
         lightContribs.Specular += contrib.Specular;
     }
 
-    for (int i = 0; i < POINT_LIGHTS_COUNT; i++)
+    for (i = 0; i < POINT_LIGHTS_COUNT; i++)
     {
         LightContrib contrib = PointLightContrib((float3)input.PosWorld,
                                                  (float3)PointLightPositions[i],
