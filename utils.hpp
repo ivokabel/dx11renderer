@@ -36,4 +36,13 @@ namespace Utils
 
     std::string  WstringToString(const std::wstring &wideString);
     std::wstring StringToWstring(const std::string &string);
+
+    inline const wchar_t* ConfigName()
+    {
+#ifdef DEBUG
+        return L"debug";
+#else
+        return L"release";
+#endif // DEBUG
+    }
 }
