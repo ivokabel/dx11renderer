@@ -213,40 +213,64 @@ struct PbrM_MatInfo
 {
     float4 diffuse;
     float4 f0;
-    float alpha;
+    float alphaSq;
 
     float specPower; // temporary blinn-phong approximation
 };
 
 
+float4 FresnelSchlick(PbrM_MatInfo matInfo, float cosTheta)
+{
+    const float4 f0 = matInfo.f0;
+    return f0 + (1 - f0) * pow(clamp(1 - cosTheta, 0, 1), 5);
+}
+
+
+float GgxMicrofacetDistribution(PbrM_MatInfo matInfo, float NdotH)
+{
+    const float alphaSq = matInfo.alphaSq;
+    const float f = (NdotH * alphaSq - NdotH) * NdotH + 1.0;
+    return alphaSq / (PI * f * f);
+}
+
+
+float GgxVisibilityOcclusion(PbrM_MatInfo matInfo, float NdotL, float NdotV)
+{
+    float alphaSq = matInfo.alphaSq;
+
+    float ggxv = NdotL * sqrt(NdotV * NdotV * (1.0 - alphaSq) + alphaSq);
+    float ggxl = NdotV * sqrt(NdotL * NdotL * (1.0 - alphaSq) + alphaSq);
+
+    return 0.5 / (ggxv + ggxl);
+}
+
+
 float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo matInfo)
 {
-    if (dot(lightDir, normal) < 0)
+    const float NdotL = dot(lightDir, normal);
+    const float NdotV = dot(viewDir, normal);
+
+    if (NdotL < 0)
         return float4(0, 0, 0, 1); // Light is below surface - no contribution
 
-    ////// Blinn-Phong
-    ////const float3 halfwayRaw = lightDir + viewDir;
-    ////const float  halfwayLen = length(halfwayRaw);
-    ////const float3 halfway = (halfwayLen > 0.001f) ? (halfwayRaw / halfwayLen) : normal;
-    ////const float  halfwayCos = max(dot(halfway, normal), 0);
-    ////const float  energyConserv = (2 + specPower) / (8 * PI);
-    ////return pow(halfwayCos, specPower) * energyConserv;
+    // Halfway vector
+    const float3 halfwayRaw = lightDir + viewDir;
+    const float  halfwayLen = length(halfwayRaw);
+    const float3 halfway = (halfwayLen > 0.001f) ? (halfwayRaw / halfwayLen) : normal;
+    const float  halfwayCos = max(dot(halfway, normal), 0);
+    const float  VdotH = max(dot(halfway, viewDir), 0.);
 
+    // Microfacet-based specular component
+    const float4 fresnel    = FresnelSchlick(matInfo, VdotH);
+    const float distr       = GgxMicrofacetDistribution(matInfo, halfwayCos);
+    const float vis         = GgxVisibilityOcclusion(matInfo, NdotL, NdotV);
 
-    //// Calculate the shading terms for the microfacet specular shading model
-    //vec3 F = specularReflection(materialInfo, angularInfo);
-    //float Vis = visibilityOcclusion(materialInfo, angularInfo);
-    //float D = microfacetDistribution(materialInfo, angularInfo);
-    //
-    //// Calculation of analytical lighting contribution
-    //vec3 diffuseContrib = (1.0 - F) * diffuse(materialInfo);
-    //vec3 specContrib = F * Vis * D;
-    //
-    //// Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)
-    //return angularInfo.NdotL * (diffuseContrib + specContrib);
-    const float4 specular = float4(0, 0, 0, 1);
+    const float4 specular = fresnel * vis * distr;
+    //const float4 specular = float4(0, 0, 0, 1);
 
+    //const float4 diffuse = (1.0 - fresnel) * Diffuse() * matInfo.diffuse;
     const float4 diffuse = Diffuse() * matInfo.diffuse;
+    //const float4 diffuse = float4(0, 0, 0, 1);
 
     return specular + diffuse;
 }
@@ -255,11 +279,11 @@ float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo ma
 float4 PbrM_AmbLightContrib(float4 luminance, PbrM_MatInfo matInfo)
 {
     //contrib.Diffuse = luminance;
-    const float4 diffuse = matInfo.diffuse * luminance;
+    const float4 diffuse = matInfo.diffuse;
     //contrib.Specular = luminance; // estimate based on assumption that full specular lobe integrates to 1
-    const float4 specular = float4(0, 0, 0, 1);
+    const float4 specular = matInfo.f0;
 
-    return diffuse + specular;
+    return (diffuse + specular) * luminance;
 }
 
 
@@ -313,8 +337,7 @@ PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
     PbrM_MatInfo matInfo;
     matInfo.diffuse     = lerp(diffuseDiel,  diffuseMetal,  metalness);
     matInfo.f0          = lerp(specularDiel, specularMetal, metalness);
-    matInfo.alpha       = roughness * roughness;
-    matInfo.specPower   = 10 / (matInfo.alpha + 0.001f); // temporary blinn-phong approximation
+    matInfo.alphaSq     = roughness * roughness;
     return matInfo;
 }
 
