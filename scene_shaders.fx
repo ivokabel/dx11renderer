@@ -219,6 +219,35 @@ struct PbrM_MatInfo
 };
 
 
+float4 PbrM_Diffuse(PbrM_MatInfo matInfo)
+{
+    return  Diffuse() * matInfo.diffuse;
+}
+
+
+float4 PbrM_Specular(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo matInfo)
+{
+    //AngularInfo angularInfo = getAngularInfo(pointToLight, normal, view);
+
+    //if (angularInfo.NdotL > 0.0 || angularInfo.NdotV > 0.0)
+    //{
+    //    // Calculate the shading terms for the microfacet specular shading model
+    //    vec3 F = specularReflection(materialInfo, angularInfo);
+    //    float Vis = visibilityOcclusion(materialInfo, angularInfo);
+    //    float D = microfacetDistribution(materialInfo, angularInfo);
+
+    //    // Calculation of analytical lighting contribution
+    //    vec3 diffuseContrib = (1.0 - F) * diffuse(materialInfo);
+    //    vec3 specContrib = F * Vis * D;
+
+    //    // Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)
+    //    return angularInfo.NdotL * (diffuseContrib + specContrib);
+    //}
+
+    return float4(0, 0, 0, 1);
+}
+
+
 float4 PbrM_AmbLightContrib(float4 luminance, PbrM_MatInfo matInfo)
 {
     //contrib.Diffuse = luminance;
@@ -238,11 +267,10 @@ float4 PbrM_DirLightContrib(float3 lightDir,
 {
     const float thetaCos = ThetaCos(normal, lightDir);
 
-    const float4 diffuse = Diffuse() * matInfo.diffuse * thetaCos * luminance;
-    //contrib.Specular = BlinPhongSpecular(lightDir, normal, viewDir, specPower) * luminance;
-    const float4 specular = float4(0, 0, 0, 1);
+    const float4 diffuse  = PbrM_Diffuse(matInfo);
+    const float4 specular = PbrM_Specular(lightDir, normal, viewDir, matInfo);
 
-    return diffuse + specular;
+    return (diffuse + specular) * thetaCos * luminance;
 }
 
 
@@ -260,11 +288,10 @@ float4 PbrM_PointLightContrib(float3 surfPos,
 
     const float thetaCos = ThetaCos(normal, lightDir);
 
-    const float4 diffuse = Diffuse() * matInfo.diffuse * thetaCos * intensity / distSqr;
-    //contrib.Specular = BlinPhongSpecular(lightDir, normal, viewDir, specPower) * intensity / distSqr;
-    const float4 specular = float4(0, 0, 0, 1);
+    const float4 diffuse  = PbrM_Diffuse(matInfo);
+    const float4 specular = PbrM_Specular(lightDir, normal, viewDir, matInfo);
 
-    return diffuse + specular;
+    return (diffuse + specular) * thetaCos * intensity / distSqr;
 }
 
 
