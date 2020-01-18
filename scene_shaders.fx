@@ -221,12 +221,12 @@ struct PbrM_MatInfo
 
 float4 PbrM_AmbLightContrib(float4 luminance, PbrM_MatInfo matInfo)
 {
-    //PbrM_LightContrib contrib;
     //contrib.Diffuse = luminance;
+    const float4 diffuse = matInfo.diffuse * luminance;
     //contrib.Specular = luminance; // estimate based on assumption that full specular lobe integrates to 1
-    //return contrib;
+    const float4 specular = float4(0, 0, 0, 1);
 
-    return float4(0, 0, 1, 1);
+    return diffuse + specular;
 }
 
 
@@ -236,14 +236,13 @@ float4 PbrM_DirLightContrib(float3 lightDir,
                             float4 luminance,
                             PbrM_MatInfo matInfo)
 {
-    //const float thetaCos = ThetaCos(normal, lightDir);
+    const float thetaCos = ThetaCos(normal, lightDir);
 
-    //PbrM_LightContrib contrib;
-    //contrib.Diffuse = Diffuse() * thetaCos * luminance;
+    const float4 diffuse = Diffuse() * matInfo.diffuse * thetaCos * luminance;
     //contrib.Specular = BlinPhongSpecular(lightDir, normal, viewDir, specPower) * luminance;
-    //return contrib;
+    const float4 specular = float4(0, 0, 0, 1);
 
-    return float4(1, 0, 0, 1);
+    return diffuse + specular;
 }
 
 
@@ -254,19 +253,18 @@ float4 PbrM_PointLightContrib(float3 surfPos,
                               float4 intensity,
                               PbrM_MatInfo matInfo)
 {
-    //const float3 dirRaw = lightPos - surfPos;
-    //const float  len = length(dirRaw);
-    //const float3 lightDir = dirRaw / len;
-    //const float  distSqr = len * len;
+    const float3 dirRaw = lightPos - surfPos;
+    const float  len = length(dirRaw);
+    const float3 lightDir = dirRaw / len;
+    const float  distSqr = len * len;
 
-    //const float thetaCos = ThetaCos(normal, lightDir);
+    const float thetaCos = ThetaCos(normal, lightDir);
 
-    //PbrM_LightContrib contrib;
-    //contrib.Diffuse = Diffuse() * thetaCos * intensity / distSqr;
+    const float4 diffuse = Diffuse() * matInfo.diffuse * thetaCos * intensity / distSqr;
     //contrib.Specular = BlinPhongSpecular(lightDir, normal, viewDir, specPower) * intensity / distSqr;
-    //return contrib;
+    const float4 specular = float4(0, 0, 0, 1);
 
-    return float4(0, 1, 0, 1);
+    return diffuse + specular;
 }
 
 
@@ -301,7 +299,7 @@ float4 PsPbrMetalness(PS_INPUT input) : SV_Target
 
     float4 output = float4(0, 0, 0, 0);
 
-    //output += PbrM_AmbLightContrib(AmbientLightLuminance, matInfo);
+    output += PbrM_AmbLightContrib(AmbientLightLuminance, matInfo);
 
     int i;
     for (i = 0; i < DIRECT_LIGHTS_COUNT; i++)
@@ -313,15 +311,15 @@ float4 PsPbrMetalness(PS_INPUT input) : SV_Target
                                        matInfo);
     }
 
-    //for (i = 0; i < POINT_LIGHTS_COUNT; i++)
-    //{
-    //    output += PbrM_PointLightContrib((float3)input.PosWorld,
-    //                                     (float3)PointLightPositions[i],
-    //                                     normal,
-    //                                     viewDir,
-    //                                     PointLightIntensities[i],
-    //                                     matInfo);
-    //}
+    for (i = 0; i < POINT_LIGHTS_COUNT; i++)
+    {
+        output += PbrM_PointLightContrib((float3)input.PosWorld,
+                                         (float3)PointLightPositions[i],
+                                         normal,
+                                         viewDir,
+                                         PointLightIntensities[i],
+                                         matInfo);
+    }
 
     output.a = 1;
     return output;
