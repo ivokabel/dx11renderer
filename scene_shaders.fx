@@ -219,32 +219,36 @@ struct PbrM_MatInfo
 };
 
 
-float4 PbrM_Diffuse(PbrM_MatInfo matInfo)
+float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo matInfo)
 {
-    return  Diffuse() * matInfo.diffuse;
-}
+    if (dot(lightDir, normal) < 0)
+        return float4(0, 0, 0, 1); // Light is below surface - no contribution
+
+    ////// Blinn-Phong
+    ////const float3 halfwayRaw = lightDir + viewDir;
+    ////const float  halfwayLen = length(halfwayRaw);
+    ////const float3 halfway = (halfwayLen > 0.001f) ? (halfwayRaw / halfwayLen) : normal;
+    ////const float  halfwayCos = max(dot(halfway, normal), 0);
+    ////const float  energyConserv = (2 + specPower) / (8 * PI);
+    ////return pow(halfwayCos, specPower) * energyConserv;
 
 
-float4 PbrM_Specular(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo matInfo)
-{
-    //AngularInfo angularInfo = getAngularInfo(pointToLight, normal, view);
+    //// Calculate the shading terms for the microfacet specular shading model
+    //vec3 F = specularReflection(materialInfo, angularInfo);
+    //float Vis = visibilityOcclusion(materialInfo, angularInfo);
+    //float D = microfacetDistribution(materialInfo, angularInfo);
+    //
+    //// Calculation of analytical lighting contribution
+    //vec3 diffuseContrib = (1.0 - F) * diffuse(materialInfo);
+    //vec3 specContrib = F * Vis * D;
+    //
+    //// Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)
+    //return angularInfo.NdotL * (diffuseContrib + specContrib);
+    const float4 specular = float4(0, 0, 0, 1);
 
-    //if (angularInfo.NdotL > 0.0 || angularInfo.NdotV > 0.0)
-    //{
-    //    // Calculate the shading terms for the microfacet specular shading model
-    //    vec3 F = specularReflection(materialInfo, angularInfo);
-    //    float Vis = visibilityOcclusion(materialInfo, angularInfo);
-    //    float D = microfacetDistribution(materialInfo, angularInfo);
+    const float4 diffuse = Diffuse() * matInfo.diffuse;
 
-    //    // Calculation of analytical lighting contribution
-    //    vec3 diffuseContrib = (1.0 - F) * diffuse(materialInfo);
-    //    vec3 specContrib = F * Vis * D;
-
-    //    // Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)
-    //    return angularInfo.NdotL * (diffuseContrib + specContrib);
-    //}
-
-    return float4(0, 0, 0, 1);
+    return specular + diffuse;
 }
 
 
@@ -267,10 +271,9 @@ float4 PbrM_DirLightContrib(float3 lightDir,
 {
     const float thetaCos = ThetaCos(normal, lightDir);
 
-    const float4 diffuse  = PbrM_Diffuse(matInfo);
-    const float4 specular = PbrM_Specular(lightDir, normal, viewDir, matInfo);
+    const float4 brdf = PbrM_BRDF(lightDir, normal, viewDir, matInfo);
 
-    return (diffuse + specular) * thetaCos * luminance;
+    return brdf * thetaCos * luminance;
 }
 
 
@@ -288,10 +291,9 @@ float4 PbrM_PointLightContrib(float3 surfPos,
 
     const float thetaCos = ThetaCos(normal, lightDir);
 
-    const float4 diffuse  = PbrM_Diffuse(matInfo);
-    const float4 specular = PbrM_Specular(lightDir, normal, viewDir, matInfo);
+    const float4 brdf = PbrM_BRDF(lightDir, normal, viewDir, matInfo);
 
-    return (diffuse + specular) * thetaCos * intensity / distSqr;
+    return brdf * thetaCos * intensity / distSqr;
 }
 
 
