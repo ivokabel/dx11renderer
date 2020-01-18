@@ -72,13 +72,21 @@ PS_INPUT VS(VS_INPUT input)
 }
 
 
+float4 PsNormalVisualizer(PS_INPUT input) : SV_Target
+{
+    const float3 normal = normalize(input.Normal); // normal is interpolated - renormalize 
+    const float3 positiveNormal = (normal + float3(1.f, 1.f, 1.f)) / 2.;
+    return float4(positiveNormal.x, positiveNormal.y, positiveNormal.z, 1.);
+}
+
+
 float ThetaCos(float3 normal, float3 lightDir)
 {
     return max(dot(normal, lightDir), 0.);
 }
 
 
-struct LightContrib
+struct PbrSpec_LightContrib
 {
     float4 Diffuse;
     float4 Specular;
@@ -91,7 +99,7 @@ float4 Diffuse()
 };
 
 
-float4 Specular(float3 lightDir, float3 normal, float3 viewDir, float specPower)
+float4 BlinPhongSpecular(float3 lightDir, float3 normal, float3 viewDir, float specPower)
 {
     // Blinn-Phong
     if (dot(lightDir, normal) < 0)
@@ -108,36 +116,36 @@ float4 Specular(float3 lightDir, float3 normal, float3 viewDir, float specPower)
 }
 
 
-LightContrib AmbLightContrib(float4 luminance)
+PbrSpec_LightContrib PbrSpec_AmbLightContrib(float4 luminance)
 {
-    LightContrib contrib;
+    PbrSpec_LightContrib contrib;
     contrib.Diffuse  = luminance;
     contrib.Specular = luminance; // estimate based on assumption that full specular lobe integrates to 1
     return contrib;
 }
 
 
-LightContrib DirLightContrib(float3 lightDir,
-                             float3 normal,
-                             float3 viewDir,
-                             float4 luminance,
-                             float specPower)
+PbrSpec_LightContrib PbrSpec_DirLightContrib(float3 lightDir,
+                                             float3 normal,
+                                             float3 viewDir,
+                                             float4 luminance,
+                                             float specPower)
 {
     const float thetaCos = ThetaCos(normal, lightDir);
 
-    LightContrib contrib;
+    PbrSpec_LightContrib contrib;
     contrib.Diffuse  = Diffuse() * thetaCos * luminance;
-    contrib.Specular = Specular(lightDir, normal, viewDir, specPower) * luminance;
+    contrib.Specular = BlinPhongSpecular(lightDir, normal, viewDir, specPower) * luminance;
     return contrib;
 }
 
 
-LightContrib PointLightContrib(float3 surfPos,
-                               float3 lightPos,
-                               float3 normal,
-                               float3 viewDir,
-                               float4 intensity,
-                               float specPower)
+PbrSpec_LightContrib PbrSpec_PointLightContrib(float3 surfPos,
+                                               float3 lightPos,
+                                               float3 normal,
+                                               float3 viewDir,
+                                               float4 intensity,
+                                               float specPower)
 {
     const float3 dirRaw = lightPos - surfPos;
     const float  len = length(dirRaw);
@@ -146,9 +154,9 @@ LightContrib PointLightContrib(float3 surfPos,
 
     const float thetaCos = ThetaCos(normal, lightDir);
 
-    LightContrib contrib;
+    PbrSpec_LightContrib contrib;
     contrib.Diffuse  = Diffuse() * thetaCos * intensity / distSqr;
-    contrib.Specular = Specular(lightDir, normal, viewDir, specPower) * intensity / distSqr;
+    contrib.Specular = BlinPhongSpecular(lightDir, normal, viewDir, specPower) * intensity / distSqr;
     return contrib;
 }
 
@@ -158,32 +166,32 @@ float4 PsPbrSpecularity(PS_INPUT input) : SV_Target
     const float3 normal  = normalize(input.Normal); // normal is interpolated - renormalize 
     const float3 viewDir = normalize((float3)CameraPos - (float3)input.PosWorld);
 
-    LightContrib lightContribs = { {0, 0, 0, 0}, {0, 0, 0, 0} };
+    PbrSpec_LightContrib lightContribs = { {0, 0, 0, 0}, {0, 0, 0, 0} };
 
     const float specPower = 100.f;
 
-    lightContribs = AmbLightContrib(AmbientLightLuminance);
+    lightContribs = PbrSpec_AmbLightContrib(AmbientLightLuminance);
 
     int i;
     for (i = 0; i < DIRECT_LIGHTS_COUNT; i++)
     {
-        LightContrib contrib = DirLightContrib((float3)DirectLightDirs[i],
-                                               normal,
-                                               viewDir,
-                                               DirectLightLuminances[i],
-                                               specPower);
+        PbrSpec_LightContrib contrib = PbrSpec_DirLightContrib((float3)DirectLightDirs[i],
+                                                               normal,
+                                                               viewDir,
+                                                               DirectLightLuminances[i],
+                                                               specPower);
         lightContribs.Diffuse  += contrib.Diffuse;
         lightContribs.Specular += contrib.Specular;
     }
 
     for (i = 0; i < POINT_LIGHTS_COUNT; i++)
     {
-        LightContrib contrib = PointLightContrib((float3)input.PosWorld,
-                                                 (float3)PointLightPositions[i],
-                                                 normal,
-                                                 viewDir,
-                                                 PointLightIntensities[i],
-                                                 specPower);
+        PbrSpec_LightContrib contrib = PbrSpec_PointLightContrib((float3)input.PosWorld,
+                                                                 (float3)PointLightPositions[i],
+                                                                 normal,
+                                                                 viewDir,
+                                                                 PointLightIntensities[i],
+                                                                 specPower);
         lightContribs.Diffuse  += contrib.Diffuse;
         lightContribs.Specular += contrib.Specular;
     }
@@ -201,15 +209,7 @@ float4 PsPbrSpecularity(PS_INPUT input) : SV_Target
 }
 
 
-float4 PsNormalVisualizer(PS_INPUT input) : SV_Target
-{
-    const float3 normal = normalize(input.Normal); // normal is interpolated - renormalize 
-    const float3 positiveNormal = (normal + float3(1.f, 1.f, 1.f)) / 2.;
-    return float4(positiveNormal.x, positiveNormal.y, positiveNormal.z, 1.);
-}
-
-
-struct PbrMetalnessInputs
+struct PbrMetal_Inputs
 {
     float4 diffuse;
     float4 f0;
@@ -217,7 +217,7 @@ struct PbrMetalnessInputs
 };
 
 
-PbrMetalnessInputs ComputePbrMetalnessInputs(PS_INPUT input)
+PbrMetal_Inputs PbrMetal_ComputeInputs(PS_INPUT input)
 {
     const float4 baseColor      = BaseColorTexture.Sample(LinearSampler, input.Tex);
     const float4 metalRoughness = MetalRoughnessTexture.Sample(LinearSampler, input.Tex);
@@ -230,7 +230,7 @@ PbrMetalnessInputs ComputePbrMetalnessInputs(PS_INPUT input)
     const float4 specularMetal  = baseColor;
     const float4 diffuseMetal   = float4(0, 0, 0, 1);
 
-    PbrMetalnessInputs metalInputs;
+    PbrMetal_Inputs metalInputs;
     metalInputs.diffuse  = lerp(diffuseDiel,  diffuseMetal,  metalness);
     metalInputs.f0       = lerp(specularDiel, specularMetal, metalness);
     metalInputs.alpha    = roughness * roughness;
@@ -243,33 +243,34 @@ float4 PsPbrMetalness(PS_INPUT input) : SV_Target
     const float3 normal  = normalize(input.Normal); // normal is interpolated - renormalize 
     const float3 viewDir = normalize((float3)CameraPos - (float3)input.PosWorld);
 
-    const PbrMetalnessInputs metalInputs = ComputePbrMetalnessInputs(input);
+    const PbrMetal_Inputs metalInputs = PbrMetal_ComputeInputs(input);
 
-    LightContrib lightContribs = { {0, 0, 0, 0}, {0, 0, 0, 0} };
+    PbrSpec_LightContrib lightContribs = { {0, 0, 0, 0}, {0, 0, 0, 0} };
 
     const float specPower = 10 / (metalInputs.alpha + 0.001f); // blinn-phong approximation
 
-    lightContribs = AmbLightContrib(AmbientLightLuminance);
+    lightContribs = PbrSpec_AmbLightContrib(AmbientLightLuminance);
 
-    for (int i = 0; i < DIRECT_LIGHTS_COUNT; i++)
+    int i;
+    for (i = 0; i < DIRECT_LIGHTS_COUNT; i++)
     {
-        LightContrib contrib = DirLightContrib((float3)DirectLightDirs[i],
-                                               normal,
-                                               viewDir,
-                                               DirectLightLuminances[i],
-                                               specPower);
+        PbrSpec_LightContrib contrib = PbrSpec_DirLightContrib((float3)DirectLightDirs[i],
+                                                               normal,
+                                                               viewDir,
+                                                               DirectLightLuminances[i],
+                                                               specPower);
         lightContribs.Diffuse  += contrib.Diffuse;
         lightContribs.Specular += contrib.Specular;
     }
 
-    for (int i = 0; i < POINT_LIGHTS_COUNT; i++)
+    for (i = 0; i < POINT_LIGHTS_COUNT; i++)
     {
-        LightContrib contrib = PointLightContrib((float3)input.PosWorld,
-                                                 (float3)PointLightPositions[i],
-                                                 normal,
-                                                 viewDir,
-                                                 PointLightIntensities[i],
-                                                 specPower);
+        PbrSpec_LightContrib contrib = PbrSpec_PointLightContrib((float3)input.PosWorld,
+                                                                 (float3)PointLightPositions[i],
+                                                                 normal,
+                                                                 viewDir,
+                                                                 PointLightIntensities[i],
+                                                                 specPower);
         lightContribs.Diffuse  += contrib.Diffuse;
         lightContribs.Specular += contrib.Specular;
     }
