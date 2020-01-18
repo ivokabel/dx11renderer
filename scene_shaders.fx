@@ -209,15 +209,68 @@ float4 PsPbrSpecularity(PS_INPUT input) : SV_Target
 }
 
 
-struct PbrMetal_Inputs
+struct PbrMetal_MatInfo
 {
     float4 diffuse;
     float4 f0;
     float alpha;
+
+    float specPower; // temporary blinn-phong approximation
 };
 
 
-PbrMetal_Inputs PbrMetal_ComputeInputs(PS_INPUT input)
+float4 PbrMetal_AmbLightContrib(float4 luminance, PbrMetal_MatInfo matInfo)
+{
+    //PbrMetal_LightContrib contrib;
+    //contrib.Diffuse = luminance;
+    //contrib.Specular = luminance; // estimate based on assumption that full specular lobe integrates to 1
+    //return contrib;
+
+    return float4(0, 0, 1, 1);
+}
+
+
+float4 PbrMetal_DirLightContrib(float3 lightDir,
+                                float3 normal,
+                                float3 viewDir,
+                                float4 luminance,
+                                PbrMetal_MatInfo matInfo)
+{
+    //const float thetaCos = ThetaCos(normal, lightDir);
+
+    //PbrMetal_LightContrib contrib;
+    //contrib.Diffuse = Diffuse() * thetaCos * luminance;
+    //contrib.Specular = BlinPhongSpecular(lightDir, normal, viewDir, specPower) * luminance;
+    //return contrib;
+
+    return float4(1, 0, 0, 1);
+}
+
+
+float4 PbrMetal_PointLightContrib(float3 surfPos,
+                                  float3 lightPos,
+                                  float3 normal,
+                                  float3 viewDir,
+                                  float4 intensity,
+                                  PbrMetal_MatInfo matInfo)
+{
+    //const float3 dirRaw = lightPos - surfPos;
+    //const float  len = length(dirRaw);
+    //const float3 lightDir = dirRaw / len;
+    //const float  distSqr = len * len;
+
+    //const float thetaCos = ThetaCos(normal, lightDir);
+
+    //PbrMetal_LightContrib contrib;
+    //contrib.Diffuse = Diffuse() * thetaCos * intensity / distSqr;
+    //contrib.Specular = BlinPhongSpecular(lightDir, normal, viewDir, specPower) * intensity / distSqr;
+    //return contrib;
+
+    return float4(0, 1, 0, 1);
+}
+
+
+PbrMetal_MatInfo PbrMetal_ComputeMatInfo(PS_INPUT input)
 {
     const float4 baseColor      = BaseColorTexture.Sample(LinearSampler, input.Tex);
     const float4 metalRoughness = MetalRoughnessTexture.Sample(LinearSampler, input.Tex);
@@ -230,11 +283,12 @@ PbrMetal_Inputs PbrMetal_ComputeInputs(PS_INPUT input)
     const float4 specularMetal  = baseColor;
     const float4 diffuseMetal   = float4(0, 0, 0, 1);
 
-    PbrMetal_Inputs metalInputs;
-    metalInputs.diffuse  = lerp(diffuseDiel,  diffuseMetal,  metalness);
-    metalInputs.f0       = lerp(specularDiel, specularMetal, metalness);
-    metalInputs.alpha    = roughness * roughness;
-    return metalInputs;
+    PbrMetal_MatInfo matInfo;
+    matInfo.diffuse     = lerp(diffuseDiel,  diffuseMetal,  metalness);
+    matInfo.f0          = lerp(specularDiel, specularMetal, metalness);
+    matInfo.alpha       = roughness * roughness;
+    matInfo.specPower   = 10 / (matInfo.alpha + 0.001f); // temporary blinn-phong approximation
+    return matInfo;
 }
 
 
@@ -243,43 +297,33 @@ float4 PsPbrMetalness(PS_INPUT input) : SV_Target
     const float3 normal  = normalize(input.Normal); // normal is interpolated - renormalize 
     const float3 viewDir = normalize((float3)CameraPos - (float3)input.PosWorld);
 
-    const PbrMetal_Inputs metalInputs = PbrMetal_ComputeInputs(input);
+    const PbrMetal_MatInfo matInfo = PbrMetal_ComputeMatInfo(input);
 
-    PbrSpec_LightContrib lightContribs = { {0, 0, 0, 0}, {0, 0, 0, 0} };
+    float4 output = float4(0, 0, 0, 0);
 
-    const float specPower = 10 / (metalInputs.alpha + 0.001f); // blinn-phong approximation
-
-    lightContribs = PbrSpec_AmbLightContrib(AmbientLightLuminance);
+    //output += PbrMetal_AmbLightContrib(AmbientLightLuminance, matInfo);
 
     int i;
     for (i = 0; i < DIRECT_LIGHTS_COUNT; i++)
     {
-        PbrSpec_LightContrib contrib = PbrSpec_DirLightContrib((float3)DirectLightDirs[i],
-                                                               normal,
-                                                               viewDir,
-                                                               DirectLightLuminances[i],
-                                                               specPower);
-        lightContribs.Diffuse  += contrib.Diffuse;
-        lightContribs.Specular += contrib.Specular;
+        output += PbrMetal_DirLightContrib((float3)DirectLightDirs[i],
+                                           normal,
+                                           viewDir,
+                                           DirectLightLuminances[i],
+                                           matInfo);
     }
 
-    for (i = 0; i < POINT_LIGHTS_COUNT; i++)
-    {
-        PbrSpec_LightContrib contrib = PbrSpec_PointLightContrib((float3)input.PosWorld,
-                                                                 (float3)PointLightPositions[i],
-                                                                 normal,
-                                                                 viewDir,
-                                                                 PointLightIntensities[i],
-                                                                 specPower);
-        lightContribs.Diffuse  += contrib.Diffuse;
-        lightContribs.Specular += contrib.Specular;
-    }
+    //for (i = 0; i < POINT_LIGHTS_COUNT; i++)
+    //{
+    //    output += PbrMetal_PointLightContrib((float3)input.PosWorld,
+    //                                         (float3)PointLightPositions[i],
+    //                                         normal,
+    //                                         viewDir,
+    //                                         PointLightIntensities[i],
+    //                                         matInfo);
+    //}
 
-    float4 output =
-          lightContribs.Diffuse  * metalInputs.diffuse
-        + lightContribs.Specular * metalInputs.f0;
     output.a = 1;
-
     return output;
 }
 
