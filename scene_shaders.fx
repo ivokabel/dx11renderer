@@ -224,78 +224,62 @@ PbrMetalnessInputs ComputePbrMetalnessInputs(PS_INPUT input)
     const float4 metalness      = float4(metalRoughness.bbb, 1);
     const float  roughness      = metalRoughness.g;
 
-    const float4 white = float4(1, 1, 1, 1);
-    const float4 black = float4(0, 0, 0, 1);
+    const float4 specularDiel   = float4(0.04, 0.04, 0.04, 1);
+    const float4 diffuseDiel    = (float4(1, 1, 1, 1) - specularDiel) * baseColor;
 
-    const float4 dielectricSpecular = float4(0.04, 0.04, 0.04, 1);
-    const float4 dielectricDiffuse  = (white - dielectricSpecular) * baseColor;
+    const float4 specularMetal  = baseColor;
+    const float4 diffuseMetal   = float4(0, 0, 0, 1);
 
-    PbrMetalnessInputs inputs;
-    inputs.diffuse  = lerp(dielectricDiffuse,  black,     metalness);
-    inputs.f0       = lerp(dielectricSpecular, baseColor, metalness);
-    inputs.alpha    = roughness * roughness;
-    return inputs;
+    PbrMetalnessInputs metalInputs;
+    metalInputs.diffuse  = lerp(diffuseDiel,  diffuseMetal,  metalness);
+    metalInputs.f0       = lerp(specularDiel, specularMetal, metalness);
+    metalInputs.alpha    = roughness * roughness;
+    return metalInputs;
 }
 
 
 float4 PsPbrMetalness(PS_INPUT input) : SV_Target
 {
-    //return PsNormalVisualizer(input);
-
     const float3 normal  = normalize(input.Normal); // normal is interpolated - renormalize 
     const float3 viewDir = normalize((float3)CameraPos - (float3)input.PosWorld);
 
+    const PbrMetalnessInputs metalInputs = ComputePbrMetalnessInputs(input);
+
     LightContrib lightContribs = { {0, 0, 0, 0}, {0, 0, 0, 0} };
 
-    const float specPower = 100.f;
+    const float specPower = 10 / (metalInputs.alpha + 0.001f); // blinn-phong approximation
 
-    //lightContribs = AmbLightContrib(AmbientLightLuminance);
+    lightContribs = AmbLightContrib(AmbientLightLuminance);
 
-    //for (int i = 0; i < DIRECT_LIGHTS_COUNT; i++)
-    //{
-    //    LightContrib contrib = DirLightContrib((float3)DirectLightDirs[i],
-    //                                           normal,
-    //                                           viewDir,
-    //                                           DirectLightLuminances[i],
-    //                                           specPower);
-    //    lightContribs.Diffuse  += contrib.Diffuse;
-    //    lightContribs.Specular += contrib.Specular;
-    //}
+    for (int i = 0; i < DIRECT_LIGHTS_COUNT; i++)
+    {
+        LightContrib contrib = DirLightContrib((float3)DirectLightDirs[i],
+                                               normal,
+                                               viewDir,
+                                               DirectLightLuminances[i],
+                                               specPower);
+        lightContribs.Diffuse  += contrib.Diffuse;
+        lightContribs.Specular += contrib.Specular;
+    }
 
-    //for (int i = 0; i < POINT_LIGHTS_COUNT; i++)
-    //{
-    //    LightContrib contrib = PointLightContrib((float3)input.PosWorld,
-    //                                             (float3)PointLightPositions[i],
-    //                                             normal,
-    //                                             viewDir,
-    //                                             PointLightIntensities[i],
-    //                                             specPower);
-    //    lightContribs.Diffuse  += contrib.Diffuse;
-    //    lightContribs.Specular += contrib.Specular;
-    //}
+    for (int i = 0; i < POINT_LIGHTS_COUNT; i++)
+    {
+        LightContrib contrib = PointLightContrib((float3)input.PosWorld,
+                                                 (float3)PointLightPositions[i],
+                                                 normal,
+                                                 viewDir,
+                                                 PointLightIntensities[i],
+                                                 specPower);
+        lightContribs.Diffuse  += contrib.Diffuse;
+        lightContribs.Specular += contrib.Specular;
+    }
 
-    //float4 diffuseColor     = BaseColorTexture.Sample(LinearSampler, input.Tex);
-    //float4 specularColor    = MetalRoughnessTexture.Sample(LinearSampler, input.Tex);
+    float4 output =
+          lightContribs.Diffuse  * metalInputs.diffuse
+        + lightContribs.Specular * metalInputs.f0;
+    output.a = 1;
 
-    //float4 output =
-    //      lightContribs.Diffuse  * diffuseColor
-    //    + lightContribs.Specular * specularColor;
-
-    //output.a = 1;
-
-
-    PbrMetalnessInputs inputs = ComputePbrMetalnessInputs(input);
-    return inputs.diffuse;
-    //return inputs.f0;
-    //return float4(0, inputs.alpha, 0, 1);
-
-
-
-    // debug
-    ////float4 output = baseColor;
-    //float4 output = float4(0, roughness, metalness, 1);
-    //output.a = 1;
-    //return output;
+    return output;
 }
 
 
