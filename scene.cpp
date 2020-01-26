@@ -47,9 +47,9 @@ struct {
     XMVECTOR at;
     XMVECTOR up;
 } sViewData = {
-    XMVectorSet(0.0f, 4.0f, -10.0f, 1.0f),
-    XMVectorSet(0.0f, -0.2f, 0.0f, 1.0f),
-    XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f),
+    XMVectorSet(0.0f,  4.0f, 10.0f, 1.0f),
+    XMVectorSet(0.0f, -0.2f,  0.0f, 1.0f),
+    XMVectorSet(0.0f,  1.0f,  0.0f, 1.0f),
 };
 
 
@@ -249,8 +249,8 @@ bool Scene::Load(IRenderingContext &ctx)
     {
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/MetalRoughSpheres/MetalRoughSpheres.gltf"))
             return false;
-        AddTranslationToRoots({ 0., 0.7, 1. });
-        AddScaleToRoots(0.7);
+        AddTranslationToRoots({ 0., 0.4, 1.6 });
+        AddScaleToRoots(0.8);
 
         // debug lights
         const double amb = 0.f;//0.3f;//
@@ -297,8 +297,8 @@ bool Scene::Load(IRenderingContext &ctx)
     case eExternalDebugDamagedHelmet:
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/DamagedHelmet/DamagedHelmet.gltf"))
             return false;
-        AddScaleToRoots(3.5);
-        AddTranslationToRoots({ 0., 0.4, 0.3 });
+        AddScaleToRoots(3.7);
+        AddTranslationToRoots({ 0., 0.35, 0.3 });
         return true;
 
     case eExternalDebugFlightHelmet:
@@ -346,7 +346,7 @@ bool Scene::Load(IRenderingContext &ctx)
     case eExternalSpotMiniRigged:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Greg McKechnie/Spot Mini (Rigged)/scene.gltf"))
             return false;
-        AddScaleToRoots(.00024f);
+        AddScaleToRoots(.00028f);
         AddTranslationToRoots({ 0., 0., 2.8 });
         return true;
 
@@ -360,8 +360,8 @@ bool Scene::Load(IRenderingContext &ctx)
     case eExternalTheRocket:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/TuppsM/The Rocket/scene.gltf"))
             return false;
-        AddScaleToRoots(.011);
-        AddTranslationToRoots({ 0.1, -1., 0. });
+        AddScaleToRoots(.012);
+        AddTranslationToRoots({ -0.1, -1., 0. });
         return true;
 
     case eExternalRoboV1:
