@@ -182,11 +182,19 @@ public:
 
 public:
 
-    bool Create(IRenderingContext &ctx,
-                const wchar_t * diffuseTexPath,
-                XMFLOAT4 diffuseConstFactor,
-                const wchar_t * specularTexPath,
-                XMFLOAT4 specularConstFactor);
+    bool CreatePbrSpecularity(IRenderingContext &ctx,
+                              const wchar_t * diffuseTexPath,
+                              XMFLOAT4 diffuseConstFactor,
+                              const wchar_t * specularTexPath,
+                              XMFLOAT4 specularConstFactor);
+
+    bool CreatePbrMetalness(IRenderingContext &ctx,
+                            const wchar_t * baseColorTexPath,
+                            XMFLOAT4 baseColorConstFactor,
+                            const wchar_t * metallicRoughnessTexPath,
+                            float metallicConstFactor,
+                            float roughnessConstFactor);
+
     bool LoadFromGltf(IRenderingContext &ctx,
                       const tinygltf::Model &model,
                       const tinygltf::Material &material,

@@ -189,11 +189,11 @@ bool Scene::Init(IRenderingContext &ctx)
     if (!mPointLightProxy.CreateSphere(ctx, 8, 16))
         return false;
 
-    if (!mDefaultMaterial.Create(ctx,
-                                 nullptr,
-                                 XMFLOAT4(0.5f, 0.5f, 0.5f, 1.f),
-                                 nullptr,
-                                 XMFLOAT4(0.f, 0.f, 0.f, 1.f)))
+    if (!mDefaultMaterial.CreatePbrSpecularity(ctx,
+                                               nullptr,
+                                               XMFLOAT4(0.5f, 0.5f, 0.5f, 1.f),
+                                               nullptr,
+                                               XMFLOAT4(0.f, 0.f, 0.f, 1.f)))
         return false;
 
     return true;
@@ -379,11 +379,11 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
 
         auto &material0 = mMaterials[0];
-        if (!material0.Create(ctx,
-                              L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png",
-                              XMFLOAT4(1.f, 1.f, 1.f, 1.f),
-                              nullptr,
-                              XMFLOAT4(0.f, 0.f, 0.f, 1.f)))
+        if (!material0.CreatePbrSpecularity(ctx,
+                                            L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png",
+                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f),
+                                            nullptr,
+                                            XMFLOAT4(0.f, 0.f, 0.f, 1.f)))
             return false;
 
         mRootNodes.clear();
@@ -422,11 +422,11 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
 
         auto &material0 = mMaterials[0];
-        if (!material0.Create(ctx,
-                              L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
-                              XMFLOAT4(1.f, 1.f, 1.f, 1.f),
-                              L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif",
-                              XMFLOAT4(1.f, 1.f, 1.f, 1.f)))
+        if (!material0.CreatePbrSpecularity(ctx,
+                                            L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
+                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f),
+                                            L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif",
+                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f)))
             return false;
 
         mRootNodes.clear();
@@ -471,11 +471,11 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
 
         auto &material0 = mMaterials[0];
-        if (!material0.Create(ctx,
-                              L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
-                              XMFLOAT4(1.f, 1.f, 1.f, 1.f),
-                              L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif",
-                              XMFLOAT4(1.f, 1.f, 1.f, 1.f)))
+        if (!material0.CreatePbrSpecularity(ctx,
+                                            L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
+                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f),
+                                            L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif",
+                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f)))
             return false;
 
         auto &node0 = mRootNodes[0];
@@ -489,10 +489,10 @@ bool Scene::Load(IRenderingContext &ctx)
         node0.AddTranslation({ 0.f, 0.f, -1.5f });
 
         auto &material1 = mMaterials[1];
-        if (!material1.Create(ctx, L"../Textures/www.solarsystemscope.com/2k_mars.jpg",
-                              XMFLOAT4(1.f, 1.f, 1.f, 1.f),
-                              nullptr,
-                              XMFLOAT4(0.f, 0.f, 0.f, 1.f)))
+        if (!material1.CreatePbrSpecularity(ctx, L"../Textures/www.solarsystemscope.com/2k_mars.jpg",
+                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f),
+                                            nullptr,
+                                            XMFLOAT4(0.f, 0.f, 0.f, 1.f)))
             return false;
 
         auto &node1 = mRootNodes[1];
@@ -506,10 +506,10 @@ bool Scene::Load(IRenderingContext &ctx)
         node1.AddTranslation({ -2.5f, 0.f, 2.0f });
 
         auto &material2 = mMaterials[2];
-        if (!material2.Create(ctx, L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg",
-                              XMFLOAT4(1.f, 1.f, 1.f, 1.f),
-                              nullptr,
-                              XMFLOAT4(0.f, 0.f, 0.f, 1.f)))
+        if (!material2.CreatePbrSpecularity(ctx, L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg",
+                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f),
+                                            nullptr,
+                                            XMFLOAT4(0.f, 0.f, 0.f, 1.f)))
             return false;
 
         auto &node2 = mRootNodes[2];
@@ -2236,11 +2236,11 @@ SceneMaterial::SceneMaterial() :
 {}
 
 
-bool SceneMaterial::Create(IRenderingContext &ctx,
-                           const wchar_t * diffuseTexPath,
-                           XMFLOAT4 diffuseConstFactor,
-                           const wchar_t * specularTexPath,
-                           XMFLOAT4 specularConstFactor)
+bool SceneMaterial::CreatePbrSpecularity(IRenderingContext &ctx,
+                                         const wchar_t * diffuseTexPath,
+                                         XMFLOAT4 diffuseConstFactor,
+                                         const wchar_t * specularTexPath,
+                                         XMFLOAT4 specularConstFactor)
 {
     if (!mBaseColorTexture.Create(ctx, diffuseTexPath, diffuseConstFactor))
         return false;
@@ -2253,7 +2253,29 @@ bool SceneMaterial::Create(IRenderingContext &ctx,
     return true;
 }
 
-bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx, 
+bool SceneMaterial::CreatePbrMetalness(IRenderingContext &ctx,
+                                       const wchar_t * baseColorTexPath,
+                                       XMFLOAT4 baseColorConstFactor,
+                                       const wchar_t * metallicRoughnessTexPath,
+                                       float metallicConstFactor,
+                                       float roughnessConstFactor)
+{
+    if (!mBaseColorTexture.Create(ctx,
+                                  baseColorTexPath,
+                                  baseColorConstFactor))
+        return false;
+
+    if (!mMetallicRoughnessTexture.Create(ctx,
+                                          metallicRoughnessTexPath,
+                                          XMFLOAT4(0.f, roughnessConstFactor, metallicConstFactor, 0.f)))
+        return false;
+
+    mWorkflow = MaterialWorkflow::kPbrMetalness;
+
+    return true;
+}
+
+bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
                                  const tinygltf::Model &model,
                                  const tinygltf::Material &material,
                                  const std::wstring &logPrefix)
