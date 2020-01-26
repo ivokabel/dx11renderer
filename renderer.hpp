@@ -82,9 +82,10 @@ private:
                     LPARAM lParam);
 
     bool CreateDevice();
-    bool EnumerateAdapters(std::vector <IDXGIAdapter*> &adapters);
-    void ReleaseAdapters(std::vector <IDXGIAdapter*> &adapters);
-    void PrintAdapters(std::vector <IDXGIAdapter*> &adapters, const std::wstring logPrefix = L"");
+    bool EnumerateAdapters();
+    IDXGIAdapter* SelectAdapter();
+    void ReleaseAdapters();
+    void PrintAdapters(const std::wstring logPrefix = L"");
     bool CreatePostprocessingResources();
     void DestroyDevice();
     bool InitScene();
@@ -130,6 +131,7 @@ private:
 
     D3D_DRIVER_TYPE             mDriverType = D3D_DRIVER_TYPE_NULL;
     D3D_FEATURE_LEVEL           mFeatureLevel = D3D_FEATURE_LEVEL_11_0;
+    std::vector <IDXGIAdapter*> mAdapters;
     ID3D11Device*               mDevice = nullptr;
     ID3D11DeviceContext*        mImmediateContext = nullptr;
 
