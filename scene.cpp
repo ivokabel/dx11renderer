@@ -414,6 +414,68 @@ bool Scene::Load(IRenderingContext &ctx)
         return true;
     }
 
+    case eHardwiredPbrMetalnesDebugSphere:
+    {
+        mMaterials.clear();
+        mMaterials.resize(1, SceneMaterial());
+        if (mMaterials.size() != 1)
+            return false;
+
+        auto &material0 = mMaterials[0];
+        const XMFLOAT4 baseColorConstFactor(0.8f, 0.8f, 0.8f, 1.f);
+        const float    metallicConstFactor  = 1.f;
+        const float    roughnessConstFactor =
+                            //0.001f;
+                            //0.010f;
+                            //0.100f;
+                            //0.200f;
+                            0.400f;
+                            //0.800f;
+                            //1.000f;
+        if (!material0.CreatePbrMetalness(ctx,
+                                          nullptr,
+                                          baseColorConstFactor,
+                                          nullptr,
+                                          metallicConstFactor,
+                                          roughnessConstFactor))
+            return false;
+
+        mRootNodes.clear();
+        mRootNodes.resize(1, SceneNode(true));
+        if (mRootNodes.size() != 1)
+            return false;
+
+        auto &node0 = mRootNodes[0];
+        auto primitive = node0.CreateEmptyPrimitive();
+        if (!primitive)
+            return false;
+
+        if (!primitive->CreateSphere(ctx, 40, 80))
+            return false;
+        primitive->SetMaterialIdx(0);
+        node0.AddScale(3.9f);
+        node0.AddTranslation({ 0.f, -0.2f, 0.f });
+
+        mAmbientLight.luminance     = XMFLOAT4(0.05f, 0.05f, 0.05f, 1.0f);
+
+        mDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance  = XMFLOAT4(4.f, 4.f, 4.f, 1.0f);
+
+        // coloured point lights
+        mPointLights[0].intensity   = XMFLOAT4(4.000f, 1.800f, 1.200f, 1.0f); // red
+        mPointLights[1].intensity   = XMFLOAT4(1.000f, 2.500f, 1.100f, 1.0f); // green
+        mPointLights[2].intensity   = XMFLOAT4(1.200f, 1.800f, 4.000f, 1.0f); // blue
+        const float pointScale = 10.f;
+        for (int i = 0; i < 3; ++i)
+        {
+            mPointLights[i].intensity.x *= pointScale;
+            mPointLights[i].intensity.y *= pointScale;
+            mPointLights[i].intensity.z *= pointScale;
+        }
+
+        return true;
+    }
+
     case eHardwiredEarth:
     {
         mMaterials.clear();

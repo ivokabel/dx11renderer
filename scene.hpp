@@ -268,6 +268,7 @@ public:
     enum SceneId
     {
         eHardwiredSimpleDebugSphere,
+        eHardwiredPbrMetalnesDebugSphere,
         eHardwiredEarth,
         eHardwiredThreePlanets,
 
