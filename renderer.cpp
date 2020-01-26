@@ -10,6 +10,9 @@
 #include <cmath>
 
 
+//#define RECORDING_MODE
+
+
 SimpleDX11Renderer::SimpleDX11Renderer(std::shared_ptr<IScene> scene) :
     mScene(scene)
 {
@@ -185,7 +188,9 @@ int SimpleDX11Renderer::Run()
         else
         {
             RenderFrame();
-            //Sleep(32);
+#ifdef RECORDING_MODE
+            Sleep(32);
+#endif
             frameCount++;
         }
     }
@@ -431,6 +436,10 @@ bool SimpleDX11Renderer::EnumerateAdapters()
 
 IDXGIAdapter* SimpleDX11Renderer::SelectAdapter()
 {
+#ifdef RECORDING_MODE
+    return nullptr; // default adapter
+#endif
+
     if (!EnumerateAdapters())
         return false;
 
