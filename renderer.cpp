@@ -8,8 +8,6 @@
 #include <xnamath.h>
 #pragma warning(pop)
 #include <cmath>
-#include <array>
-#include <vector>
 
 
 SimpleDX11Renderer::SimpleDX11Renderer(std::shared_ptr<IScene> scene) :
@@ -272,6 +270,12 @@ bool SimpleDX11Renderer::CreateDevice()
 
     HRESULT hr = S_OK;
 
+    std::vector <IDXGIAdapter*> adapters;
+    if (!EnumerateAdapters(adapters))
+        return false;
+    PrintAdapters(adapters);
+    ReleaseAdapters(adapters);
+
     UINT createDeviceFlags = 0;
 #ifdef _DEBUG
     createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
@@ -380,6 +384,67 @@ bool SimpleDX11Renderer::CreateDevice()
     return true;
 }
 
+
+bool SimpleDX11Renderer::EnumerateAdapters(std::vector <IDXGIAdapter*> &adapters) 
+{
+    IDXGIFactory* pFactory = NULL;
+    if (FAILED(CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&pFactory)))
+    {
+        Log::Error(L"Failed to create adapters enumeration factory!");
+        return false;
+    }
+
+    IDXGIAdapter * pAdapter;
+    for (UINT i = 0;
+         pFactory->EnumAdapters(i, &pAdapter) != DXGI_ERROR_NOT_FOUND;
+         ++i)
+    {
+        adapters.push_back(pAdapter);
+    }
+
+    pFactory->Release();
+    return true;
+};
+
+void SimpleDX11Renderer::ReleaseAdapters(std::vector <IDXGIAdapter*> &adapters)
+{
+    for (auto adapter : adapters)
+        if (adapter)
+            adapter->Release();
+};
+
+void SimpleDX11Renderer::PrintAdapters(std::vector <IDXGIAdapter*> &adapters,
+                                       const std::wstring logPrefix)
+{
+    Log::Debug(L"Found %d adapters", adapters.size());
+    const std::wstring &subItemsLogPrefix = logPrefix + L"   ";
+
+    for (size_t i = 0; i < adapters.size(); i++)
+    {
+        auto adapter = adapters[i];
+
+        if (!adapter)
+        {
+            Log::Warning(L"%s" L"Adapter %d is null!", subItemsLogPrefix.c_str(), i);
+            continue;
+        }
+
+        DXGI_ADAPTER_DESC dxad;
+        if (FAILED(adapter->GetDesc(&dxad)))
+        {
+            Log::Warning(L"%s" L"Adapter %d failed to get description!", subItemsLogPrefix.c_str(), i);
+            continue;
+        }
+
+        Log::Debug(L"%s" L"%d: %-32s, dedicated vmem %4dM, dedicated sysmem %4dM, shared sysmem %4dM",
+                   subItemsLogPrefix.c_str(),
+                   i,
+                   dxad.Description,
+                   dxad.DedicatedVideoMemory >> 20,
+                   dxad.DedicatedSystemMemory >> 20,
+                   dxad.SharedSystemMemory >> 20);
+    }
+}
 
 bool SimpleDX11Renderer::CreatePostprocessingResources()
 {

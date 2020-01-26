@@ -26,6 +26,7 @@
 #pragma warning(pop)
 
 #include <array>
+#include <vector>
 #include <memory>
 #include <cstdint>
 
@@ -81,6 +82,9 @@ private:
                     LPARAM lParam);
 
     bool CreateDevice();
+    bool EnumerateAdapters(std::vector <IDXGIAdapter*> &adapters);
+    void ReleaseAdapters(std::vector <IDXGIAdapter*> &adapters);
+    void PrintAdapters(std::vector <IDXGIAdapter*> &adapters, const std::wstring logPrefix = L"");
     bool CreatePostprocessingResources();
     void DestroyDevice();
     bool InitScene();
