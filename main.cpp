@@ -21,19 +21,21 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
 
     wchar_t buffer[1024] = {};
     GetCurrentDirectory(1024, buffer);
-    Log::Debug(L"Entering WinMain: cmd \"%s\", current dir \"%s\"",
-               cmdLine, buffer);
+    Log::Debug(L"Entering WinMain: %s config, cmd \"%s\", current dir \"%s\"",
+               Utils::ConfigName(), cmdLine, buffer);
 
     auto scene = std::make_shared<Scene>(
         //Scene::eHardwiredSimpleDebugSphere
         //Scene::eHardwiredEarth
         //Scene::eHardwiredThreePlanets
+        Scene::eHardwiredPbrMetalnesDebugSphere
         //Scene::eExternalDebugTriangleWithoutIndices // Non-indexed geometry not yet supported!
         //Scene::eExternalDebugTriangle
         //Scene::eExternalDebugSimpleMeshes
         //Scene::eExternalDebugBox
         //Scene::eExternalDebugBoxInterleaved
         //Scene::eExternalDebugBoxTextured
+        //Scene::eExternalDebugMetalRoughSpheres
         //Scene::eExternalDebug2CylinderEngine
         //Scene::eExternalDebugDuck
         //Scene::eExternalDebugBoomBox
@@ -48,7 +50,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eExternalSpotMiniRigged
         //Scene::eExternalMandaloriansHelmet
         //Scene::eExternalWeltron2001SpaceballRadio
-        Scene::eExternalTheRocket
+        //Scene::eExternalTheRocket
         //Scene::eExternalRoboV1
         );
     SimpleDX11Renderer renderer(scene);

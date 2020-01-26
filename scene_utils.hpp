@@ -32,5 +32,8 @@ namespace SceneUtils
                                   XMFLOAT4 color);
 
     bool ConvertImageToFloat(std::vector<unsigned char> &floatImage,
-                             const tinygltf::Image &srcImage);
+                             const tinygltf::Image &srcImage,
+                             XMFLOAT4 constFactor);
+
+    const FLOAT& GetComponent(const XMFLOAT4 &vec, size_t comp);
 }

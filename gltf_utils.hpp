@@ -16,16 +16,6 @@ namespace GltfUtils
 {
     bool LoadModel(tinygltf::Model &model, const std::wstring &filePath);
 
-    //bool LoadFloat4Param(XMFLOAT4 &materialParam,
-    //                     const char *paramName,
-    //                     const tinygltf::ParameterMap &params,
-    //                     const std::wstring &logPrefix);
-
-    bool LoadFloatParam(float &materialParam,
-                        const char *paramName,
-                        const tinygltf::ParameterMap &params,
-                        const std::wstring &logPrefix);
-
     D3D11_PRIMITIVE_TOPOLOGY ModeToTopology(int mode);
 
     std::wstring ModeToWstring(int mode);

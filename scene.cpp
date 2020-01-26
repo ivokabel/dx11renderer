@@ -47,9 +47,9 @@ struct {
     XMVECTOR at;
     XMVECTOR up;
 } sViewData = {
-    XMVectorSet(0.0f, 4.0f, -10.0f, 1.0f),
-    XMVectorSet(0.0f, -0.2f, 0.0f, 1.0f),
-    XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f),
+    XMVectorSet(0.0f,  4.0f, 10.0f, 1.0f),
+    XMVectorSet(0.0f, -0.2f,  0.0f, 1.0f),
+    XMVectorSet(0.0f,  1.0f,  0.0f, 1.0f),
 };
 
 
@@ -119,12 +119,12 @@ bool Scene::Init(IRenderingContext &ctx)
     if (FAILED(hr))
         return false;
 
-    // Pixel shader - illuminated surface
-    if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsIllumSurf", "ps_4_0", mPixelShaderIllum))
+    // Pixel shaders
+    if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsPbrMetalness", "ps_4_0", mPsPbrMetalness))
         return false;
-
-    // Pixel shader - light-emitting surface
-    if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsEmissiveSurf", "ps_4_0", mPixelShaderSolid))
+    if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsPbrSpecularity", "ps_4_0", mPsPbrSpecularity))
+        return false;
+    if (!ctx.CreatePixelShader(L"../scene_shaders.fx", "PsConstEmissive", "ps_4_0", mPsConstEmmisive))
         return false;
 
     // Create constant buffers
@@ -189,7 +189,11 @@ bool Scene::Init(IRenderingContext &ctx)
     if (!mPointLightProxy.CreateSphere(ctx, 8, 16))
         return false;
 
-    if (!mDefaultMaterial.Create(ctx))
+    if (!mDefaultMaterial.CreatePbrSpecularity(ctx,
+                                               nullptr,
+                                               XMFLOAT4(0.5f, 0.5f, 0.5f, 1.f),
+                                               nullptr,
+                                               XMFLOAT4(0.f, 0.f, 0.f, 1.f)))
         return false;
 
     return true;
@@ -241,10 +245,31 @@ bool Scene::Load(IRenderingContext &ctx)
         AddTranslationToRoots({ 0., 0., 0. });
         return true;
 
+    case eExternalDebugMetalRoughSpheres:
+    {
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/MetalRoughSpheres/MetalRoughSpheres.gltf"))
+            return false;
+        AddTranslationToRoots({ 0., 0.4, 1.6 });
+        AddScaleToRoots(0.8);
+
+        // debug lights
+        const double amb = 0.f;//0.3f;//
+        mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
+        const double lum = 2.f;//0.f;//
+        mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+        const double ints = 0.f;//6.5f;//
+        mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+
+        return true;
+    }
+
     case eExternalDebug2CylinderEngine:
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/2CylinderEngine/2CylinderEngine.gltf"))
             return false;
-        AddScaleToRoots(0.009f);
+        AddScaleToRoots(0.012f);
         AddTranslationToRoots({ 0., 0.2, 0. });
         return true;
 
@@ -272,8 +297,8 @@ bool Scene::Load(IRenderingContext &ctx)
     case eExternalDebugDamagedHelmet:
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/DamagedHelmet/DamagedHelmet.gltf"))
             return false;
-        AddScaleToRoots(3.5);
-        AddTranslationToRoots({ 0., 0.4, 0.3 });
+        AddScaleToRoots(3.7);
+        AddTranslationToRoots({ 0., 0.35, 0.3 });
         return true;
 
     case eExternalDebugFlightHelmet:
@@ -321,7 +346,7 @@ bool Scene::Load(IRenderingContext &ctx)
     case eExternalSpotMiniRigged:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Greg McKechnie/Spot Mini (Rigged)/scene.gltf"))
             return false;
-        AddScaleToRoots(.00024f);
+        AddScaleToRoots(.00028f);
         AddTranslationToRoots({ 0., 0., 2.8 });
         return true;
 
@@ -335,15 +360,15 @@ bool Scene::Load(IRenderingContext &ctx)
     case eExternalTheRocket:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/TuppsM/The Rocket/scene.gltf"))
             return false;
-        AddScaleToRoots(.011);
-        AddTranslationToRoots({ 0.1, -1., 0. });
+        AddScaleToRoots(.012);
+        AddTranslationToRoots({ -0.1, -1., 0. });
         return true;
 
     case eExternalRoboV1:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/_Sef_/Robo_V1/scene.gltf"))
             return false;
-        AddScaleToRoots(.001);
-        AddTranslationToRoots({ 0., -1., 0. });
+        AddTranslationToRoots({ 0., -100., -240. });
+        AddScaleToRoots(.10);
         return true;
 
     case eHardwiredSimpleDebugSphere:
@@ -354,7 +379,11 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
 
         auto &material0 = mMaterials[0];
-        if (!material0.Create(ctx, L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png"))
+        if (!material0.CreatePbrSpecularity(ctx,
+                                            L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png",
+                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f),
+                                            nullptr,
+                                            XMFLOAT4(0.f, 0.f, 0.f, 1.f)))
             return false;
 
         mRootNodes.clear();
@@ -385,6 +414,68 @@ bool Scene::Load(IRenderingContext &ctx)
         return true;
     }
 
+    case eHardwiredPbrMetalnesDebugSphere:
+    {
+        mMaterials.clear();
+        mMaterials.resize(1, SceneMaterial());
+        if (mMaterials.size() != 1)
+            return false;
+
+        auto &material0 = mMaterials[0];
+        const XMFLOAT4 baseColorConstFactor(0.8f, 0.8f, 0.8f, 1.f);
+        const float    metallicConstFactor  = 1.f;
+        const float    roughnessConstFactor =
+                            //0.001f;
+                            //0.010f;
+                            //0.100f;
+                            //0.200f;
+                            0.400f;
+                            //0.800f;
+                            //1.000f;
+        if (!material0.CreatePbrMetalness(ctx,
+                                          nullptr,
+                                          baseColorConstFactor,
+                                          nullptr,
+                                          metallicConstFactor,
+                                          roughnessConstFactor))
+            return false;
+
+        mRootNodes.clear();
+        mRootNodes.resize(1, SceneNode(true));
+        if (mRootNodes.size() != 1)
+            return false;
+
+        auto &node0 = mRootNodes[0];
+        auto primitive = node0.CreateEmptyPrimitive();
+        if (!primitive)
+            return false;
+
+        if (!primitive->CreateSphere(ctx, 40, 80))
+            return false;
+        primitive->SetMaterialIdx(0);
+        node0.AddScale(3.9f);
+        node0.AddTranslation({ 0.f, -0.2f, 0.f });
+
+        mAmbientLight.luminance     = XMFLOAT4(0.05f, 0.05f, 0.05f, 1.0f);
+
+        mDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance  = XMFLOAT4(4.f, 4.f, 4.f, 1.0f);
+
+        // coloured point lights
+        mPointLights[0].intensity   = XMFLOAT4(4.000f, 1.800f, 1.200f, 1.0f); // red
+        mPointLights[1].intensity   = XMFLOAT4(1.000f, 2.500f, 1.100f, 1.0f); // green
+        mPointLights[2].intensity   = XMFLOAT4(1.200f, 1.800f, 4.000f, 1.0f); // blue
+        const float pointScale = 10.f;
+        for (int i = 0; i < 3; ++i)
+        {
+            mPointLights[i].intensity.x *= pointScale;
+            mPointLights[i].intensity.y *= pointScale;
+            mPointLights[i].intensity.z *= pointScale;
+        }
+
+        return true;
+    }
+
     case eHardwiredEarth:
     {
         mMaterials.clear();
@@ -393,9 +484,11 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
 
         auto &material0 = mMaterials[0];
-        if (!material0.Create(ctx,
-                              L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
-                              L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
+        if (!material0.CreatePbrSpecularity(ctx,
+                                            L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
+                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f),
+                                            L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif",
+                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f)))
             return false;
 
         mRootNodes.clear();
@@ -440,9 +533,11 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
 
         auto &material0 = mMaterials[0];
-        if (!material0.Create(ctx,
-                              L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
-                              L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif"))
+        if (!material0.CreatePbrSpecularity(ctx,
+                                            L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
+                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f),
+                                            L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif",
+                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f)))
             return false;
 
         auto &node0 = mRootNodes[0];
@@ -456,7 +551,10 @@ bool Scene::Load(IRenderingContext &ctx)
         node0.AddTranslation({ 0.f, 0.f, -1.5f });
 
         auto &material1 = mMaterials[1];
-        if (!material1.Create(ctx, L"../Textures/www.solarsystemscope.com/2k_mars.jpg"))
+        if (!material1.CreatePbrSpecularity(ctx, L"../Textures/www.solarsystemscope.com/2k_mars.jpg",
+                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f),
+                                            nullptr,
+                                            XMFLOAT4(0.f, 0.f, 0.f, 1.f)))
             return false;
 
         auto &node1 = mRootNodes[1];
@@ -470,7 +568,10 @@ bool Scene::Load(IRenderingContext &ctx)
         node1.AddTranslation({ -2.5f, 0.f, 2.0f });
 
         auto &material2 = mMaterials[2];
-        if (!material2.Create(ctx, L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg"))
+        if (!material2.CreatePbrSpecularity(ctx, L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg",
+                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f),
+                                            nullptr,
+                                            XMFLOAT4(0.f, 0.f, 0.f, 1.f)))
             return false;
 
         auto &node2 = mRootNodes[2];
@@ -801,8 +902,9 @@ bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
 void Scene::Destroy()
 {
     Utils::ReleaseAndMakeNull(mVertexShader);
-    Utils::ReleaseAndMakeNull(mPixelShaderIllum);
-    Utils::ReleaseAndMakeNull(mPixelShaderSolid);
+    Utils::ReleaseAndMakeNull(mPsPbrMetalness);
+    Utils::ReleaseAndMakeNull(mPsPbrSpecularity);
+    Utils::ReleaseAndMakeNull(mPsConstEmmisive);
     Utils::ReleaseAndMakeNull(mVertexLayout);
     Utils::ReleaseAndMakeNull(mCbNeverChanged);
     Utils::ReleaseAndMakeNull(mCbChangedOnResize);
@@ -891,8 +993,7 @@ void Scene::RenderFrame(IRenderingContext &ctx)
     immCtx->VSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
     immCtx->VSSetConstantBuffers(3, 1, &mCbChangedPerSceneNode);
 
-    // Setup pixel shader
-    immCtx->PSSetShader(mPixelShaderIllum, nullptr, 0);
+    // Setup pixel shader data (shader itself is chosen later for each material)
     immCtx->PSSetConstantBuffers(0, 1, &mCbNeverChanged);
     immCtx->PSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
     immCtx->PSSetConstantBuffers(3, 1, &mCbChangedPerSceneNode);
@@ -923,7 +1024,7 @@ void Scene::RenderFrame(IRenderingContext &ctx)
 
         immCtx->UpdateSubresource(mCbChangedPerSceneNode, 0, nullptr, &cbPerSceneNode, 0, 0);
 
-        immCtx->PSSetShader(mPixelShaderSolid, nullptr, 0);
+        immCtx->PSSetShader(mPsConstEmmisive, nullptr, 0);
         mPointLightProxy.DrawGeometry(ctx, mVertexLayout);
     }
 }
@@ -984,11 +1085,30 @@ void Scene::RenderNode(IRenderingContext &ctx,
     // Draw current node
     for (auto &primitive : node.mPrimitives)
     {
-        const int matIdx = primitive.GetMaterialIdx();
-        if (matIdx >= 0 && matIdx < mMaterials.size())
-            mMaterials[matIdx].PSSetShaderResources(ctx);
-        else
-            mDefaultMaterial.PSSetShaderResources(ctx);
+        const SceneMaterial &material = [&]()
+        {
+            const int matIdx = primitive.GetMaterialIdx();
+            if (matIdx >= 0 && matIdx < mMaterials.size())
+                return mMaterials[matIdx];
+            else
+                return mDefaultMaterial;
+        }();
+
+        switch (material.GetWorkflow())
+        {
+        case MaterialWorkflow::kPbrMetalness:
+            immCtx->PSSetShader(mPsPbrMetalness, nullptr, 0);
+            immCtx->PSSetShaderResources(0, 1, material.GetBaseColorSRV());
+            immCtx->PSSetShaderResources(1, 1, material.GetMetallicRoughnessSRV());
+            break;
+        case MaterialWorkflow::kPbrSpecularity:
+            immCtx->PSSetShader(mPsPbrSpecularity, nullptr, 0);
+            immCtx->PSSetShaderResources(2, 1, material.GetBaseColorSRV());
+            immCtx->PSSetShaderResources(3, 1, material.GetSpecularSRV());
+            break;
+        default:
+            continue;
+        }
 
         primitive.DrawGeometry(ctx, mVertexLayout);
     }
@@ -1904,7 +2024,8 @@ void SceneNode::Animate(IRenderingContext &ctx)
 
 
 SceneTexture::SceneTexture(XMFLOAT4 defaultConstFactor) :
-    mConstFactor(defaultConstFactor)
+    mConstFactor(defaultConstFactor),
+    srv(nullptr)
 {}
 
 SceneTexture::SceneTexture(const SceneTexture &src) :
@@ -1945,7 +2066,7 @@ SceneTexture::~SceneTexture()
 }
 
 
-bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path)
+bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path, XMFLOAT4 constFactor)
 {
     auto device = ctx.GetDevice();
     if (!device)
@@ -1953,8 +2074,11 @@ bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path)
 
     HRESULT hr = S_OK;
 
+    mConstFactor = constFactor;
+
     if (path)
     {
+        // TODO: Pre-multiply by const factor
         hr = D3DX11CreateShaderResourceViewFromFile(device, path, nullptr, nullptr, &srv, nullptr);
         if (FAILED(hr))
             return false;
@@ -1966,33 +2090,106 @@ bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path)
 }
 
 
-bool SceneTexture::LoadFromGltf(const char *constParamName,
-                                const char *textureParamName,
-                                IRenderingContext &ctx,
-                                const tinygltf::Model &model,
-                                const tinygltf::ParameterMap &params,
-                                const std::wstring &logPrefix)
+bool SceneTexture::LoadFloat4FactorFromGltf(const char *paramName,
+                                            const tinygltf::ParameterMap &params,
+                                            const std::wstring &logPrefix)
 {
-    // Try texture first
-    auto textureParamIt = params.find(textureParamName);
-    if (textureParamIt != params.end())
+    auto paramIt = params.find(paramName);
+    if (paramIt != params.end())
     {
-        auto &textureParam = textureParamIt->second;
+        auto &param = paramIt->second;
+        if (param.number_array.size() != 4)
+        {
+            Log::Error(L"%sIncorrect \"%s\" material parameter (size %d instead of 4)!",
+                       logPrefix.c_str(),
+                       Utils::StringToWstring(paramName).c_str(),
+                       param.number_array.size());
+            return false;
+        }
+
+        mConstFactor = XMFLOAT4((float)param.number_array[0],
+                                (float)param.number_array[1],
+                                (float)param.number_array[2],
+                                (float)param.number_array[3]);
+
+        Log::Debug(L"%s%s: %s",
+                   logPrefix.c_str(),
+                   Utils::StringToWstring(paramName).c_str(),
+                   GltfUtils::ParameterValueToWstring(param).c_str());
+    }
+
+    return true;
+}
+
+
+bool SceneTexture::LoadFloatFactorFromGltf(const char *paramName,
+                                           uint32_t component,
+                                           const tinygltf::ParameterMap &params,
+                                           const std::wstring &logPrefix)
+{
+    auto paramIt = params.find(paramName);
+    if (paramIt != params.end())
+    {
+        auto &param = paramIt->second;
+        if (!param.has_number_value)
+        {
+            Log::Error(L"%sIncorrect \"%s\" material parameter type (must be float)!",
+                       logPrefix.c_str(),
+                       Utils::StringToWstring(paramName).c_str());
+            return false;
+        }
+
+        switch (component)
+        {
+        case 0: mConstFactor.x = (float)param.number_value; break;
+        case 1: mConstFactor.y = (float)param.number_value; break;
+        case 2: mConstFactor.z = (float)param.number_value; break;
+        case 3: mConstFactor.w = (float)param.number_value; break;
+        default:
+            Log::Error(L"%sIncorrect component index for \"%s\" material parameter (%d >= 4)!",
+                       logPrefix.c_str(),
+                       Utils::StringToWstring(paramName).c_str(),
+                       component);
+            return false;
+        }
+
+        Log::Debug(L"%s%s: %s",
+                   logPrefix.c_str(),
+                   Utils::StringToWstring(paramName).c_str(),
+                   GltfUtils::ParameterValueToWstring(param).c_str());
+    }
+
+    return true;
+}
+
+
+// Multiplies the values with const factor and creates texture
+bool SceneTexture::LoadTextureFromGltf(const char *paramName,
+                                       IRenderingContext &ctx,
+                                       const tinygltf::Model &model,
+                                       const tinygltf::ParameterMap &params,
+                                       const std::wstring &logPrefix)
+{
+    auto paramIt = params.find(paramName);
+    if (paramIt != params.end())
+    {
+        const auto &param = paramIt->second;
         const auto &textures = model.textures;
         const auto &images = model.images;
 
-        const auto textureIndex = textureParam.TextureIndex();
+        const auto textureIndex = param.TextureIndex();
         if ((textureIndex < 0) || (textureIndex >= textures.size()))
         {
             Log::Error(L"%sInvalid texture index (%d/%d) in \"%s\" parameter!",
                        logPrefix.c_str(),
                        textureIndex,
                        textures.size(),
-                       Utils::StringToWstring(textureParamName).c_str());
+                       Utils::StringToWstring(paramName).c_str());
             return false;
         }
 
         const auto &texture = textures[textureIndex];
+
         const auto texSource = texture.source;
         if ((texSource < 0) || (texSource >= images.size()))
         {
@@ -2004,12 +2201,11 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
             return false;
         }
 
-        // TODO: Sampler
-
         const auto &image = images[texSource];
 
-        Log::Debug(L"%sImage \"%s\": \"%s\", %dx%d, %dx%db %s, data %dB",
+        Log::Debug(L"%s%s: \"%s\"/\"%s\", %dx%d, %dx%db %s, data %dB",
                    logPrefix.c_str(),
+                   Utils::StringToWstring(paramName).c_str(),
                    Utils::StringToWstring(image.name).c_str(),
                    Utils::StringToWstring(image.uri).c_str(),
                    image.width,
@@ -2019,7 +2215,7 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
                    GltfUtils::ComponentTypeToWstring(image.pixel_type).c_str(),
                    image.image.size());
 
-        const auto srcPixelSize        = image.component * image.bits / 8;
+        const auto srcPixelSize = image.component * image.bits / 8;
         const auto expectedSrcDataSize = image.width * image.height * srcPixelSize;
         if (image.width <= 0 ||
             image.height <= 0 ||
@@ -2042,7 +2238,7 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
         }
 
         std::vector<unsigned char> floatImage;
-        if (!SceneUtils::ConvertImageToFloat(floatImage, image))
+        if (!SceneUtils::ConvertImageToFloat(floatImage, image, mConstFactor))
         {
             Log::Error(L"%sFailed to convert image \"%s\" to float format: \"%s\", %dx%d, %dx%db %s, data %dB",
                        logPrefix.c_str(),
@@ -2074,67 +2270,74 @@ bool SceneTexture::LoadFromGltf(const char *constParamName,
             return false;
         }
 
-        return true;
+        // TODO: Sampler
     }
-
-    // If there's no texture, try constant factor
-    auto constParamIt = params.find(constParamName);
-    if (constParamIt != params.end())
+    else
     {
-        auto &constParam = constParamIt->second;
-        if (constParam.number_array.size() != 4)
-        {
-            Log::Error(L"%sCorrupted \"%s\" material parameter (size %d instead of 4)!",
-                        logPrefix.c_str(),
-                        Utils::StringToWstring(constParamName).c_str(),
-                        constParam.number_array.size());
-            return false;
-        }
-        mConstFactor = XMFLOAT4((float)constParam.number_array[0],
-                                (float)constParam.number_array[1],
-                                (float)constParam.number_array[2],
-                                (float)constParam.number_array[3]);
-
-        //Log::Debug(L"%s\"%s\": %s",
-        //           logPrefix.c_str(),
-        //           Utils::StringToWstring(constParamName).c_str(),
-        //           GltfUtils::ParameterValueToWstring(constParam).c_str());
-
+        // Constant texture
         if (!SceneUtils::CreateConstantTextureSRV(ctx, srv, mConstFactor))
         {
             Log::Error(L"%sFailed to create constant texture for \"%s\"!",
                        logPrefix.c_str(),
-                       Utils::StringToWstring(constParamName).c_str());
+                       Utils::StringToWstring(paramName).c_str());
             return false;
         }
-
-        return true;
     }
-
-    return true; // Use default constant factor
-}
-
-
-SceneMaterial::SceneMaterial() :
-    mSpecularTexture(XMFLOAT4(0.f, 0.f, 0.f, 1.f)),
-    mBaseColorTexture(XMFLOAT4(.5f, .5f, .5f, 1.f))
-{}
-
-
-bool SceneMaterial::Create(IRenderingContext &ctx,
-                           const wchar_t *diffuseTexPath,
-                           const wchar_t *specularTexPath)
-{
-    if (!mSpecularTexture.Create(ctx, specularTexPath))
-        return false;
-
-    if (!mBaseColorTexture.Create(ctx, diffuseTexPath))
-        return false;
 
     return true;
 }
 
-bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx, 
+
+SceneMaterial::SceneMaterial() :
+    mWorkflow(MaterialWorkflow::eNone),
+
+    mBaseColorTexture(XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
+    mMetallicRoughnessTexture(XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
+
+    mSpecularTexture(XMFLOAT4(1.f, 1.f, 1.f, 1.f))
+{}
+
+
+bool SceneMaterial::CreatePbrSpecularity(IRenderingContext &ctx,
+                                         const wchar_t * diffuseTexPath,
+                                         XMFLOAT4 diffuseConstFactor,
+                                         const wchar_t * specularTexPath,
+                                         XMFLOAT4 specularConstFactor)
+{
+    if (!mBaseColorTexture.Create(ctx, diffuseTexPath, diffuseConstFactor))
+        return false;
+
+    if (!mSpecularTexture.Create(ctx, specularTexPath, specularConstFactor))
+        return false;
+
+    mWorkflow = MaterialWorkflow::kPbrSpecularity;
+
+    return true;
+}
+
+bool SceneMaterial::CreatePbrMetalness(IRenderingContext &ctx,
+                                       const wchar_t * baseColorTexPath,
+                                       XMFLOAT4 baseColorConstFactor,
+                                       const wchar_t * metallicRoughnessTexPath,
+                                       float metallicConstFactor,
+                                       float roughnessConstFactor)
+{
+    if (!mBaseColorTexture.Create(ctx,
+                                  baseColorTexPath,
+                                  baseColorConstFactor))
+        return false;
+
+    if (!mMetallicRoughnessTexture.Create(ctx,
+                                          metallicRoughnessTexPath,
+                                          XMFLOAT4(0.f, roughnessConstFactor, metallicConstFactor, 0.f)))
+        return false;
+
+    mWorkflow = MaterialWorkflow::kPbrMetalness;
+
+    return true;
+}
+
+bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
                                  const tinygltf::Model &model,
                                  const tinygltf::Material &material,
                                  const std::wstring &logPrefix)
@@ -2155,30 +2358,24 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
                        Utils::StringToWstring(value.first).c_str(),
                        GltfUtils::ParameterValueToWstring(value.second).c_str());
         }
+        Log::Debug(L"%s---", logPrefix.c_str());
     }
 
     auto &values = material.values;
 
-    if (!mSpecularTexture.Create(ctx, nullptr))
+    if (!mBaseColorTexture.LoadFloat4FactorFromGltf("baseColorFactor", values, logPrefix))
+        return false;
+    if (!mBaseColorTexture.LoadTextureFromGltf("baseColorTexture", ctx, model, values, logPrefix))
         return false;
 
-    if (!mBaseColorTexture.LoadFromGltf("baseColorFactor", "baseColorTexture", ctx, model, values, logPrefix))
+    if (!mMetallicRoughnessTexture.LoadFloatFactorFromGltf("metallicFactor", 2, values, logPrefix))
+        return false;
+    if (!mMetallicRoughnessTexture.LoadFloatFactorFromGltf("roughnessFactor", 1, values, logPrefix))
+        return false;
+    if (!mMetallicRoughnessTexture.LoadTextureFromGltf("metallicRoughnessTexture", ctx, model, values, logPrefix))
         return false;
 
-    if (!GltfUtils::LoadFloatParam(mMetallicFactor, "metallicFactor", values, logPrefix))
-        return false;
-
-    if (!GltfUtils::LoadFloatParam(mRoughnessFactor, "roughnessFactor", values, logPrefix))
-        return false;
+    mWorkflow = MaterialWorkflow::kPbrMetalness;
 
     return true;
 };
-
-void SceneMaterial::PSSetShaderResources(IRenderingContext &ctx) const
-{
-    if (auto immCtx = ctx.GetImmediateContext())
-    {
-        immCtx->PSSetShaderResources(0, 1, &mBaseColorTexture.srv);
-        immCtx->PSSetShaderResources(1, 1, &mSpecularTexture.srv);
-    }
-}

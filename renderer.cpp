@@ -8,8 +8,9 @@
 #include <xnamath.h>
 #pragma warning(pop)
 #include <cmath>
-#include <array>
-#include <vector>
+
+
+//#define RECORDING_MODE
 
 
 SimpleDX11Renderer::SimpleDX11Renderer(std::shared_ptr<IScene> scene) :
@@ -187,7 +188,9 @@ int SimpleDX11Renderer::Run()
         else
         {
             RenderFrame();
-            //Sleep(32);
+#ifdef RECORDING_MODE
+            Sleep(32);
+#endif
             frameCount++;
         }
     }
@@ -272,6 +275,8 @@ bool SimpleDX11Renderer::CreateDevice()
 
     HRESULT hr = S_OK;
 
+    IDXGIAdapter* adapter = SelectAdapter();
+
     UINT createDeviceFlags = 0;
 #ifdef _DEBUG
     createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
@@ -303,26 +308,50 @@ bool SimpleDX11Renderer::CreateDevice()
     scd.SampleDesc.Quality = GetMsaaQuality();
     scd.Windowed = TRUE;
 
-    for (auto driverType : driverTypes)
+    if (adapter)
     {
-        hr = D3D11CreateDeviceAndSwapChain(nullptr, driverType, nullptr, createDeviceFlags,
+        hr = D3D11CreateDeviceAndSwapChain(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, createDeviceFlags,
                                            featureLevels.data(), (UINT)featureLevels.size(),
                                            D3D11_SDK_VERSION, &scd, &mSwapChain,
                                            &mDevice, &mFeatureLevel, &mImmediateContext);
-        if (SUCCEEDED(hr))
-        {
-            mDriverType = driverType;
-            break;
-        }
-    }
-    if (FAILED(hr))
-        return false;
+        if (FAILED(hr))
+            return false;
 
-    Log::Debug(L"Created device: type %s, feature level %s, MSAA %d:%d",
+        mDriverType = D3D_DRIVER_TYPE_HARDWARE; // TODO: ???
+    }
+    else
+    {
+        for (auto driverType : driverTypes)
+        {
+            hr = D3D11CreateDeviceAndSwapChain(nullptr, driverType, nullptr, createDeviceFlags,
+                                               featureLevels.data(), (UINT)featureLevels.size(),
+                                               D3D11_SDK_VERSION, &scd, &mSwapChain,
+                                               &mDevice, &mFeatureLevel, &mImmediateContext);
+            if (SUCCEEDED(hr))
+            {
+                mDriverType = driverType;
+                break;
+            }
+        }
+        if (FAILED(hr))
+            return false;
+
+        IDXGIDevice1* dxgiDevice = NULL;
+        if (FAILED(mDevice->QueryInterface(&dxgiDevice)))
+            return false;
+        if (FAILED(dxgiDevice->GetAdapter(&adapter)) || !adapter)
+            return false;
+    }
+
+    DXGI_ADAPTER_DESC dxad;
+    if (FAILED(adapter->GetDesc(&dxad)))
+        return false;
+    Log::Debug(L"Created device: type %s, feature level %s, MSAA %d:%d, adapter \"%s\"",
                DriverTypeToString(mDriverType),
                FeatureLevelToString(mFeatureLevel),
                GetMsaaCount(),
-               GetMsaaQuality());
+               GetMsaaQuality(),
+               dxad.Description);
 
     // Create a render target view
     ID3D11Texture2D* swapChainBuffer = nullptr;
@@ -380,6 +409,109 @@ bool SimpleDX11Renderer::CreateDevice()
     return true;
 }
 
+
+bool SimpleDX11Renderer::EnumerateAdapters() 
+{
+    ReleaseAdapters();
+
+    IDXGIFactory* pFactory = NULL;
+    if (FAILED(CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&pFactory)))
+    {
+        Log::Error(L"Failed to create adapters enumeration factory!");
+        return false;
+    }
+
+    IDXGIAdapter * pAdapter;
+    for (UINT i = 0;
+         pFactory->EnumAdapters(i, &pAdapter) != DXGI_ERROR_NOT_FOUND;
+         ++i)
+    {
+        mAdapters.push_back(pAdapter);
+    }
+
+    pFactory->Release();
+    return true;
+}
+
+
+IDXGIAdapter* SimpleDX11Renderer::SelectAdapter()
+{
+#ifdef RECORDING_MODE
+    return nullptr; // default adapter
+#endif
+
+    if (!EnumerateAdapters())
+        return false;
+
+    PrintAdapters();
+
+    SIZE_T maxDedicatedVideoMemory = 0;
+    IDXGIAdapter* maxMemoryAdapter = nullptr;
+
+    for (size_t i = 0; i < mAdapters.size(); i++)
+    {
+        auto adapter = mAdapters[i];
+
+        if (!adapter)
+            continue;
+
+        DXGI_ADAPTER_DESC dxad;
+        if (FAILED(adapter->GetDesc(&dxad)))
+            continue;
+
+        if (dxad.DedicatedVideoMemory > maxDedicatedVideoMemory)
+        {
+            maxDedicatedVideoMemory = dxad.DedicatedVideoMemory;
+            maxMemoryAdapter = adapter;
+        }
+    }
+
+    if (!maxMemoryAdapter)
+        Log::Error(L"Failed to select an adapter!");
+
+    return maxMemoryAdapter;
+}
+
+
+void SimpleDX11Renderer::ReleaseAdapters()
+{
+    for (auto adapter : mAdapters)
+        if (adapter)
+            adapter->Release();
+    mAdapters.clear();
+}
+
+void SimpleDX11Renderer::PrintAdapters(const std::wstring logPrefix)
+{
+    Log::Debug(L"Found %d adapters", mAdapters.size());
+    const std::wstring &subItemsLogPrefix = logPrefix + L"   ";
+
+    for (size_t i = 0; i < mAdapters.size(); i++)
+    {
+        auto adapter = mAdapters[i];
+
+        if (!adapter)
+        {
+            Log::Warning(L"%s" L"Adapter %d is null!", subItemsLogPrefix.c_str(), i);
+            continue;
+        }
+
+        DXGI_ADAPTER_DESC dxad;
+        if (FAILED(adapter->GetDesc(&dxad)))
+        {
+            Log::Warning(L"%s" L"Adapter %d failed to get description!", subItemsLogPrefix.c_str(), i);
+            continue;
+        }
+
+        Log::Debug(L"%s%d: %-32s, vmem %4dM, sysmem %4dM, shared sysmem %4dM",
+                   subItemsLogPrefix.c_str(),
+                   i,
+                   dxad.Description,
+                   dxad.DedicatedVideoMemory >> 20,
+                   dxad.DedicatedSystemMemory >> 20,
+                   dxad.SharedSystemMemory >> 20);
+    }
+}
 
 bool SimpleDX11Renderer::CreatePostprocessingResources()
 {
@@ -506,6 +638,8 @@ void SimpleDX11Renderer::DestroyDevice()
     Utils::ReleaseAndMakeNull(mSwapChain);
     Utils::ReleaseAndMakeNull(mImmediateContext);
     Utils::ReleaseAndMakeNull(mDevice);
+
+    ReleaseAdapters();
 }
 
 
@@ -631,12 +765,16 @@ bool SimpleDX11Renderer::CompileShader(WCHAR* szFileName,
     if (FAILED(hr))
     {
         if (pErrorBlob)
-            Log::Error(L"CompileShader: D3DX11CompileFromFile failed: \"%S\"",
+            Log::Error(L"CompileShader: D3DX11CompileFromFile failed: \n%S",
                        (char*)pErrorBlob->GetBufferPointer());
         if (pErrorBlob)
             pErrorBlob->Release();
         return false;
     }
+
+    if (pErrorBlob)
+        Log::Debug(L"CompileShader: D3DX11CompileFromFile error message: \n%S",
+                   (char*)pErrorBlob->GetBufferPointer());
 
     if (pErrorBlob)
         pErrorBlob->Release();

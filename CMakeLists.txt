@@ -65,6 +65,7 @@ target_link_libraries(dx11renderer
     d3dx9d
     dxerr
     dxguid
+    dxgi
     winmm
     comctl32
     )

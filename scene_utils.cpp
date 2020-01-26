@@ -59,7 +59,8 @@ bool SceneUtils::CreateConstantTextureSRV(IRenderingContext &ctx,
 
 
 bool SceneUtils::ConvertImageToFloat(std::vector<unsigned char> &floatImage,
-                                     const tinygltf::Image &srcImage)
+                                     const tinygltf::Image &srcImage,
+                                     XMFLOAT4 constFactor)
 {
     const size_t floatDataSize = srcImage.width * srcImage.height * 4 * sizeof(float);
     floatImage.resize(floatDataSize);
@@ -78,11 +79,17 @@ bool SceneUtils::ConvertImageToFloat(std::vector<unsigned char> &floatImage,
             for (size_t y = 0; y < srcImage.height; y++)
             {
                 for (size_t comp = 0; comp < srcImage.component; comp++, srcPtr++, floatPtr++)
-                    *floatPtr = *srcPtr / 255.f;
+                    *floatPtr = (*srcPtr / 255.f) * GetComponent(constFactor, comp);
             }
 
         return true;
     }
     else
         return false;
+}
+
+
+const FLOAT& SceneUtils::GetComponent(const XMFLOAT4 &vec, size_t comp)
+{
+    return *(reinterpret_cast<const FLOAT*>(&vec) + comp);
 }

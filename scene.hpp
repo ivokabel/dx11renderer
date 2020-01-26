@@ -139,22 +139,39 @@ public:
     ~SceneTexture();
 
     bool Create(IRenderingContext &ctx,
-                const wchar_t *path);
-    bool LoadFromGltf(const char *constParamName,
-                      const char *textureParamName,
-                      IRenderingContext &ctx,
-                      const tinygltf::Model &model,
-                      const tinygltf::ParameterMap &params,
-                      const std::wstring &logPrefix);
+                const wchar_t *path,
+                XMFLOAT4 constFactor);
+
+    bool LoadFloat4FactorFromGltf(const char *factorParamName,
+                                  const tinygltf::ParameterMap &params,
+                                  const std::wstring &logPrefix);
+    bool LoadFloatFactorFromGltf(const char *factorParamName,
+                                 uint32_t component,
+                                 const tinygltf::ParameterMap &params,
+                                 const std::wstring &logPrefix);
+
+    // Multiplies the values with const factor and creates the texture
+    bool LoadTextureFromGltf(const char *textureParamName,
+                             IRenderingContext &ctx,
+                             const tinygltf::Model &model,
+                             const tinygltf::ParameterMap &params,
+                             const std::wstring &logPrefix);
 
 private:
     XMFLOAT4 mConstFactor;
     // TODO: sampler, texCoord
 
 public:
-    ID3D11ShaderResourceView* srv = nullptr;
+    ID3D11ShaderResourceView* srv;
 };
 
+
+enum class MaterialWorkflow
+{
+    eNone,
+    kPbrMetalness,
+    kPbrSpecularity,
+};
 
 
 class SceneMaterial
@@ -165,25 +182,42 @@ public:
 
 public:
 
-    bool Create(IRenderingContext &ctx,
-                const wchar_t * diffuseTexPath = nullptr,
-                const wchar_t * specularTexPath = nullptr);
+    bool CreatePbrSpecularity(IRenderingContext &ctx,
+                              const wchar_t * diffuseTexPath,
+                              XMFLOAT4 diffuseConstFactor,
+                              const wchar_t * specularTexPath,
+                              XMFLOAT4 specularConstFactor);
+
+    bool CreatePbrMetalness(IRenderingContext &ctx,
+                            const wchar_t * baseColorTexPath,
+                            XMFLOAT4 baseColorConstFactor,
+                            const wchar_t * metallicRoughnessTexPath,
+                            float metallicConstFactor,
+                            float roughnessConstFactor);
+
     bool LoadFromGltf(IRenderingContext &ctx,
                       const tinygltf::Model &model,
                       const tinygltf::Material &material,
                       const std::wstring &logPrefix);
 
-    void PSSetShaderResources(IRenderingContext &ctx) const;
+    MaterialWorkflow GetWorkflow() const { return mWorkflow; }
+
+    ID3D11ShaderResourceView * const * GetBaseColorSRV()         const { return &mBaseColorTexture.srv; };
+    ID3D11ShaderResourceView * const * GetMetallicRoughnessSRV() const { return &mMetallicRoughnessTexture.srv; };
+
+    ID3D11ShaderResourceView * const * GetSpecularSRV() const { return &mSpecularTexture.srv; };
 
 private:
 
-    SceneTexture    mSpecularTexture; // Deprecated (blinn-phong workflow)
+    MaterialWorkflow    mWorkflow;
 
     // PBR metal/roughness workflow
-    SceneTexture    mBaseColorTexture;
-    float           mMetallicFactor = 1.f;
-    float           mRoughnessFactor = 1.f;
-    //TODO:         mMetallicRoughnessTexture
+    SceneTexture        mBaseColorTexture;
+    SceneTexture        mMetallicRoughnessTexture;
+
+    // PBR specularity workflow
+    SceneTexture        mSpecularTexture;
+    //TODO...
 };
 
 
@@ -234,6 +268,7 @@ public:
     enum SceneId
     {
         eHardwiredSimpleDebugSphere,
+        eHardwiredPbrMetalnesDebugSphere,
         eHardwiredEarth,
         eHardwiredThreePlanets,
 
@@ -243,6 +278,7 @@ public:
         eExternalDebugBox,
         eExternalDebugBoxInterleaved,
         eExternalDebugBoxTextured,
+        eExternalDebugMetalRoughSpheres,
         eExternalDebug2CylinderEngine,
         eExternalDebugDuck,
         eExternalDebugBoomBox,
@@ -327,8 +363,9 @@ private:
     // Shaders
 
     ID3D11VertexShader*         mVertexShader = nullptr;
-    ID3D11PixelShader*          mPixelShaderIllum = nullptr;
-    ID3D11PixelShader*          mPixelShaderSolid = nullptr;
+    ID3D11PixelShader*          mPsPbrMetalness = nullptr;
+    ID3D11PixelShader*          mPsPbrSpecularity = nullptr;
+    ID3D11PixelShader*          mPsConstEmmisive = nullptr;
     ID3D11InputLayout*          mVertexLayout = nullptr;
 
     ID3D11Buffer*               mCbNeverChanged = nullptr;
