@@ -148,13 +148,17 @@ LRESULT CALLBACK SimpleDX11Renderer::WndProc(HWND wnd,
     {
         switch (wParam)
         {
-        case 'P':
-            mIsPostProcessingActive = !mIsPostProcessingActive;
-            Log::Debug(L"WM_KEYDOWN: Post-processing %s", mIsPostProcessingActive ? L"ON" : L"OFF");
+        case 'B':
+            mPostProcessingMode = Utils::ToggleBits(mPostProcessingMode, kBloom);
+            Log::Debug(L"Bloom: %s", (mPostProcessingMode & kBloom) ? L"ON" : L"OFF");
+            break;
+        case 'D':
+            mPostProcessingMode = Utils::ToggleBits(mPostProcessingMode, kDebug);
+            Log::Debug(L"Debug shader: %s", (mPostProcessingMode & kDebug) ? L"ON" : L"OFF");
             break;
         case 'A':
             mIsAnimationActive = !mIsAnimationActive;
-            Log::Debug(L"WM_KEYDOWN: Animation %s", mIsAnimationActive ? L"ON" : L"OFF");
+            Log::Debug(L"Animation: %s", mIsAnimationActive ? L"ON" : L"OFF");
             break;
         }
         break;
@@ -568,6 +572,7 @@ bool SimpleDX11Renderer::CreatePostprocessingResources()
     mRenderBuff.Create(*this, postBufferFlags, 1);
     mBloomHorzBuff.Create(*this, postBufferFlags, mBloomDownscaleFactor);
     mBloomBuff.Create(*this, postBufferFlags, mBloomDownscaleFactor);
+    mDebugBuff.Create(*this, postBufferFlags, 1);
 
     // Samplers
     D3D11_SAMPLER_DESC descSampler;
@@ -602,6 +607,8 @@ bool SimpleDX11Renderer::CreatePostprocessingResources()
         return false;
     if (!CreatePixelShader(L"../post_shaders.fx", "FinalPassPS", "ps_4_0", mFinalPassPS))
         return false;
+    if (!CreatePixelShader(L"../post_shaders.fx", "DebugPS", "ps_4_0", mDebugPS))
+        return false;
 
     return true;
 }
@@ -624,9 +631,11 @@ void SimpleDX11Renderer::DestroyDevice()
     mRenderBuffMS.Destroy();
     mBloomHorzBuff.Destroy();
     mBloomBuff.Destroy();
+    mDebugBuff.Destroy();
     Utils::ReleaseAndMakeNull(mBloomCB);
     Utils::ReleaseAndMakeNull(mBloomPS);
     Utils::ReleaseAndMakeNull(mFinalPassPS);
+    Utils::ReleaseAndMakeNull(mDebugPS);
     Utils::ReleaseAndMakeNull(mSamplerStatePoint);
     Utils::ReleaseAndMakeNull(mSamplerStateLinear);
 
@@ -773,7 +782,7 @@ bool SimpleDX11Renderer::CompileShader(WCHAR* szFileName,
     }
 
     if (pErrorBlob)
-        Log::Debug(L"CompileShader: D3DX11CompileFromFile error message: \n%S",
+        Log::Debug(L"CompileShader: D3DX11CompileFromFile: \n%S",
                    (char*)pErrorBlob->GetBufferPointer());
 
     if (pErrorBlob)
@@ -856,7 +865,7 @@ void SimpleDX11Renderer::RenderFrame()
     mImmediateContext->ClearDepthStencilView(swapChainDSV, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
     // Pass 0: Replace render target view with our buffer
-    if (mIsPostProcessingActive)
+    if (mPostProcessingMode != kNone)
     {
         if (mUseMSAA)
         {
@@ -882,7 +891,7 @@ void SimpleDX11Renderer::RenderFrame()
     }
 
     // Resolve multisampled buffer into single sampled before post processing
-    if (mIsPostProcessingActive && mUseMSAA)
+    if ((mPostProcessingMode != kNone) && mUseMSAA)
     {
         auto renderTex = mRenderBuff.GetTex();
         auto renderTexMS = mRenderBuffMS.GetTex();
@@ -898,9 +907,10 @@ void SimpleDX11Renderer::RenderFrame()
         }
     }
 
-    // Bloom - part 1: Scale image down & blur horizontally
-    if (mIsPostProcessingActive)
+    if (mPostProcessingMode & kBloom)
     {
+        // Bloom - part 1: Scale image down & blur horizontally
+
         SetBloomCB(true);
 
         mImmediateContext->GenerateMips(mRenderBuff.GetSRV()); // for nicer downscaling
@@ -911,11 +921,9 @@ void SimpleDX11Renderer::RenderFrame()
                           mBloomHorzBuff.GetRTV(), nullptr,
                           mWndWidth / mBloomDownscaleFactor,
                           mWndHeight / mBloomDownscaleFactor);
-    }
 
-    // Bloom - part 2: blur (downscaled image) vertically
-    if (mIsPostProcessingActive)
-    {
+        // Bloom - part 2: blur (downscaled image) vertically
+
         SetBloomCB(false);
 
         ExecuteRenderPass({ mBloomHorzBuff.GetSRV() },
@@ -926,15 +934,21 @@ void SimpleDX11Renderer::RenderFrame()
                           mWndHeight / mBloomDownscaleFactor);
     }
 
-    // Final pass: Compose original and (upscaled) blurred image
-    if (mIsPostProcessingActive)
-    {
+    // Final bloom pass: Compose original and (upscaled) blurred image
+    if (mPostProcessingMode & kBloom)
         ExecuteRenderPass({ mRenderBuff.GetSRV(), mBloomBuff.GetSRV() },
                           { mSamplerStatePoint, mSamplerStateLinear },
                           mFinalPassPS,
+                          (mPostProcessingMode & kDebug) ? mDebugBuff.GetRTV() : swapChainRTV,
+                          (mPostProcessingMode & kDebug) ? nullptr             : swapChainDSV,
+                          mWndWidth, mWndHeight);
+
+    if (mPostProcessingMode & kDebug)
+        ExecuteRenderPass({ (mPostProcessingMode & kBloom) ? mDebugBuff.GetSRV() : mRenderBuff.GetSRV() },
+                          { mSamplerStatePoint, mSamplerStateLinear },
+                          mDebugPS,
                           swapChainRTV, swapChainDSV, // restores swap chain buffers
                           mWndWidth, mWndHeight);
-    }
 
     Utils::ReleaseAndMakeNull(swapChainRTV);
     Utils::ReleaseAndMakeNull(swapChainDSV);

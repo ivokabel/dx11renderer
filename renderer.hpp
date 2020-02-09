@@ -186,6 +186,7 @@ private:
     PassBuffer                  mRenderBuffMS;
     PassBuffer                  mBloomHorzBuff;
     PassBuffer                  mBloomBuff;
+    PassBuffer                  mDebugBuff;
     uint32_t                    mBloomDownscaleFactor = 4;
     struct BloomCB
     {
@@ -195,6 +196,7 @@ private:
     ID3D11Buffer*               mBloomCB = NULL;
     ID3D11PixelShader*          mBloomPS = nullptr;
     ID3D11PixelShader*          mFinalPassPS = nullptr;
+    ID3D11PixelShader*          mDebugPS = nullptr;
     ID3D11SamplerState*         mSamplerStatePoint = nullptr;
     ID3D11SamplerState*         mSamplerStateLinear = nullptr;
 
@@ -202,7 +204,14 @@ private:
 
 private: // Options
 
-    const bool                  mUseMSAA = true;
-    bool                        mIsPostProcessingActive = true;
+    enum PostProcessingModes
+    {
+        kNone   = 0x00,
+        kBloom  = 0x01,
+        kDebug  = 0x02,
+    };
+
+    const bool                  mUseMSAA = false;// true;
+    PostProcessingModes         mPostProcessingMode = kNone;// kBloom;
     bool                        mIsAnimationActive = true;
 };
