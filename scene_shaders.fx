@@ -247,11 +247,8 @@ float GgxVisibilityOcclusion(PbrM_MatInfo matInfo, float NdotL, float NdotV)
 
 float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo matInfo)
 {
-    const float NdotL = dot(lightDir, normal);
-    const float NdotV = dot(viewDir, normal);
-
-    if (NdotL < 0)
-        return float4(0, 0, 0, 1); // Light is below surface - no contribution
+    const float NdotL = max(dot(lightDir, normal), 0.001f);
+    const float NdotV = max(dot(viewDir, normal), 0.001f);
 
     // Halfway vector
     const float3 halfwayRaw = lightDir + viewDir;
@@ -266,11 +263,9 @@ float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo ma
     const float vis         = GgxVisibilityOcclusion(matInfo, NdotL, NdotV);
 
     const float4 specular = fresnel * vis * distr;
-    //const float4 specular = float4(0, 0, 0, 1);
 
     //const float4 diffuse = (1.0 - fresnel) * Diffuse() * matInfo.diffuse;
     const float4 diffuse = Diffuse() * matInfo.diffuse;
-    //const float4 diffuse = float4(0, 0, 0, 1);
 
     return specular + diffuse;
 }
