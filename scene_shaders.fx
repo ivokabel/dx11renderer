@@ -229,6 +229,7 @@ float4 FresnelSchlick(PbrM_MatInfo matInfo, float cosTheta)
 float GgxMicrofacetDistribution(PbrM_MatInfo matInfo, float NdotH)
 {
     const float alphaSq = matInfo.alphaSq;
+
     const float f = (NdotH * alphaSq - NdotH) * NdotH + 1.0;
     return alphaSq / (PI * f * f);
 }
@@ -247,11 +248,14 @@ float GgxVisibilityOcclusion(PbrM_MatInfo matInfo, float NdotL, float NdotV)
 
 float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo matInfo)
 {
-    const float NdotL = dot(lightDir, normal);
-    const float NdotV = dot(viewDir, normal);
+    float NdotL = dot(lightDir, normal);
+    float NdotV = dot(viewDir, normal);
 
     if (NdotL < 0)
-        return float4(0, 0, 0, 1); // Light is below surface - no contribution
+        return float4(0, 0, 0, 1);
+
+    NdotL = max(NdotL, 0.01f);
+    NdotV = max(NdotV, 0.01f);
 
     // Halfway vector
     const float3 halfwayRaw = lightDir + viewDir;
@@ -266,11 +270,9 @@ float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo ma
     const float vis         = GgxVisibilityOcclusion(matInfo, NdotL, NdotV);
 
     const float4 specular = fresnel * vis * distr;
-    //const float4 specular = float4(0, 0, 0, 1);
 
     //const float4 diffuse = (1.0 - fresnel) * Diffuse() * matInfo.diffuse;
     const float4 diffuse = Diffuse() * matInfo.diffuse;
-    //const float4 diffuse = float4(0, 0, 0, 1);
 
     return specular + diffuse;
 }
@@ -337,7 +339,7 @@ PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
     PbrM_MatInfo matInfo;
     matInfo.diffuse     = lerp(diffuseDiel,  diffuseMetal,  metalness);
     matInfo.f0          = lerp(specularDiel, specularMetal, metalness);
-    matInfo.alphaSq     = roughness * roughness;
+    matInfo.alphaSq     = max(roughness * roughness, 0.0001f);
     return matInfo;
 }
 

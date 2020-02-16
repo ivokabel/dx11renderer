@@ -57,3 +57,35 @@ float4 FinalPassPS(QUAD_VS_OUTPUT Input) : SV_TARGET
 
     return render * (1 - bloomStrength) + bloom * bloomStrength;
 }
+
+
+float4 DebugPS(QUAD_VS_OUTPUT Input) : SV_TARGET
+{
+    float4 color = Texture0.Sample(PointSampler, Input.Tex);
+
+    //const float green = 0.2f;
+    //return color * (1 - green) + float4(0., 1., 0., 1.) * green;
+
+    //float4 isColorNan = isnan(color);
+    //return float4(
+    //    isColorNan.r ? 1 : 0,
+    //    isColorNan.g ? 1 : 0,
+    //    isColorNan.b ? 1 : 0,
+    //    1);
+
+    //return float4(
+    //    IsNAN(color.r) ? 1 : 0,
+    //    IsNAN(color.g) ? 1 : 0,
+    //    IsNAN(color.b) ? 1 : 0,
+    //    1);
+
+    //return float4(
+    //    isfinite(color.r) ? 0 : 1,
+    //    isfinite(color.g) ? 0 : 1,
+    //    isfinite(color.b) ? 0 : 1,
+    //    1);
+
+    //return float4(0.7f * color.rgb, 1);
+
+    return float4(0.9f * pow(color.rgb, 0.85f.xxx), 1); // simple tonemapping
+}

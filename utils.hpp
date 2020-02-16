@@ -31,6 +31,12 @@ namespace Utils
             value->AddRef();
     }
 
+    template <typename T>
+    inline T ToggleBits(const T &aVal, const T &aMask)
+    {
+        return static_cast<T>(aVal ^ aMask);
+    }
+
     std::wstring GetFilePathExt(const std::wstring &path);
     std::string  GetFilePathExt(const std::string  &path);
 
