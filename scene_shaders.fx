@@ -1,5 +1,7 @@
 #include "constants.hpp"
 
+//#define SMOOTH_REFRACTION_APPROXIMATION
+
 static const float PI = 3.14159265f;
 
 // Metalness workflow
@@ -262,28 +264,38 @@ float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo ma
     const float  halfwayLen = length(halfwayRaw);
     const float3 halfway = (halfwayLen > 0.001f) ? (halfwayRaw / halfwayLen) : normal;
     const float  halfwayCos = max(dot(halfway, normal), 0);
-    const float  VdotH = max(dot(halfway, viewDir), 0.);
+    const float  HdotV = max(dot(halfway, viewDir), 0.);
 
     // Microfacet-based specular component
-    const float4 fresnel    = FresnelSchlick(matInfo, VdotH);
+    const float4 fresnelHV  = FresnelSchlick(matInfo, HdotV);
     const float distr       = GgxMicrofacetDistribution(matInfo, halfwayCos);
     const float vis         = GgxVisibilityOcclusion(matInfo, NdotL, NdotV);
 
-    const float4 specular = fresnel * vis * distr;
+    const float4 specular = fresnelHV * vis * distr;
 
-    //const float4 diffuse = (1.0 - fresnel) * Diffuse() * matInfo.diffuse;
+#ifndef SMOOTH_REFRACTION_APPROXIMATION
     const float4 diffuse = Diffuse() * matInfo.diffuse;
+#else
+    const float4 fresnelNV = FresnelSchlick(matInfo, NdotV);
+    const float4 diffuse = Diffuse() * matInfo.diffuse * (1.0 - fresnelNV);
+#endif
 
     return specular + diffuse;
 }
 
 
-float4 PbrM_AmbLightContrib(float4 luminance, PbrM_MatInfo matInfo)
+float4 PbrM_AmbLightContrib(float3 normal, float3 viewDir, float4 luminance, PbrM_MatInfo matInfo)
 {
-    //contrib.Diffuse = luminance;
-    const float4 diffuse = matInfo.diffuse;
-    //contrib.Specular = luminance; // estimate based on assumption that full specular lobe integrates to 1
-    const float4 specular = matInfo.f0;
+#ifndef SMOOTH_REFRACTION_APPROXIMATION
+    const float4 diffuse  = matInfo.diffuse;
+    const float4 specular = matInfo.f0; // assuming that full specular lobe integrates to 1
+#else
+    const float NdotV = max(dot(normal, viewDir), 0.);
+    const float4 fresnelNV = FresnelSchlick(matInfo, NdotV);
+
+    const float4 diffuse = matInfo.diffuse * (1.0 - fresnelNV);
+    const float4 specular = fresnelNV; // assuming that full specular lobe integrates to 1
+#endif
 
     return (diffuse + specular) * luminance;
 }
@@ -331,7 +343,11 @@ PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
     const float  roughness      = metalRoughness.g;
 
     const float4 f0Diel         = float4(0.04, 0.04, 0.04, 1);
+#ifndef SMOOTH_REFRACTION_APPROXIMATION
     const float4 diffuseDiel    = (float4(1, 1, 1, 1) - f0Diel) * baseColor;
+#else
+    const float4 diffuseDiel    = baseColor;
+#endif
 
     const float4 f0Metal        = baseColor;
     const float4 diffuseMetal   = float4(0, 0, 0, 1);
@@ -353,7 +369,7 @@ float4 PsPbrMetalness(PS_INPUT input) : SV_Target
 
     float4 output = float4(0, 0, 0, 0);
 
-    output += PbrM_AmbLightContrib(AmbientLightLuminance, matInfo);
+    output += PbrM_AmbLightContrib(normal, viewDir, AmbientLightLuminance, matInfo);
 
     int i;
     for (i = 0; i < DIRECT_LIGHTS_COUNT; i++)
