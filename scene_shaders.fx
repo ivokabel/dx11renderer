@@ -330,15 +330,15 @@ PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
     const float4 metalness      = float4(metalRoughness.bbb, 1);
     const float  roughness      = metalRoughness.g;
 
-    const float4 specularDiel   = float4(0.04, 0.04, 0.04, 1);
-    const float4 diffuseDiel    = (float4(1, 1, 1, 1) - specularDiel) * baseColor;
+    const float4 f0Diel         = float4(0.04, 0.04, 0.04, 1);
+    const float4 diffuseDiel    = (float4(1, 1, 1, 1) - f0Diel) * baseColor;
 
-    const float4 specularMetal  = baseColor;
+    const float4 f0Metal        = baseColor;
     const float4 diffuseMetal   = float4(0, 0, 0, 1);
 
     PbrM_MatInfo matInfo;
     matInfo.diffuse     = lerp(diffuseDiel,  diffuseMetal,  metalness);
-    matInfo.f0          = lerp(specularDiel, specularMetal, metalness);
+    matInfo.f0          = lerp(f0Diel, f0Metal, metalness);
     matInfo.alphaSq     = max(roughness * roughness, 0.0001f);
     return matInfo;
 }
@@ -357,23 +357,19 @@ float4 PsPbrMetalness(PS_INPUT input) : SV_Target
 
     int i;
     for (i = 0; i < DIRECT_LIGHTS_COUNT; i++)
-    {
         output += PbrM_DirLightContrib((float3)DirectLightDirs[i],
                                        normal,
                                        viewDir,
                                        DirectLightLuminances[i],
                                        matInfo);
-    }
 
     for (i = 0; i < POINT_LIGHTS_COUNT; i++)
-    {
         output += PbrM_PointLightContrib((float3)input.PosWorld,
                                          (float3)PointLightPositions[i],
                                          normal,
                                          viewDir,
                                          PointLightIntensities[i],
                                          matInfo);
-    }
 
     output.a = 1;
     return output;
