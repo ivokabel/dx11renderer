@@ -246,11 +246,25 @@ bool Scene::Load(IRenderingContext &ctx)
         return true;
 
     case eExternalDebugMetalRoughSpheres:
+    case eExternalDebugMetalRoughSpheresNoTextures:
     {
-        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/MetalRoughSpheres/MetalRoughSpheres.gltf"))
+        switch (mSceneId)
+        {
+        case eExternalDebugMetalRoughSpheres:
+            if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/MetalRoughSpheres/MetalRoughSpheres.gltf"))
+                return false;
+            AddTranslationToRoots({ 0., 0.4, 1.6 });
+            AddScaleToRoots(0.8);
+            break;
+        case eExternalDebugMetalRoughSpheresNoTextures:
+            if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/MetalRoughSpheresNoTextures/MetalRoughSpheresNoTextures.gltf"))
+                return false;
+            AddScaleToRoots(900);
+            AddTranslationToRoots({ -2.5, -2.3, 1.5 });
+            break;
+        default:
             return false;
-        AddTranslationToRoots({ 0., 0.4, 1.6 });
-        AddScaleToRoots(0.8);
+        }
 
         // debug lights
         const double amb = 0.5f;//0.3f;//
@@ -302,11 +316,25 @@ bool Scene::Load(IRenderingContext &ctx)
         return true;
 
     case eExternalDebugFlightHelmet:
+    {
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/FlightHelmet/FlightHelmet.gltf"))
             return false;
         AddScaleToRoots(11.0);
         AddTranslationToRoots({ 0., 1.2, 0. });
+
+        // debug lights
+        const float amb = 0.3f;
+        mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
+        const float lum = 4.f;
+        mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+        const float ints = 6.5f;
+        mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+
         return true;
+        }
 
     case eExternalTeslaCybertruck:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/PolyDucky/Tesla Cybertruck/scene.gltf"))
@@ -426,9 +454,9 @@ bool Scene::Load(IRenderingContext &ctx)
         const float    metallicConstFactor  = 1.0f;
         const float    roughnessConstFactor =
                             //0.000f;
-                            0.001f;
+                            //0.001f;
                             //0.010f;
-                            //0.100f;
+                            0.100f;
                             //0.200f;
                             //0.400f;
                             //0.800f;
@@ -1493,7 +1521,7 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
         auto pos = *reinterpret_cast<const XMFLOAT3*>(ptr);
 
         itemIdx; // unused param
-        //Log::Debug(L"%s%d: pos [%.1f, %.1f, %.1f]",
+        //Log::Debug(L"%s%d: pos [%.4f, %.4f, %.4f]",
         //           dataConsumerLogPrefix.c_str(),
         //           itemIdx,
         //           pos.x, pos.y, pos.z);
@@ -1534,7 +1562,7 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
         {
             auto normal = *reinterpret_cast<const XMFLOAT3*>(ptr);
 
-            //Log::Debug(L"%s%d: normal [%.1f, %.1f, %.1f]",
+            //Log::Debug(L"%s%d: normal [%.4f, %.4f, %.4f]",
             //           dataConsumerLogPrefix.c_str(),
             //           itemIdx, normal.x, normal.y, normal.z);
 
