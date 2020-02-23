@@ -28,7 +28,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eHardwiredSimpleDebugSphere
         //Scene::eHardwiredEarth
         //Scene::eHardwiredThreePlanets
-        Scene::eHardwiredPbrMetalnesDebugSphere
+        //Scene::eHardwiredPbrMetalnesDebugSphere
         //Scene::eExternalDebugTriangleWithoutIndices // Non-indexed geometry not yet supported!
         //Scene::eExternalDebugTriangle
         //Scene::eExternalDebugSimpleMeshes
@@ -36,6 +36,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eExternalDebugBoxInterleaved
         //Scene::eExternalDebugBoxTextured
         //Scene::eExternalDebugMetalRoughSpheres
+        Scene::eExternalDebugMetalRoughSpheresNoTextures
         //Scene::eExternalDebug2CylinderEngine
         //Scene::eExternalDebugDuck
         //Scene::eExternalDebugBoomBox

@@ -246,11 +246,25 @@ bool Scene::Load(IRenderingContext &ctx)
         return true;
 
     case eExternalDebugMetalRoughSpheres:
+    case eExternalDebugMetalRoughSpheresNoTextures:
     {
-        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/MetalRoughSpheres/MetalRoughSpheres.gltf"))
+        switch (mSceneId)
+        {
+        case eExternalDebugMetalRoughSpheres:
+            if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/MetalRoughSpheres/MetalRoughSpheres.gltf"))
+                return false;
+            AddTranslationToRoots({ 0., 0.4, 1.6 });
+            AddScaleToRoots(0.8);
+            break;
+        case eExternalDebugMetalRoughSpheresNoTextures:
+            if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/MetalRoughSpheresNoTextures/MetalRoughSpheresNoTextures.gltf"))
+                return false;
+            AddScaleToRoots(900);
+            AddTranslationToRoots({ -2.5, -2.3, 1.5 });
+            break;
+        default:
             return false;
-        AddTranslationToRoots({ 0., 0.4, 1.6 });
-        AddScaleToRoots(0.8);
+        }
 
         // debug lights
         const double amb = 0.5f;//0.3f;//
@@ -1493,7 +1507,7 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
         auto pos = *reinterpret_cast<const XMFLOAT3*>(ptr);
 
         itemIdx; // unused param
-        //Log::Debug(L"%s%d: pos [%.1f, %.1f, %.1f]",
+        //Log::Debug(L"%s%d: pos [%.4f, %.4f, %.4f]",
         //           dataConsumerLogPrefix.c_str(),
         //           itemIdx,
         //           pos.x, pos.y, pos.z);
@@ -1534,7 +1548,7 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
         {
             auto normal = *reinterpret_cast<const XMFLOAT3*>(ptr);
 
-            //Log::Debug(L"%s%d: normal [%.1f, %.1f, %.1f]",
+            //Log::Debug(L"%s%d: normal [%.4f, %.4f, %.4f]",
             //           dataConsumerLogPrefix.c_str(),
             //           itemIdx, normal.x, normal.y, normal.z);
 
