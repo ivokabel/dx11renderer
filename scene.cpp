@@ -324,13 +324,6 @@ bool Scene::Load(IRenderingContext &ctx)
         return true;
         }
 
-    case eExternalTeslaCybertruck:
-        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/PolyDucky/Tesla Cybertruck/scene.gltf"))
-            return false;
-        AddScaleToRoots(2.6);
-        AddTranslationToRoots({ 0.3, 0., 0. });
-        return true;
-
     case eExternalLowPolyDrifter:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Ivan Norman/Low-poly truck (car Drifter)/scene.gltf"))
             return false;

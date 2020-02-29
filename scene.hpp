@@ -287,7 +287,6 @@ public:
         eExternalDebugDamagedHelmet,
         eExternalDebugFlightHelmet,
 
-        eExternalTeslaCybertruck,
         eExternalLowPolyDrifter,
         eExternalWolfBaseMesh,
         eExternalNintendoGameBoyClassic,
