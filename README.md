@@ -4,9 +4,9 @@ Simple DirectX 11 pet renderer heavily based on DX11 SDK tutorials.
 
  - Lights:
    - Point, directional, ambient (constant background)
-   - Defined physical quantities/units
- - Blinn-Phong material model (with diffuse & specular texture)
- - Physically-based bloom effect
+   - Defined in physical quantities/units
+ - Blinn-Phong material
+ - Physically-based bloom
  - Hard-wired scenes
  - glTF scene loader
    - Static geometry
