@@ -29,14 +29,15 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eHardwiredEarth
         //Scene::eHardwiredThreePlanets
         //Scene::eHardwiredPbrMetalnesDebugSphere
+
         //Scene::eExternalDebugTriangleWithoutIndices // Non-indexed geometry not yet supported!
         //Scene::eExternalDebugTriangle
         //Scene::eExternalDebugSimpleMeshes
         //Scene::eExternalDebugBox
         //Scene::eExternalDebugBoxInterleaved
         //Scene::eExternalDebugBoxTextured
-        //Scene::eExternalDebugMetalRoughSpheres
-        Scene::eExternalDebugMetalRoughSpheresNoTextures
+        Scene::eExternalDebugMetalRoughSpheres
+        //Scene::eExternalDebugMetalRoughSpheresNoTextures
         //Scene::eExternalDebug2CylinderEngine
         //Scene::eExternalDebugDuck
         //Scene::eExternalDebugBoomBox
@@ -47,7 +48,6 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eExternalWolfBaseMesh
         //Scene::eExternalNintendoGameBoyClassic
         //Scene::eExternalLowPolyDrifter
-        //Scene::eExternalTeslaCybertruck
         //Scene::eExternalSpotMiniRigged
         //Scene::eExternalMandaloriansHelmet
         //Scene::eExternalWeltron2001SpaceballRadio

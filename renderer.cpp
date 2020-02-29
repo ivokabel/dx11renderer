@@ -193,7 +193,7 @@ int SimpleDX11Renderer::Run()
         {
             RenderFrame();
 #ifdef RECORDING_MODE
-            Sleep(32);
+            Sleep(34);
 #endif
             frameCount++;
         }
