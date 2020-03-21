@@ -298,25 +298,25 @@ bool SimpleDX11Renderer::CreateDevice()
         D3D_FEATURE_LEVEL_10_0,
     };
 
-    DXGI_SWAP_CHAIN_DESC scd;
-    ZeroMemory(&scd, sizeof(scd));
-    scd.BufferCount = 1;
-    scd.BufferDesc.Width = mWndWidth;
-    scd.BufferDesc.Height = mWndHeight;
-    scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    scd.BufferDesc.RefreshRate.Numerator = 60;
-    scd.BufferDesc.RefreshRate.Denominator = 1;
-    scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    scd.OutputWindow = mWnd;
-    scd.SampleDesc.Count   = GetMsaaCount();
-    scd.SampleDesc.Quality = GetMsaaQuality();
-    scd.Windowed = TRUE;
+    DXGI_SWAP_CHAIN_DESC swapChainDesc;
+    ZeroMemory(&swapChainDesc, sizeof(swapChainDesc));
+    swapChainDesc.BufferCount = 1;
+    swapChainDesc.BufferDesc.Width = mWndWidth;
+    swapChainDesc.BufferDesc.Height = mWndHeight;
+    swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    swapChainDesc.BufferDesc.RefreshRate.Numerator = 60;
+    swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
+    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    swapChainDesc.OutputWindow = mWnd;
+    swapChainDesc.SampleDesc.Count   = GetMsaaCount();
+    swapChainDesc.SampleDesc.Quality = GetMsaaQuality();
+    swapChainDesc.Windowed = TRUE;
 
     if (adapter)
     {
         hr = D3D11CreateDeviceAndSwapChain(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, createDeviceFlags,
                                            featureLevels.data(), (UINT)featureLevels.size(),
-                                           D3D11_SDK_VERSION, &scd, &mSwapChain,
+                                           D3D11_SDK_VERSION, &swapChainDesc, &mSwapChain,
                                            &mDevice, &mFeatureLevel, &mImmediateContext);
         if (FAILED(hr))
             return false;
@@ -329,7 +329,7 @@ bool SimpleDX11Renderer::CreateDevice()
         {
             hr = D3D11CreateDeviceAndSwapChain(nullptr, driverType, nullptr, createDeviceFlags,
                                                featureLevels.data(), (UINT)featureLevels.size(),
-                                               D3D11_SDK_VERSION, &scd, &mSwapChain,
+                                               D3D11_SDK_VERSION, &swapChainDesc, &mSwapChain,
                                                &mDevice, &mFeatureLevel, &mImmediateContext);
             if (SUCCEEDED(hr))
             {
@@ -357,41 +357,40 @@ bool SimpleDX11Renderer::CreateDevice()
                GetMsaaQuality(),
                dxad.Description);
 
-    // Create a render target view
+    // Swap chain render target view
     ID3D11Texture2D* swapChainBuffer = nullptr;
     hr = mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&swapChainBuffer);
     if (FAILED(hr))
         return false;
-
     hr = mDevice->CreateRenderTargetView(swapChainBuffer, nullptr, &mSwapChainRTV);
     swapChainBuffer->Release();
     if (FAILED(hr))
         return false;
 
     // Depth stencil texture
-    D3D11_TEXTURE2D_DESC descDepth;
-    ZeroMemory(&descDepth, sizeof(descDepth));
-    descDepth.Width  = mWndWidth;
-    descDepth.Height = mWndHeight;
-    descDepth.MipLevels = 1;
-    descDepth.ArraySize = 1;
-    descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    descDepth.SampleDesc.Count   = GetMsaaCount();
-    descDepth.SampleDesc.Quality = GetMsaaQuality();
-    descDepth.Usage = D3D11_USAGE_DEFAULT;
-    descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-    hr = mDevice->CreateTexture2D(&descDepth, nullptr, &mSwapChainDSTex);
+    D3D11_TEXTURE2D_DESC depthDesc;
+    ZeroMemory(&depthDesc, sizeof(depthDesc));
+    depthDesc.Width  = mWndWidth;
+    depthDesc.Height = mWndHeight;
+    depthDesc.MipLevels = 1;
+    depthDesc.ArraySize = 1;
+    depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    depthDesc.SampleDesc.Count   = GetMsaaCount();
+    depthDesc.SampleDesc.Quality = GetMsaaQuality();
+    depthDesc.Usage = D3D11_USAGE_DEFAULT;
+    depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+    hr = mDevice->CreateTexture2D(&depthDesc, nullptr, &mSwapChainDSTex);
     if (FAILED(hr))
         return false;
 
     // Depth stencil view
-    D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
-    ZeroMemory(&descDSV, sizeof(descDSV));
-    descDSV.Format = descDepth.Format;
-    descDSV.ViewDimension = mUseMSAA ? D3D11_DSV_DIMENSION_TEXTURE2DMS :
-                                       D3D11_DSV_DIMENSION_TEXTURE2D;
-    descDSV.Texture2D.MipSlice = 0;
-    hr = mDevice->CreateDepthStencilView(mSwapChainDSTex, &descDSV, &mSwapChainDSV);
+    D3D11_DEPTH_STENCIL_VIEW_DESC depthSVDesc;
+    ZeroMemory(&depthSVDesc, sizeof(depthSVDesc));
+    depthSVDesc.Format = depthDesc.Format;
+    depthSVDesc.ViewDimension = mUseMSAA ? D3D11_DSV_DIMENSION_TEXTURE2DMS :
+                                           D3D11_DSV_DIMENSION_TEXTURE2D;
+    depthSVDesc.Texture2D.MipSlice = 0;
+    hr = mDevice->CreateDepthStencilView(mSwapChainDSTex, &depthSVDesc, &mSwapChainDSV);
     if (FAILED(hr))
         return false;
 
@@ -673,21 +672,21 @@ bool SimpleDX11Renderer::PassBuffer::Create(IRenderingContext &ctx,
     bool generateMips = createRtv && createSrv;
 
     // Texture
-    D3D11_TEXTURE2D_DESC descTex;
-    ZeroMemory(&descTex, sizeof(D3D11_TEXTURE2D_DESC));
-    descTex.ArraySize = 1;
-    descTex.BindFlags =
+    D3D11_TEXTURE2D_DESC textDesc;
+    ZeroMemory(&textDesc, sizeof(D3D11_TEXTURE2D_DESC));
+    textDesc.ArraySize = 1;
+    textDesc.BindFlags =
         (createRtv ? D3D11_BIND_RENDER_TARGET   : 0) |
         (createSrv ? D3D11_BIND_SHADER_RESOURCE : 0);
-    descTex.MiscFlags = generateMips ? D3D11_RESOURCE_MISC_GENERATE_MIPS : 0;
-    descTex.Usage = D3D11_USAGE_DEFAULT;
-    descTex.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    descTex.Width  = width;
-    descTex.Height = height;
-    descTex.MipLevels = generateMips ? 0 : 1;
-    descTex.SampleDesc.Count   = singleSample ? 1 : ctx.GetMsaaCount();
-    descTex.SampleDesc.Quality = singleSample ? 0 : ctx.GetMsaaQuality();
-    hr = device->CreateTexture2D(&descTex, nullptr, &tex);
+    textDesc.MiscFlags = generateMips ? D3D11_RESOURCE_MISC_GENERATE_MIPS : 0;
+    textDesc.Usage = D3D11_USAGE_DEFAULT;
+    textDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    textDesc.Width  = width;
+    textDesc.Height = height;
+    textDesc.MipLevels = generateMips ? 0 : 1;
+    textDesc.SampleDesc.Count   = singleSample ? 1 : ctx.GetMsaaCount();
+    textDesc.SampleDesc.Quality = singleSample ? 0 : ctx.GetMsaaQuality();
+    hr = device->CreateTexture2D(&textDesc, nullptr, &tex);
     if (FAILED(hr))
         return false;
 
@@ -696,12 +695,12 @@ bool SimpleDX11Renderer::PassBuffer::Create(IRenderingContext &ctx,
     // Render target view
     if (createRtv)
     {
-        D3D11_RENDER_TARGET_VIEW_DESC descRTV;
-        descRTV.Format = descTex.Format;
-        descRTV.ViewDimension = isMultiSample ? D3D11_RTV_DIMENSION_TEXTURE2DMS :
+        D3D11_RENDER_TARGET_VIEW_DESC rtvDesc;
+        rtvDesc.Format = textDesc.Format;
+        rtvDesc.ViewDimension = isMultiSample ? D3D11_RTV_DIMENSION_TEXTURE2DMS :
                                                 D3D11_RTV_DIMENSION_TEXTURE2D;
-        descRTV.Texture2D.MipSlice = 0;
-        hr = device->CreateRenderTargetView(tex, &descRTV, &rtv);
+        rtvDesc.Texture2D.MipSlice = 0;
+        hr = device->CreateRenderTargetView(tex, &rtvDesc, &rtv);
         if (FAILED(hr))
             return false;
     }
@@ -709,13 +708,13 @@ bool SimpleDX11Renderer::PassBuffer::Create(IRenderingContext &ctx,
     // Shader resource view
     if (createSrv)
     {
-        D3D11_SHADER_RESOURCE_VIEW_DESC descSRV;
-        descSRV.Format = descTex.Format;
-        descSRV.ViewDimension = isMultiSample ? D3D11_SRV_DIMENSION_TEXTURE2DMS :
+        D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+        srvDesc.Format = textDesc.Format;
+        srvDesc.ViewDimension = isMultiSample ? D3D11_SRV_DIMENSION_TEXTURE2DMS :
                                                 D3D11_SRV_DIMENSION_TEXTURE2D;
-        descSRV.Texture2D.MipLevels = generateMips ? -1 : 1;
-        descSRV.Texture2D.MostDetailedMip = 0;
-        hr = device->CreateShaderResourceView(tex, &descSRV, &srv);
+        srvDesc.Texture2D.MipLevels = generateMips ? -1 : 1;
+        srvDesc.Texture2D.MostDetailedMip = 0;
+        hr = device->CreateShaderResourceView(tex, &srvDesc, &srv);
         if (FAILED(hr))
             return false;
     }

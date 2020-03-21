@@ -16,7 +16,7 @@ bool SceneUtils::CreateTextureSrvFromData(IRenderingContext &ctx,
     HRESULT hr = S_OK;
     ID3D11Texture2D *tex = nullptr;
 
-    // Texture containing the data
+    // Texture
     D3D11_TEXTURE2D_DESC descTex;
     ZeroMemory(&descTex, sizeof(D3D11_TEXTURE2D_DESC));
     descTex.ArraySize = 1;
