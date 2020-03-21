@@ -1,6 +1,7 @@
 #include "renderer.hpp"
 #include "log.hpp"
 #include "utils.hpp"
+#include "constants.hpp"
 
 #include <d3dcompiler.h>
 #pragma warning(push)
@@ -8,9 +9,6 @@
 #include <xnamath.h>
 #pragma warning(pop)
 #include <cmath>
-
-
-//#define RECORDING_MODE
 
 
 SimpleDX11Renderer::SimpleDX11Renderer(std::shared_ptr<IScene> scene) :
@@ -192,7 +190,7 @@ int SimpleDX11Renderer::Run()
         else
         {
             RenderFrame();
-#ifdef RECORDING_MODE
+#ifdef VIDEO_RECORDING_MODE
             Sleep(34);
 #endif
             frameCount++;
@@ -439,7 +437,7 @@ bool SimpleDX11Renderer::EnumerateAdapters()
 
 IDXGIAdapter* SimpleDX11Renderer::SelectAdapter()
 {
-#ifdef RECORDING_MODE
+#ifdef VIDEO_RECORDING_MODE
     return nullptr; // default adapter
 #endif
 

@@ -1,7 +1,5 @@
 #include "constants.hpp"
 
-//#define SMOOTH_REFRACTION_APPROXIMATION
-
 static const float PI = 3.14159265f;
 
 // Metalness workflow
@@ -273,7 +271,7 @@ float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo ma
 
     const float4 specular = fresnelHV * vis * distr;
 
-#ifndef SMOOTH_REFRACTION_APPROXIMATION
+#ifndef USE_SMOOTH_REFRACTION_APPROX_BSDF
     const float4 diffuse = Diffuse() * matInfo.diffuse;
 #else
     const float4 fresnelNV = FresnelSchlick(matInfo, NdotV);
@@ -286,7 +284,7 @@ float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo ma
 
 float4 PbrM_AmbLightContrib(float3 normal, float3 viewDir, float4 luminance, PbrM_MatInfo matInfo)
 {
-#ifndef SMOOTH_REFRACTION_APPROXIMATION
+#ifndef USE_SMOOTH_REFRACTION_APPROX_BSDF
     const float4 diffuse  = matInfo.diffuse;
     const float4 specular = matInfo.f0; // assuming that full specular lobe integrates to 1
 #else
@@ -343,7 +341,7 @@ PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
     const float  roughness      = metalRoughness.g;
 
     const float4 f0Diel         = float4(0.04, 0.04, 0.04, 1);
-#ifndef SMOOTH_REFRACTION_APPROXIMATION
+#ifndef USE_SMOOTH_REFRACTION_APPROX_BSDF
     const float4 diffuseDiel    = (float4(1, 1, 1, 1) - f0Diel) * baseColor;
 #else
     const float4 diffuseDiel    = baseColor;
