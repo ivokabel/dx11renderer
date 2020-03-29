@@ -36,7 +36,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eExternalDebugBox
         //Scene::eExternalDebugBoxInterleaved
         //Scene::eExternalDebugBoxTextured
-        Scene::eExternalDebugMetalRoughSpheres
+        //Scene::eExternalDebugMetalRoughSpheres
         //Scene::eExternalDebugMetalRoughSpheresNoTextures
         //Scene::eExternalDebug2CylinderEngine
         //Scene::eExternalDebugDuck
@@ -44,6 +44,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eExternalDebugBoomBoxWithAxes
         //Scene::eExternalDebugDamagedHelmet
         //Scene::eExternalDebugFlightHelmet
+
+        Scene::eExternalDebugGradientBox
 
         //Scene::eExternalWolfBaseMesh
         //Scene::eExternalNintendoGameBoyClassic

@@ -287,6 +287,8 @@ public:
         eExternalDebugDamagedHelmet,
         eExternalDebugFlightHelmet,
 
+        eExternalDebugGradientBox,
+
         eExternalLowPolyDrifter,
         eExternalWolfBaseMesh,
         eExternalNintendoGameBoyClassic,

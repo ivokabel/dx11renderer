@@ -322,7 +322,31 @@ bool Scene::Load(IRenderingContext &ctx)
         AddScaleToRoots(11.0);
         AddTranslationToRoots({ 0., 1.2, 0. });
         return true;
-        }
+    }
+
+    case  eExternalDebugGradientBox:
+    {
+        if (!LoadExternal(ctx, L"../Scenes/Debugging/GradientBox/GradientBox.gltf"))
+            return false;
+        //AddScaleToRoots({ 4., 1., 1. });
+        AddScaleToRoots(6.);
+        AddTranslationToRoots({ 0., .2, 0. });
+        //AddRotationQuaternionToRoots({ 0.980, 0., 0., 0.197 }); //22.7°
+        AddRotationQuaternionToRoots({ 0.980, 0., 0., 0.198 }); //22.8°
+
+        // Pure ambient lighting
+        const double amb = 0.5f;
+        mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
+        const double lum = 0.f;
+        mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+        const double ints = 0.f;
+        mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+
+        return true;
+    }
 
     case eExternalLowPolyDrifter:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Ivan Norman/Low-poly truck (car Drifter)/scene.gltf"))
