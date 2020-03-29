@@ -2095,7 +2095,17 @@ bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path, XMFLOAT4 
     if (path)
     {
         // TODO: Pre-multiply by const factor
-        hr = D3DX11CreateShaderResourceViewFromFile(device, path, nullptr, nullptr, &srv, nullptr);
+        //hr = D3DX11CreateShaderResourceViewFromFile(device, path, nullptr, nullptr, &srv, nullptr);
+
+        D3DX11_IMAGE_LOAD_INFO ili;
+#ifdef CONVERT_SRGB_INPUT_TO_LINEAR
+        ili.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+#else
+        ili.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+#endif
+
+        hr = D3DX11CreateShaderResourceViewFromFile(device, path, &ili, nullptr, &srv, nullptr);
+
         if (FAILED(hr))
             return false;
     }
@@ -2253,6 +2263,26 @@ bool SceneTexture::LoadTextureFromGltf(const char *paramName,
             return false;
         }
 
+#ifdef CONVERT_SRGB_INPUT_TO_LINEAR
+        // TODO: Multiply with mConstFactor 
+
+        if (!SceneUtils::CreateTextureSrvFromData(ctx,
+                                                  srv,
+                                                  image.width,
+                                                  image.height,
+                                                  DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+                                                  image.image.data(),
+                                                  image.width * 4 * sizeof(uint8_t)))
+        {
+            Log::Error(L"%sFailed to create texture & SRV for image \"%s\": \"%s\", %dx%d",
+                       logPrefix.c_str(),
+                       Utils::StringToWstring(image.name).c_str(),
+                       Utils::StringToWstring(image.uri).c_str(),
+                       image.width,
+                       image.height);
+            return false;
+        }
+#else
         std::vector<unsigned char> floatImage;
         if (!SceneUtils::ConvertImageToFloat(floatImage, image, mConstFactor))
         {
@@ -2285,6 +2315,7 @@ bool SceneTexture::LoadTextureFromGltf(const char *paramName,
                        image.height);
             return false;
         }
+#endif
 
         // TODO: Sampler
     }
