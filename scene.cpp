@@ -204,59 +204,59 @@ bool Scene::Load(IRenderingContext &ctx)
 {
     switch (mSceneId)
     {
-    case eExternalDebugTriangleWithoutIndices:
+    case eGltfSampleTriangleWithoutIndices:
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/TriangleWithoutIndices/TriangleWithoutIndices.gltf"))
             return false;
         AddScaleToRoots(3.);
         return true;
 
-    case eExternalDebugTriangle:
+    case eGltfSampleTriangle:
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Triangle/Triangle.gltf"))
             return false;
         AddScaleToRoots(4.5);
         AddTranslationToRoots({ 0., -1.5, 0. });
         return true;
 
-    case eExternalDebugSimpleMeshes:
+    case eGltfSampleSimpleMeshes:
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/SimpleMeshes/SimpleMeshes.gltf"))
             return false;
         AddScaleToRoots(2.5);
         AddTranslationToRoots({ 0., -0.5, 0. });
         return true;
 
-    case eExternalDebugBox:
+    case eGltfSampleBox:
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Box/Box.gltf"))
             return false;
         AddScaleToRoots(4.);
         AddTranslationToRoots({ 0., 0., 0. });
         return true;
 
-    case eExternalDebugBoxInterleaved:
+    case eGltfSampleBoxInterleaved:
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoxInterleaved/BoxInterleaved.gltf"))
             return false;
         AddScaleToRoots(4.);
         AddTranslationToRoots({ 0., 0., 0. });
         return true;
 
-    case eExternalDebugBoxTextured:
+    case eGltfSampleBoxTextured:
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoxTextured/BoxTextured.gltf"))
             return false;
         AddScaleToRoots(4.);
         AddTranslationToRoots({ 0., 0., 0. });
         return true;
 
-    case eExternalDebugMetalRoughSpheres:
-    case eExternalDebugMetalRoughSpheresNoTextures:
+    case eGltfSampleMetalRoughSpheres:
+    case eGltfSampleMetalRoughSpheresNoTextures:
     {
         switch (mSceneId)
         {
-        case eExternalDebugMetalRoughSpheres:
+        case eGltfSampleMetalRoughSpheres:
             if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/MetalRoughSpheres/MetalRoughSpheres.gltf"))
                 return false;
             AddTranslationToRoots({ 0., 0.4, 1.6 });
             AddScaleToRoots(0.8);
             break;
-        case eExternalDebugMetalRoughSpheresNoTextures:
+        case eGltfSampleMetalRoughSpheresNoTextures:
             if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/MetalRoughSpheresNoTextures/MetalRoughSpheresNoTextures.gltf"))
                 return false;
             AddScaleToRoots(900);
@@ -280,42 +280,42 @@ bool Scene::Load(IRenderingContext &ctx)
         return true;
     }
 
-    case eExternalDebug2CylinderEngine:
+    case eGltfSample2CylinderEngine:
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/2CylinderEngine/2CylinderEngine.gltf"))
             return false;
         AddScaleToRoots(0.012f);
         AddTranslationToRoots({ 0., 0.2, 0. });
         return true;
 
-    case eExternalDebugDuck:
+    case eGltfSampleDuck:
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Duck/Duck.gltf"))
             return false;
         AddScaleToRoots(3.8);
         AddTranslationToRoots({ -0.5, -3.3, 0. });
         return true;
 
-    case eExternalDebugBoomBox:
+    case eGltfSampleBoomBox:
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoomBox/BoomBox.gltf"))
             return false;
         AddScaleToRoots(330.);
         AddTranslationToRoots({ 0., 0., 0. });
         return true;
 
-    case eExternalDebugBoomBoxWithAxes:
+    case eGltfSampleBoomBoxWithAxes:
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoomBoxWithAxes/BoomBoxWithAxes.gltf"))
             return false;
         AddScaleToRoots(230.);
         AddTranslationToRoots({ 0., -2.2, 0. });
         return true;
 
-    case eExternalDebugDamagedHelmet:
+    case eGltfSampleDamagedHelmet:
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/DamagedHelmet/DamagedHelmet.gltf"))
             return false;
         AddScaleToRoots(3.7);
         AddTranslationToRoots({ 0., 0.35, 0.3 });
         return true;
 
-    case eExternalDebugFlightHelmet:
+    case eGltfSampleFlightHelmet:
     {
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/FlightHelmet/FlightHelmet.gltf"))
             return false;
@@ -324,7 +324,7 @@ bool Scene::Load(IRenderingContext &ctx)
         return true;
     }
 
-    case  eExternalDebugGradientBox:
+    case  eDebugGradientBox:
     {
         if (!LoadExternal(ctx, L"../Scenes/Debugging/GradientBox/GradientBox.gltf"))
             return false;
@@ -348,56 +348,56 @@ bool Scene::Load(IRenderingContext &ctx)
         return true;
     }
 
-    case eExternalLowPolyDrifter:
+    case eLowPolyDrifter:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Ivan Norman/Low-poly truck (car Drifter)/scene.gltf"))
             return false;
         AddScaleToRoots(0.015);
         AddTranslationToRoots({ 0.5, -1.2, 0. });
         return true;
 
-    case eExternalWolfBaseMesh:
+    case eWolfBaseMesh:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/TheCharliEZM/Wolf base mesh/scene.gltf"))
             return false;
         AddScaleToRoots(0.008);
         AddTranslationToRoots({ 0.7, -2.4, 0. });
         return true;
 
-    case eExternalNintendoGameBoyClassic:
+    case eNintendoGameBoyClassic:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/hunter333d/Nintendo Game Boy Classic/scene.gltf"))
             return false;
         AddScaleToRoots(0.50);
         AddTranslationToRoots({ 0., -1.7, 0. });
         return true;
 
-    case eExternalWeltron2001SpaceballRadio:
+    case eWeltron2001SpaceballRadio:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/ArneDC/Prinzsound SM8 - Weltron 2001 Spaceball Radio/scene.gltf"))
             return false;
         AddScaleToRoots(.016);
         AddTranslationToRoots({ 0., -3.6, 0. });
         return true;
 
-    case eExternalSpotMiniRigged:
+    case eSpotMiniRigged:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Greg McKechnie/Spot Mini (Rigged)/scene.gltf"))
             return false;
         AddScaleToRoots(.00028f);
         AddTranslationToRoots({ 0., 0., 2.8 });
         return true;
 
-    case eExternalMandaloriansHelmet:
+    case eMandaloriansHelmet:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/arn204/The Mandalorian's Helmet/scene.gltf"))
             return false;
         AddTranslationToRoots({ -35., -70., 85. });
         AddScaleToRoots(.17f);
         return true;
 
-    case eExternalTheRocket:
+    case eTheRocket:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/TuppsM/The Rocket/scene.gltf"))
             return false;
         AddScaleToRoots(.012);
         AddTranslationToRoots({ -0.1, -1., 0. });
         return true;
 
-    case eExternalRoboV1:
+    case eRoboV1:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/_Sef_/Robo_V1/scene.gltf"))
             return false;
         AddTranslationToRoots({ 0., -100., -240. });

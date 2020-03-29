@@ -30,31 +30,31 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eHardwiredThreePlanets
         //Scene::eHardwiredPbrMetalnesDebugSphere
 
-        //Scene::eExternalDebugTriangleWithoutIndices // Non-indexed geometry not yet supported!
-        //Scene::eExternalDebugTriangle
-        //Scene::eExternalDebugSimpleMeshes
-        //Scene::eExternalDebugBox
-        //Scene::eExternalDebugBoxInterleaved
-        //Scene::eExternalDebugBoxTextured
-        //Scene::eExternalDebugMetalRoughSpheres
-        //Scene::eExternalDebugMetalRoughSpheresNoTextures
-        //Scene::eExternalDebug2CylinderEngine
-        //Scene::eExternalDebugDuck
-        //Scene::eExternalDebugBoomBox
-        //Scene::eExternalDebugBoomBoxWithAxes
-        //Scene::eExternalDebugDamagedHelmet
-        //Scene::eExternalDebugFlightHelmet
+        //Scene::eGltfSampleTriangleWithoutIndices // Non-indexed geometry not yet supported!
+        //Scene::eGltfSampleTriangle
+        //Scene::eGltfSampleSimpleMeshes
+        //Scene::eGltfSampleBox
+        //Scene::eGltfSampleBoxInterleaved
+        //Scene::eGltfSampleBoxTextured
+        //Scene::eGltfSampleMetalRoughSpheres
+        //Scene::eGltfSampleMetalRoughSpheresNoTextures
+        //Scene::eGltfSample2CylinderEngine
+        //Scene::eGltfSampleDuck
+        //Scene::eGltfSampleBoomBox
+        //Scene::eGltfSampleBoomBoxWithAxes
+        //Scene::eGltfSampleDamagedHelmet
+        //Scene::eGltfSampleFlightHelmet
 
-        Scene::eExternalDebugGradientBox
+        Scene::eDebugGradientBox
 
-        //Scene::eExternalWolfBaseMesh
-        //Scene::eExternalNintendoGameBoyClassic
-        //Scene::eExternalLowPolyDrifter
-        //Scene::eExternalSpotMiniRigged
-        //Scene::eExternalMandaloriansHelmet
-        //Scene::eExternalWeltron2001SpaceballRadio
-        //Scene::eExternalTheRocket
-        //Scene::eExternalRoboV1
+        //Scene::eWolfBaseMesh
+        //Scene::eNintendoGameBoyClassic
+        //Scene::eLowPolyDrifter
+        //Scene::eSpotMiniRigged
+        //Scene::eMandaloriansHelmet
+        //Scene::eWeltron2001SpaceballRadio
+        //Scene::eTheRocket
+        //Scene::eRoboV1
         );
     SimpleDX11Renderer renderer(scene);
 
