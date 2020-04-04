@@ -420,13 +420,16 @@ bool Scene::Load(IRenderingContext &ctx)
                                             //L"../Textures/vfx_debug_textures by Chris Judkins/debug_offset_01.png",
                                             //L"../Textures/vfx_debug_textures by Chris Judkins/debug_uv_02.png",
                                             nullptr,
+                                            //XMFLOAT4(0.f, 0.f, 0.f, 1.f),
+                                            //XMFLOAT4(0.9f, 0.9f, 0.9f, 1.f),
+                                            XMFLOAT4(0.9f, 0.45f, 0.135f, 1.f),
                                             //XMFLOAT4(1.f, 1.f, 1.f, 1.f),
-                                            XMFLOAT4(1.f, 0.5f, 0.15f, 1.f),
 
                                             // Specular:
                                             nullptr,
                                             //XMFLOAT4(0.f, 0.f, 0.f, 1.f)
-                                            XMFLOAT4(0.4f, 0.4f, 0.4f, 1.f)
+                                            XMFLOAT4(0.1f, 0.1f, 0.1f, 1.f)
+                                            //XMFLOAT4(1.f, 1.f, 1.f, 1.f)
         ))
             return false;
 
@@ -446,7 +449,8 @@ bool Scene::Load(IRenderingContext &ctx)
         node0.AddScale({ 3.4f, 3.4f, 3.4f });
 
 //#define USE_PURE_AMBIENT_LIGHT
-#define USE_PURE_DIRECTIONAL_LIGHT
+//#define USE_PURE_DIRECTIONAL_LIGHT
+//#define USE_PURE_POINT_LIGHT
 #ifdef USE_PURE_AMBIENT_LIGHT
         const float amb = 0.9f;
         mAmbientLight.luminance     = XMFLOAT4(amb, amb, amb, 1.0f);
@@ -468,6 +472,18 @@ bool Scene::Load(IRenderingContext &ctx)
         mDirectLights[0].luminance  = XMFLOAT4(lum, lum, lum, 1.0f);
 
         const float ints = 0.f;
+        mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+#elif defined USE_PURE_POINT_LIGHT
+        const float amb = 0.f;
+        mAmbientLight.luminance     = XMFLOAT4(amb, amb, amb, 1.0f);
+
+        const float lum = 0.f;
+        mDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance  = XMFLOAT4(lum, lum, lum, 1.0f);
+
+        const float ints = 3.141f;
         mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
         mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
         mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
