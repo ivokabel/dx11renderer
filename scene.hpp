@@ -237,7 +237,7 @@ struct DirectLight
 {
     XMFLOAT4 dir;
     XMFLOAT4 dirTransf;
-    XMFLOAT4 luminance; // lm * sr-1 * m-2
+    XMFLOAT4 luminance; // lm * sr-1 * m-2 ... Really???
 
     DirectLight() :
         dir{},

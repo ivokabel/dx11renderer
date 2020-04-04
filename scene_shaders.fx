@@ -93,13 +93,13 @@ struct PbrS_LightContrib
 };
 
 
-float4 Diffuse()
+float4 DiffuseBRDF()
 {
     return 1 / PI;
 };
 
 
-float4 BlinPhongSpecular(float3 lightDir, float3 normal, float3 viewDir, float specPower)
+float4 BlinPhongSpecularBRDF(float3 lightDir, float3 normal, float3 viewDir, float specPower)
 {
     // Blinn-Phong
     if (dot(lightDir, normal) < 0)
@@ -134,8 +134,8 @@ PbrS_LightContrib PbrS_DirLightContrib(float3 lightDir,
     const float thetaCos = ThetaCos(normal, lightDir);
 
     PbrS_LightContrib contrib;
-    contrib.Diffuse = Diffuse() * thetaCos * luminance;
-    contrib.Specular = BlinPhongSpecular(lightDir, normal, viewDir, specPower) * luminance;
+    contrib.Diffuse = DiffuseBRDF() * thetaCos * luminance;
+    contrib.Specular = BlinPhongSpecularBRDF(lightDir, normal, viewDir, specPower) * luminance;
     return contrib;
 }
 
@@ -155,8 +155,8 @@ PbrS_LightContrib PbrS_PointLightContrib(float3 surfPos,
     const float thetaCos = ThetaCos(normal, lightDir);
 
     PbrS_LightContrib contrib;
-    contrib.Diffuse = Diffuse() * thetaCos * intensity / distSqr;
-    contrib.Specular = BlinPhongSpecular(lightDir, normal, viewDir, specPower) * intensity / distSqr;
+    contrib.Diffuse = DiffuseBRDF() * thetaCos * intensity / distSqr;
+    contrib.Specular = BlinPhongSpecularBRDF(lightDir, normal, viewDir, specPower) * intensity / distSqr;
     return contrib;
 }
 
@@ -272,10 +272,10 @@ float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo ma
     const float4 specular = fresnelHV * vis * distr;
 
 #ifndef USE_SMOOTH_REFRACTION_APPROX_BSDF
-    const float4 diffuse = Diffuse() * matInfo.diffuse;
+    const float4 diffuse = DiffuseBRDF() * matInfo.diffuse;
 #else
     const float4 fresnelNV = FresnelSchlick(matInfo, NdotV);
-    const float4 diffuse = Diffuse() * matInfo.diffuse * (1.0 - fresnelNV);
+    const float4 diffuse = DiffuseBRDF() * matInfo.diffuse * (1.0 - fresnelNV);
 #endif
 
     return specular + diffuse;
