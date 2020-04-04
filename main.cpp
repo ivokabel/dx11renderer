@@ -25,10 +25,10 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
                Utils::ConfigName(), cmdLine, buffer);
 
     auto scene = std::make_shared<Scene>(
-        //Scene::eHardwiredSimpleDebugSphere
+        Scene::eHardwiredSimpleDebugSphere
+        //Scene::eHardwiredPbrMetalnesDebugSphere
         //Scene::eHardwiredEarth
         //Scene::eHardwiredThreePlanets
-        //Scene::eHardwiredPbrMetalnesDebugSphere
 
         //Scene::eGltfSampleTriangleWithoutIndices // Non-indexed geometry not yet supported!
         //Scene::eGltfSampleTriangle
@@ -45,7 +45,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eGltfSampleDamagedHelmet
         //Scene::eGltfSampleFlightHelmet
 
-        Scene::eDebugGradientBox
+        //Scene::eDebugGradientBox
 
         //Scene::eWolfBaseMesh
         //Scene::eNintendoGameBoyClassic

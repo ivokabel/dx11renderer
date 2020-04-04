@@ -413,10 +413,21 @@ bool Scene::Load(IRenderingContext &ctx)
 
         auto &material0 = mMaterials[0];
         if (!material0.CreatePbrSpecularity(ctx,
-                                            L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png",
-                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f),
+
+                                            // Diffuse:
+                                            //L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png",
+                                            //L"../Textures/vfx_debug_textures by Chris Judkins/debug_orientation_01.png",
+                                            //L"../Textures/vfx_debug_textures by Chris Judkins/debug_offset_01.png",
+                                            //L"../Textures/vfx_debug_textures by Chris Judkins/debug_uv_02.png",
                                             nullptr,
-                                            XMFLOAT4(0.f, 0.f, 0.f, 1.f)))
+                                            //XMFLOAT4(1.f, 1.f, 1.f, 1.f),
+                                            XMFLOAT4(1.f, 0.5f, 0.15f, 1.f),
+
+                                            // Specular:
+                                            nullptr,
+                                            //XMFLOAT4(0.f, 0.f, 0.f, 1.f)
+                                            XMFLOAT4(0.4f, 0.4f, 0.4f, 1.f)
+        ))
             return false;
 
         mRootNodes.clear();
@@ -434,7 +445,35 @@ bool Scene::Load(IRenderingContext &ctx)
         primitive->SetMaterialIdx(0);
         node0.AddScale({ 3.4f, 3.4f, 3.4f });
 
-        mAmbientLight.luminance     = XMFLOAT4(0.10f, 0.10f, 0.10f, 1.0f);
+//#define USE_PURE_AMBIENT_LIGHT
+#define USE_PURE_DIRECTIONAL_LIGHT
+#ifdef USE_PURE_AMBIENT_LIGHT
+        const float amb = 0.9f;
+        mAmbientLight.luminance     = XMFLOAT4(amb, amb, amb, 1.0f);
+
+        const float lum = 0.f;
+        mDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance  = XMFLOAT4(lum, lum, lum, 1.0f);
+
+        const float ints = 0.f;
+        mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+#elif defined USE_PURE_DIRECTIONAL_LIGHT
+        const float amb = 0.f;
+        mAmbientLight.luminance     = XMFLOAT4(amb, amb, amb, 1.0f);
+
+        const float lum = 3.141f;
+        mDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance  = XMFLOAT4(lum, lum, lum, 1.0f);
+
+        const float ints = 0.f;
+        mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+#else
+        const float amb = 0.10f;
+        mAmbientLight.luminance     = XMFLOAT4(amb, amb, amb, 1.0f);
 
         const float lum = 2.6f;
         mDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
@@ -444,6 +483,7 @@ bool Scene::Load(IRenderingContext &ctx)
         mPointLights[0].intensity   = XMFLOAT4(4.000f, 1.800f, 1.200f, 1.0f); // red
         mPointLights[1].intensity   = XMFLOAT4(1.000f, 2.500f, 1.100f, 1.0f); // green
         mPointLights[2].intensity   = XMFLOAT4(1.200f, 1.800f, 4.000f, 1.0f); // blue
+#endif
 
         return true;
     }
@@ -2120,6 +2160,12 @@ bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path, XMFLOAT4 
     {
         // TODO: Pre-multiply by const factor
         //hr = D3DX11CreateShaderResourceViewFromFile(device, path, nullptr, nullptr, &srv, nullptr);
+
+        //// debug
+        //D3DX11_IMAGE_INFO ii;
+        //hr = D3DX11GetImageInfoFromFile(path, nullptr, &ii, nullptr);
+        //if (FAILED(hr))
+        //    return false;
 
         D3DX11_IMAGE_LOAD_INFO ili;
 #ifdef CONVERT_SRGB_INPUT_TO_LINEAR
