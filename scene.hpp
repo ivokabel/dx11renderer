@@ -176,7 +176,7 @@ public:
 
 enum class MaterialWorkflow
 {
-    eNone,
+    kNone,
     kPbrMetalness,
     kPbrSpecularity,
 };

@@ -2494,7 +2494,7 @@ bool SceneTexture::LoadTextureFromGltf(const char *paramName,
 
 
 SceneMaterial::SceneMaterial() :
-    mWorkflow(MaterialWorkflow::eNone),
+    mWorkflow(MaterialWorkflow::kNone),
 
     mBaseColorTexture(SceneTexture::eSrgb, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
     mMetallicRoughnessTexture(SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
