@@ -131,7 +131,14 @@ private:
 class SceneTexture
 {
 public:
-    SceneTexture(XMFLOAT4 defaultConstFactor);
+    enum ValueType
+    {
+        eLinear,
+        eSrgb,
+    };
+
+    SceneTexture(ValueType valueType, XMFLOAT4 defaultConstFactor);
+
     SceneTexture(const SceneTexture &src);
     SceneTexture& operator =(const SceneTexture &src);
     SceneTexture(SceneTexture &&src);
@@ -158,6 +165,7 @@ public:
                              const std::wstring &logPrefix);
 
 private:
+    ValueType mValueType;
     XMFLOAT4 mConstFactor;
     // TODO: sampler, texCoord
 
