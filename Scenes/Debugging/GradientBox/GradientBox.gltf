@@ -139,7 +139,8 @@
     ],
     "images": [
         {
-            "uri": "sRGBLinearGradient.png"
+            "//uri": "sRGBLinearGradient_Dithered.png",
+            "uri": "sRGBLinearGradient_Plain.png"
         }
     ],
     "samplers": [
