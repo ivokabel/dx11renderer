@@ -267,12 +267,12 @@ bool Scene::Load(IRenderingContext &ctx)
         }
 
         // debug lights
-        const double amb = 0.5f;//0.3f;//
+        const double amb = 0.f;// 0.5f;//0.3f;//
         mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
         const double lum = 2.f;//0.f;//
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-        const double ints = 0.f;//6.5f;//
+        const double ints = 0.f;// 0.f;//6.5f;//
         mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
         mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
         mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
@@ -309,11 +309,55 @@ bool Scene::Load(IRenderingContext &ctx)
         return true;
 
     case eGltfSampleDamagedHelmet:
+    {
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/DamagedHelmet/DamagedHelmet.gltf"))
             return false;
+
         AddScaleToRoots(3.7);
         AddTranslationToRoots({ 0., 0.35, 0.3 });
+        //AddRotationQuaternionToRoots({ 0.000, 0.131, 0.000, 0.991 }); // 15°y
+        //AddRotationQuaternionToRoots({ 0.000, 0.259, 0.000, 0.966 }); // 30°y
+        //AddRotationQuaternionToRoots({ 0.000, 0.383, 0.000, 0.924 }); // 45°y
+        //AddRotationQuaternionToRoots({ 0.000, 0.500, 0.000, 0.866 }); // 60°y
+        //AddRotationQuaternionToRoots({ 0.000, 0.609, 0.000, 0.793 }); // 75°y
+        AddRotationQuaternionToRoots({ 0.000, 0.643, 0.000, 0.766 }); // 80°y
+        //AddRotationQuaternionToRoots({ 0.000, 0.676, 0.000, 0.737 }); // 85°y
+        //AddRotationQuaternionToRoots({ 0.000, 0.707, 0.000, 0.707 }); // 90°y
+
+        auto SrgbColorToLinear = [](uint8_t r,
+                                    uint8_t g,
+                                    uint8_t b,
+                                    float intensity = 1.0f) -> XMFLOAT4
+        {
+#ifdef CONVERT_SRGB_INPUT_TO_LINEAR
+            return XMFLOAT4(pow((r / 255.f), 2.2f) * intensity,
+                            pow((g / 255.f), 2.2f) * intensity,
+                            pow((b / 255.f), 2.2f) * intensity,
+                            1.0f);
+#else
+            return XMFLOAT4((r / 255.f) * intensity,
+                            (g / 255.f) * intensity,
+                            (b / 255.f) * intensity,
+                            1.0f);
+#endif
+        };
+
+        //const float amb = 0.3f;
+        //mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
+        mAmbientLight.luminance = SrgbColorToLinear(0, 0, 0);
+        //mAmbientLight.luminance = SrgbColorToLinear(64, 64, 64);
+        //mAmbientLight.luminance = SrgbColorToLinear(128, 128, 128);
+        //mAmbientLight.luminance = SrgbColorToLinear(192, 192, 192);
+        const float lum = 0.f;// 1.8f;
+        mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+        const float ints = 5.0f;
+        mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+
         return true;
+    }
 
     case eGltfSampleFlightHelmet:
     {
@@ -334,13 +378,12 @@ bool Scene::Load(IRenderingContext &ctx)
         //AddRotationQuaternionToRoots({ 0.980, 0., 0., 0.197 }); //22.7°
         AddRotationQuaternionToRoots({ 0.980, 0., 0., 0.198 }); //22.8°
 
-        // Pure ambient lighting
-        const double amb = 0.5f;
+        const double amb = 0.f;//1.f;//
         mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
-        const double lum = 0.f;
+        const double lum = 8.f;//0.f;//
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-        const double ints = 0.f;
+        const double ints = 0.f;//3000.f;//
         mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
         mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
         mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
@@ -384,11 +427,29 @@ bool Scene::Load(IRenderingContext &ctx)
         return true;
 
     case eMandaloriansHelmet:
+    {
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/arn204/The Mandalorian's Helmet/scene.gltf"))
             return false;
+
         AddTranslationToRoots({ -35., -70., 85. });
         AddScaleToRoots(.17f);
+        //AddRotationQuaternionToRoots({ 0.000, 0.996, 0.000, 0.087 }); // 170°y
+        AddRotationQuaternionToRoots({ 0.000, 0.999, 0.000,  0.044 }); // 175°y
+        //AddRotationQuaternionToRoots({ 0.000, 1.000, 0.000, 0.000 }); // 180°y
+        //AddRotationQuaternionToRoots({ 0.000,  0.996, 0.000, -0.087 }); // 190°y
+
+        const float amb = 0.5f;
+        mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
+        const float lum = 1.8f;
+        mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+        const float ints = 7.0f;
+        mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+
         return true;
+    }
 
     case eTheRocket:
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/TuppsM/The Rocket/scene.gltf"))
@@ -869,12 +930,12 @@ bool Scene::LoadGLTF(IRenderingContext &ctx,
     Log::Debug(L"");
 
     // debug lights
-    const float amb = 0.5f;
+    const float amb = 0.f;// 0.5f;
     mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
     const float lum = 2.8f;
     mDirectLights[0].dir       = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
     mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-    const float ints = 6.5f;
+    const float ints = 0.f;// 6.5f;
     mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
     mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
     mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
