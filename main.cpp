@@ -36,7 +36,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eGltfSampleBox
         //Scene::eGltfSampleBoxInterleaved
         //Scene::eGltfSampleBoxTextured
-        //Scene::eGltfSampleMetalRoughSpheres
+        Scene::eGltfSampleMetalRoughSpheres
         //Scene::eGltfSampleMetalRoughSpheresNoTextures
         //Scene::eGltfSample2CylinderEngine
         //Scene::eGltfSampleDuck
@@ -45,7 +45,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eGltfSampleDamagedHelmet
         //Scene::eGltfSampleFlightHelmet
 
-        Scene::eDebugGradientBox
+        //Scene::eDebugGradientBox
 
         //Scene::eWolfBaseMesh
         //Scene::eNintendoGameBoyClassic
