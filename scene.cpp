@@ -2256,23 +2256,19 @@ bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path, XMFLOAT4 
 
     if (path)
     {
-        // TODO: Pre-multiply by const factor
-        //hr = D3DX11CreateShaderResourceViewFromFile(device, path, nullptr, nullptr, &srv, nullptr);
-
-        //// debug
-        //D3DX11_IMAGE_INFO ii;
-        //hr = D3DX11GetImageInfoFromFile(path, nullptr, &ii, nullptr);
-        //if (FAILED(hr))
-        //    return false;
-
         D3DX11_IMAGE_LOAD_INFO ili;
+        ili.Usage = D3D11_USAGE_IMMUTABLE;
 #ifdef CONVERT_SRGB_INPUT_TO_LINEAR
-        // TODO: if (mValueType == SceneTexture::eSrgb)
-        ili.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-#else
-        ili.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        if (mValueType == SceneTexture::eSrgb)
+        {
+            ili.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+            ili.Filter = D3DX11_FILTER_SRGB | D3DX11_FILTER_NONE;
+        }
+        else
 #endif
+            ili.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 
+        // TODO: Pre-multiply by const factor
         hr = D3DX11CreateShaderResourceViewFromFile(device, path, &ili, nullptr, &srv, nullptr);
 
         if (FAILED(hr))
