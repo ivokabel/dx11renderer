@@ -473,7 +473,8 @@ bool Scene::Load(IRenderingContext &ctx)
                                             //L"../Textures/vfx_debug_textures by Chris Judkins/debug_orientation_01.png",
                                             //L"../Textures/vfx_debug_textures by Chris Judkins/debug_offset_01.png",
                                             //L"../Textures/vfx_debug_textures by Chris Judkins/debug_uv_02.png",
-                                            nullptr,
+                                            L"../Scenes/Debugging/GradientBox/VerticalSineWaves8.png",
+                                            //nullptr,
                                             //XMFLOAT4(0.f, 0.f, 0.f, 1.f),
                                             //XMFLOAT4(0.9f, 0.9f, 0.9f, 1.f),
                                             XMFLOAT4(0.9f, 0.45f, 0.135f, 1.f),
@@ -481,10 +482,10 @@ bool Scene::Load(IRenderingContext &ctx)
 
                                             // Specular:
                                             nullptr,
-                                            XMFLOAT4(0.f, 0.f, 0.f, 1.f)
-                                            //XMFLOAT4(0.1f, 0.1f, 0.1f, 1.f)
+                                            //XMFLOAT4(0.f, 0.f, 0.f, 1.f)
+                                            XMFLOAT4(0.1f, 0.1f, 0.1f, 1.f)
                                             //XMFLOAT4(1.f, 1.f, 1.f, 1.f)
-        ))
+                                            ))
             return false;
 
         mRootNodes.clear();
@@ -497,7 +498,7 @@ bool Scene::Load(IRenderingContext &ctx)
         if (!primitive)
             return false;
 
-        if (!primitive->CreateSphere(ctx, 40, 80))
+        if (!primitive->CreateSphere(ctx, 50, 100))
             return false;
         primitive->SetMaterialIdx(0);
         node0.AddScale({ 3.4f, 3.4f, 3.4f });
