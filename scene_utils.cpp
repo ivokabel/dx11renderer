@@ -93,3 +93,19 @@ const FLOAT& SceneUtils::GetComponent(const XMFLOAT4 &vec, size_t comp)
 {
     return *(reinterpret_cast<const FLOAT*>(&vec) + comp);
 }
+
+
+XMFLOAT4 SceneUtils::SrgbColorToLinear(uint8_t r, uint8_t g, uint8_t b, float intensity)
+{
+#ifdef CONVERT_SRGB_INPUT_TO_LINEAR
+    return XMFLOAT4(pow((r / 255.f), 2.2f) * intensity,
+                    pow((g / 255.f), 2.2f) * intensity,
+                    pow((b / 255.f), 2.2f) * intensity,
+                    1.0f);
+#else
+    return XMFLOAT4((r / 255.f) * intensity,
+                    (g / 255.f) * intensity,
+                    (b / 255.f) * intensity,
+                    1.0f);
+#endif
+};

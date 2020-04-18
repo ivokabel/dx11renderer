@@ -280,6 +280,8 @@ public:
         eHardwiredEarth,
         eHardwiredThreePlanets,
 
+        eDebugGradientBox,
+
         eGltfSampleTriangleWithoutIndices, // Non-indexed geometry not yet supported!
         eGltfSampleTriangle,
         eGltfSampleSimpleMeshes,
@@ -294,8 +296,6 @@ public:
         eGltfSampleBoomBoxWithAxes,
         eGltfSampleDamagedHelmet,
         eGltfSampleFlightHelmet,
-
-        eDebugGradientBox,
 
         eLowPolyDrifter,
         eWolfBaseMesh,

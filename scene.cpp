@@ -205,45 +205,57 @@ bool Scene::Load(IRenderingContext &ctx)
     switch (mSceneId)
     {
     case eGltfSampleTriangleWithoutIndices:
+    {
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/TriangleWithoutIndices/TriangleWithoutIndices.gltf"))
             return false;
         AddScaleToRoots(3.);
         return true;
+    }
 
     case eGltfSampleTriangle:
+    {
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Triangle/Triangle.gltf"))
             return false;
         AddScaleToRoots(4.5);
         AddTranslationToRoots({ 0., -1.5, 0. });
         return true;
+    }
 
     case eGltfSampleSimpleMeshes:
+    {
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/SimpleMeshes/SimpleMeshes.gltf"))
             return false;
         AddScaleToRoots(2.5);
         AddTranslationToRoots({ 0., -0.5, 0. });
         return true;
+    }
 
     case eGltfSampleBox:
+    {
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Box/Box.gltf"))
             return false;
         AddScaleToRoots(4.);
         AddTranslationToRoots({ 0., 0., 0. });
         return true;
+    }
 
     case eGltfSampleBoxInterleaved:
+    {
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoxInterleaved/BoxInterleaved.gltf"))
             return false;
         AddScaleToRoots(4.);
         AddTranslationToRoots({ 0., 0., 0. });
         return true;
+    }
 
     case eGltfSampleBoxTextured:
+    {
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoxTextured/BoxTextured.gltf"))
             return false;
         AddScaleToRoots(4.);
         AddTranslationToRoots({ 0., 0., 0. });
         return true;
+    }
 
     case eGltfSampleMetalRoughSpheres:
     case eGltfSampleMetalRoughSpheresNoTextures:
@@ -281,32 +293,40 @@ bool Scene::Load(IRenderingContext &ctx)
     }
 
     case eGltfSample2CylinderEngine:
+    {
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/2CylinderEngine/2CylinderEngine.gltf"))
             return false;
         AddScaleToRoots(0.012f);
         AddTranslationToRoots({ 0., 0.2, 0. });
         return true;
+    }
 
     case eGltfSampleDuck:
+    {
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/Duck/Duck.gltf"))
             return false;
         AddScaleToRoots(3.8);
         AddTranslationToRoots({ -0.5, -3.3, 0. });
         return true;
+    }
 
     case eGltfSampleBoomBox:
+    {
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoomBox/BoomBox.gltf"))
             return false;
         AddScaleToRoots(330.);
         AddTranslationToRoots({ 0., 0., 0. });
         return true;
+    }
 
     case eGltfSampleBoomBoxWithAxes:
+    {
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/BoomBoxWithAxes/BoomBoxWithAxes.gltf"))
             return false;
         AddScaleToRoots(230.);
         AddTranslationToRoots({ 0., -2.2, 0. });
         return true;
+    }
 
     case eGltfSampleDamagedHelmet:
     {
@@ -324,27 +344,9 @@ bool Scene::Load(IRenderingContext &ctx)
         //AddRotationQuaternionToRoots({ 0.000, 0.676, 0.000, 0.737 }); // 85°y
         //AddRotationQuaternionToRoots({ 0.000, 0.707, 0.000, 0.707 }); // 90°y
 
-        auto SrgbColorToLinear = [](uint8_t r,
-                                    uint8_t g,
-                                    uint8_t b,
-                                    float intensity = 1.0f) -> XMFLOAT4
-        {
-#ifdef CONVERT_SRGB_INPUT_TO_LINEAR
-            return XMFLOAT4(pow((r / 255.f), 2.2f) * intensity,
-                            pow((g / 255.f), 2.2f) * intensity,
-                            pow((b / 255.f), 2.2f) * intensity,
-                            1.0f);
-#else
-            return XMFLOAT4((r / 255.f) * intensity,
-                            (g / 255.f) * intensity,
-                            (b / 255.f) * intensity,
-                            1.0f);
-#endif
-        };
-
         //const float amb = 0.3f;
         //mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
-        mAmbientLight.luminance = SrgbColorToLinear(0, 0, 0);
+        mAmbientLight.luminance = SceneUtils::SrgbColorToLinear(0, 0, 0);
         //mAmbientLight.luminance = SrgbColorToLinear(64, 64, 64);
         //mAmbientLight.luminance = SrgbColorToLinear(128, 128, 128);
         //mAmbientLight.luminance = SrgbColorToLinear(192, 192, 192);
@@ -368,63 +370,50 @@ bool Scene::Load(IRenderingContext &ctx)
         return true;
     }
 
-    case  eDebugGradientBox:
-    {
-        if (!LoadExternal(ctx, L"../Scenes/Debugging/GradientBox/GradientBox.gltf"))
-            return false;
-        //AddScaleToRoots({ 4., 1., 1. });
-        AddScaleToRoots(6.);
-        AddTranslationToRoots({ 0., .2, 0. });
-        //AddRotationQuaternionToRoots({ 0.980, 0., 0., 0.197 }); //22.7°
-        AddRotationQuaternionToRoots({ 0.980, 0., 0., 0.198 }); //22.8°
-
-        const double amb = 0.f;//1.f;//
-        mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
-        const double lum = 8.f;//0.f;//
-        mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
-        mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-        const double ints = 0.f;//3000.f;//
-        mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
-        mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
-        mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
-
-        return true;
-    }
-
     case eLowPolyDrifter:
+    {
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Ivan Norman/Low-poly truck (car Drifter)/scene.gltf"))
             return false;
         AddScaleToRoots(0.015);
         AddTranslationToRoots({ 0.5, -1.2, 0. });
         return true;
+    }
 
     case eWolfBaseMesh:
+    {
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/TheCharliEZM/Wolf base mesh/scene.gltf"))
             return false;
         AddScaleToRoots(0.008);
         AddTranslationToRoots({ 0.7, -2.4, 0. });
         return true;
+    }
 
     case eNintendoGameBoyClassic:
+    {
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/hunter333d/Nintendo Game Boy Classic/scene.gltf"))
             return false;
         AddScaleToRoots(0.50);
         AddTranslationToRoots({ 0., -1.7, 0. });
         return true;
+    }
 
     case eWeltron2001SpaceballRadio:
+    {
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/ArneDC/Prinzsound SM8 - Weltron 2001 Spaceball Radio/scene.gltf"))
             return false;
         AddScaleToRoots(.016);
         AddTranslationToRoots({ 0., -3.6, 0. });
         return true;
+    }
 
     case eSpotMiniRigged:
+    {
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Greg McKechnie/Spot Mini (Rigged)/scene.gltf"))
             return false;
         AddScaleToRoots(.00028f);
         AddTranslationToRoots({ 0., 0., 2.8 });
         return true;
+    }
 
     case eMandaloriansHelmet:
     {
@@ -452,18 +441,22 @@ bool Scene::Load(IRenderingContext &ctx)
     }
 
     case eTheRocket:
+    {
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/TuppsM/The Rocket/scene.gltf"))
             return false;
         AddScaleToRoots(.012);
         AddTranslationToRoots({ -0.1, -1., 0. });
         return true;
+    }
 
     case eRoboV1:
+    {
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/_Sef_/Robo_V1/scene.gltf"))
             return false;
         AddTranslationToRoots({ 0., -100., -240. });
         AddScaleToRoots(.10);
         return true;
+    }
 
     case eHardwiredSimpleDebugSphere:
     {
@@ -488,8 +481,8 @@ bool Scene::Load(IRenderingContext &ctx)
 
                                             // Specular:
                                             nullptr,
-                                            //XMFLOAT4(0.f, 0.f, 0.f, 1.f)
-                                            XMFLOAT4(0.1f, 0.1f, 0.1f, 1.f)
+                                            XMFLOAT4(0.f, 0.f, 0.f, 1.f)
+                                            //XMFLOAT4(0.1f, 0.1f, 0.1f, 1.f)
                                             //XMFLOAT4(1.f, 1.f, 1.f, 1.f)
         ))
             return false;
@@ -510,7 +503,7 @@ bool Scene::Load(IRenderingContext &ctx)
         node0.AddScale({ 3.4f, 3.4f, 3.4f });
 
 //#define USE_PURE_AMBIENT_LIGHT
-//#define USE_PURE_DIRECTIONAL_LIGHT
+#define USE_PURE_DIRECTIONAL_LIGHT
 //#define USE_PURE_POINT_LIGHT
 #ifdef USE_PURE_AMBIENT_LIGHT
         const float amb = 0.9f;
@@ -748,6 +741,29 @@ bool Scene::Load(IRenderingContext &ctx)
         mDirectLights[0].dir       = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
         const float ints = 4.0f;
+        mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+
+        return true;
+    }
+
+    case  eDebugGradientBox:
+    {
+        if (!LoadExternal(ctx, L"../Scenes/Debugging/GradientBox/GradientBox.gltf"))
+            return false;
+        //AddScaleToRoots({ 4., 1., 1. });
+        AddScaleToRoots(6.);
+        AddTranslationToRoots({ 0., .2, 0. });
+        //AddRotationQuaternionToRoots({ 0.980, 0., 0., 0.197 }); //22.7°
+        AddRotationQuaternionToRoots({ 0.980, 0., 0., 0.198 }); //22.8°
+
+        const double amb = 0.f;//1.f;//
+        mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
+        const double lum = 8.f;//0.f;//
+        mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+        const double ints = 0.f;//3000.f;//
         mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
         mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
         mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
