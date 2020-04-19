@@ -25,7 +25,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
                Utils::ConfigName(), cmdLine, buffer);
 
     auto scene = std::make_shared<Scene>(
-        Scene::eHardwiredSimpleDebugSphere
+        //Scene::eHardwiredSimpleDebugSphere
         //Scene::eHardwiredPbrMetalnesDebugSphere
         //Scene::eHardwiredEarth
         //Scene::eHardwiredThreePlanets
@@ -38,7 +38,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eGltfSampleBox
         //Scene::eGltfSampleBoxInterleaved
         //Scene::eGltfSampleBoxTextured
-        //Scene::eGltfSampleMetalRoughSpheres
+        Scene::eGltfSampleMetalRoughSpheres
         //Scene::eGltfSampleMetalRoughSpheresNoTextures
         //Scene::eGltfSample2CylinderEngine
         //Scene::eGltfSampleDuck

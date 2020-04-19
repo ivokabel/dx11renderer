@@ -344,16 +344,12 @@ bool Scene::Load(IRenderingContext &ctx)
         //AddRotationQuaternionToRoots({ 0.000, 0.676, 0.000, 0.737 }); // 85°y
         //AddRotationQuaternionToRoots({ 0.000, 0.707, 0.000, 0.707 }); // 90°y
 
-        //const float amb = 0.3f;
-        //mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
-        mAmbientLight.luminance = SceneUtils::SrgbColorToLinear(0, 0, 0);
-        //mAmbientLight.luminance = SrgbColorToLinear(64, 64, 64);
-        //mAmbientLight.luminance = SrgbColorToLinear(128, 128, 128);
-        //mAmbientLight.luminance = SrgbColorToLinear(192, 192, 192);
-        const float lum = 0.f;// 1.8f;
+        const uint8_t amb = 50;
+        mAmbientLight.luminance = SceneUtils::SrgbColorToLinear(amb, amb, amb);
+        const float lum = 1.4f;
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-        const float ints = 5.0f;
+        const float ints = 4.5f;
         mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
         mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
         mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
@@ -427,8 +423,8 @@ bool Scene::Load(IRenderingContext &ctx)
         //AddRotationQuaternionToRoots({ 0.000, 1.000, 0.000, 0.000 }); // 180°y
         //AddRotationQuaternionToRoots({ 0.000,  0.996, 0.000, -0.087 }); // 190°y
 
-        const float amb = 0.5f;
-        mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
+        const uint8_t amb = 30;
+        mAmbientLight.luminance = SceneUtils::SrgbColorToLinear(amb, amb, amb);
         const float lum = 1.8f;
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
@@ -469,21 +465,21 @@ bool Scene::Load(IRenderingContext &ctx)
         if (!material0.CreatePbrSpecularity(ctx,
 
                                             // Diffuse:
-                                            //L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png",
+                                            L"../Textures/vfx_debug_textures by Chris Judkins/debug_color_02.png",
                                             //L"../Textures/vfx_debug_textures by Chris Judkins/debug_orientation_01.png",
                                             //L"../Textures/vfx_debug_textures by Chris Judkins/debug_offset_01.png",
                                             //L"../Textures/vfx_debug_textures by Chris Judkins/debug_uv_02.png",
-                                            L"../Scenes/Debugging/GradientBox/VerticalSineWaves8.png",
+                                            //L"../Scenes/Debugging/GradientBox/VerticalSineWaves8.png",
                                             //nullptr,
                                             //XMFLOAT4(0.f, 0.f, 0.f, 1.f),
                                             //XMFLOAT4(0.9f, 0.9f, 0.9f, 1.f),
-                                            XMFLOAT4(0.9f, 0.45f, 0.135f, 1.f),
-                                            //XMFLOAT4(1.f, 1.f, 1.f, 1.f),
+                                            //XMFLOAT4(0.9f, 0.45f, 0.135f, 1.f),
+                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f),
 
                                             // Specular:
                                             nullptr,
-                                            //XMFLOAT4(0.f, 0.f, 0.f, 1.f)
-                                            XMFLOAT4(0.1f, 0.1f, 0.1f, 1.f)
+                                            XMFLOAT4(0.f, 0.f, 0.f, 1.f)
+                                            //XMFLOAT4(0.1f, 0.1f, 0.1f, 1.f)
                                             //XMFLOAT4(1.f, 1.f, 1.f, 1.f)
                                             ))
             return false;
@@ -502,9 +498,10 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         primitive->SetMaterialIdx(0);
         node0.AddScale({ 3.4f, 3.4f, 3.4f });
+        node0.AddRotationQuaternion({ 0.000, 0.707, 0.000, 0.707 }); // 90°y
 
 //#define USE_PURE_AMBIENT_LIGHT
-#define USE_PURE_DIRECTIONAL_LIGHT
+//#define USE_PURE_DIRECTIONAL_LIGHT
 //#define USE_PURE_POINT_LIGHT
 #ifdef USE_PURE_AMBIENT_LIGHT
         const float amb = 0.9f;
@@ -543,8 +540,7 @@ bool Scene::Load(IRenderingContext &ctx)
         mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
         mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
 #else
-        const float amb = 0.10f;
-        mAmbientLight.luminance     = XMFLOAT4(amb, amb, amb, 1.0f);
+        mAmbientLight.luminance     = SceneUtils::SrgbColorToLinear(30, 30, 30);
 
         const float lum = 2.6f;
         mDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
@@ -947,12 +943,12 @@ bool Scene::LoadGLTF(IRenderingContext &ctx,
     Log::Debug(L"");
 
     // debug lights
-    const float amb = 0.f;// 0.5f;
-    mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
-    const float lum = 2.8f;
+    const uint8_t amb = 60;
+    mAmbientLight.luminance = SceneUtils::SrgbColorToLinear(amb, amb, amb);
+    const float lum = 3.0f;
     mDirectLights[0].dir       = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
     mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-    const float ints = 0.f;// 6.5f;
+    const float ints = 6.5f;
     mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
     mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
     mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
