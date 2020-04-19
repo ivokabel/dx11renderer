@@ -1,5 +1,6 @@
 #include "scene_utils.hpp"
 
+#include "constants.hpp"
 #include "utils.hpp"
 
 bool SceneUtils::CreateTextureSrvFromData(IRenderingContext &ctx,
@@ -95,12 +96,28 @@ const FLOAT& SceneUtils::GetComponent(const XMFLOAT4 &vec, size_t comp)
 }
 
 
+#define SRGB_TO_LINEAR_EXACT
+float SceneUtils::SrgbValueToLinear(uint8_t v)
+{
+    const float f = v / 255.f;
+
+#ifdef SRGB_TO_LINEAR_EXACT
+    if (f <= 0.04045f)
+        return f / 12.92f;
+    else
+        return pow((f + 0.055f) / 1.055f, 2.4f);
+#else
+    return pow(f, 2.2f);
+#endif
+}
+
+
 XMFLOAT4 SceneUtils::SrgbColorToLinear(uint8_t r, uint8_t g, uint8_t b, float intensity)
 {
 #ifdef CONVERT_SRGB_INPUT_TO_LINEAR
-    return XMFLOAT4(pow((r / 255.f), 2.2f) * intensity,
-                    pow((g / 255.f), 2.2f) * intensity,
-                    pow((b / 255.f), 2.2f) * intensity,
+    return XMFLOAT4(SrgbValueToLinear(r) * intensity,
+                    SrgbValueToLinear(g) * intensity,
+                    SrgbValueToLinear(b) * intensity,
                     1.0f);
 #else
     return XMFLOAT4((r / 255.f) * intensity,
