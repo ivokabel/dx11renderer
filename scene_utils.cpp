@@ -96,12 +96,13 @@ const FLOAT& SceneUtils::GetComponent(const XMFLOAT4 &vec, size_t comp)
 }
 
 
-#define SRGB_TO_LINEAR_EXACT
+#define SRGB_TO_LINEAR_PRECISE
+
 float SceneUtils::SrgbValueToLinear(uint8_t v)
 {
     const float f = v / 255.f;
 
-#ifdef SRGB_TO_LINEAR_EXACT
+#ifdef SRGB_TO_LINEAR_PRECISE
     if (f <= 0.04045f)
         return f / 12.92f;
     else
