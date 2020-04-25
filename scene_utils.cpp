@@ -113,7 +113,7 @@ float SceneUtils::SrgbValueToLinear(uint8_t v)
 }
 
 
-XMFLOAT4 SceneUtils::SrgbColorToLinear(uint8_t r, uint8_t g, uint8_t b, float intensity)
+XMFLOAT4 SceneUtils::SrgbColorToFloat(uint8_t r, uint8_t g, uint8_t b, float intensity)
 {
 #ifdef CONVERT_SRGB_INPUT_TO_LINEAR
     return XMFLOAT4(SrgbValueToLinear(r) * intensity,
