@@ -131,7 +131,14 @@ private:
 class SceneTexture
 {
 public:
-    SceneTexture(XMFLOAT4 defaultConstFactor);
+    enum ValueType
+    {
+        eLinear,
+        eSrgb,
+    };
+
+    SceneTexture(ValueType valueType, XMFLOAT4 defaultConstFactor);
+
     SceneTexture(const SceneTexture &src);
     SceneTexture& operator =(const SceneTexture &src);
     SceneTexture(SceneTexture &&src);
@@ -158,6 +165,7 @@ public:
                              const std::wstring &logPrefix);
 
 private:
+    ValueType mValueType;
     XMFLOAT4 mConstFactor;
     // TODO: sampler, texCoord
 
@@ -168,7 +176,7 @@ public:
 
 enum class MaterialWorkflow
 {
-    eNone,
+    kNone,
     kPbrMetalness,
     kPbrSpecularity,
 };
@@ -237,7 +245,7 @@ struct DirectLight
 {
     XMFLOAT4 dir;
     XMFLOAT4 dirTransf;
-    XMFLOAT4 luminance; // lm * sr-1 * m-2
+    XMFLOAT4 luminance; // lm * sr-1 * m-2 ... Really???
 
     DirectLight() :
         dir{},
@@ -272,29 +280,31 @@ public:
         eHardwiredEarth,
         eHardwiredThreePlanets,
 
-        eExternalDebugTriangleWithoutIndices, // Non-indexed geometry not yet supported!
-        eExternalDebugTriangle,
-        eExternalDebugSimpleMeshes,
-        eExternalDebugBox,
-        eExternalDebugBoxInterleaved,
-        eExternalDebugBoxTextured,
-        eExternalDebugMetalRoughSpheres,
-        eExternalDebugMetalRoughSpheresNoTextures,
-        eExternalDebug2CylinderEngine,
-        eExternalDebugDuck,
-        eExternalDebugBoomBox,
-        eExternalDebugBoomBoxWithAxes,
-        eExternalDebugDamagedHelmet,
-        eExternalDebugFlightHelmet,
+        eDebugGradientBox,
 
-        eExternalLowPolyDrifter,
-        eExternalWolfBaseMesh,
-        eExternalNintendoGameBoyClassic,
-        eExternalWeltron2001SpaceballRadio,
-        eExternalSpotMiniRigged,
-        eExternalMandaloriansHelmet,
-        eExternalTheRocket,
-        eExternalRoboV1,
+        eGltfSampleTriangleWithoutIndices, // Non-indexed geometry not yet supported!
+        eGltfSampleTriangle,
+        eGltfSampleSimpleMeshes,
+        eGltfSampleBox,
+        eGltfSampleBoxInterleaved,
+        eGltfSampleBoxTextured,
+        eGltfSampleMetalRoughSpheres,
+        eGltfSampleMetalRoughSpheresNoTextures,
+        eGltfSample2CylinderEngine,
+        eGltfSampleDuck,
+        eGltfSampleBoomBox,
+        eGltfSampleBoomBoxWithAxes,
+        eGltfSampleDamagedHelmet,
+        eGltfSampleFlightHelmet,
+
+        eLowPolyDrifter,
+        eWolfBaseMesh,
+        eNintendoGameBoyClassic,
+        eWeltron2001SpaceballRadio,
+        eSpotMiniRigged,
+        eMandaloriansHelmet,
+        eTheRocket,
+        eRoboV1,
     };
 
     Scene(const SceneId sceneId);

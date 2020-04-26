@@ -87,5 +87,7 @@ float4 DebugPS(QUAD_VS_OUTPUT Input) : SV_TARGET
 
     //return float4(0.7f * color.rgb, 1);
 
-    return float4(0.9f * pow(color.rgb, 0.85f.xxx), 1); // simple tonemapping
+    //return float4(0.9f * pow(color.rgb, 0.85f.xxx), 1); // simple tonemapping
+
+    return float4(color.rgb, 1); // identity
 }

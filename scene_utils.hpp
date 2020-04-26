@@ -36,4 +36,8 @@ namespace SceneUtils
                              XMFLOAT4 constFactor);
 
     const FLOAT& GetComponent(const XMFLOAT4 &vec, size_t comp);
+
+    float SrgbValueToLinear(uint8_t v);
+
+    XMFLOAT4 SrgbColorToFloat(uint8_t r, uint8_t g, uint8_t b, float intensity = 1.0f);
 }

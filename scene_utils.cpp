@@ -1,5 +1,6 @@
 #include "scene_utils.hpp"
 
+#include "constants.hpp"
 #include "utils.hpp"
 
 bool SceneUtils::CreateTextureSrvFromData(IRenderingContext &ctx,
@@ -16,7 +17,7 @@ bool SceneUtils::CreateTextureSrvFromData(IRenderingContext &ctx,
     HRESULT hr = S_OK;
     ID3D11Texture2D *tex = nullptr;
 
-    // Texture containing the data
+    // Texture
     D3D11_TEXTURE2D_DESC descTex;
     ZeroMemory(&descTex, sizeof(D3D11_TEXTURE2D_DESC));
     descTex.ArraySize = 1;
@@ -93,3 +94,36 @@ const FLOAT& SceneUtils::GetComponent(const XMFLOAT4 &vec, size_t comp)
 {
     return *(reinterpret_cast<const FLOAT*>(&vec) + comp);
 }
+
+
+#define SRGB_TO_LINEAR_PRECISE
+
+float SceneUtils::SrgbValueToLinear(uint8_t v)
+{
+    const float f = v / 255.f;
+
+#ifdef SRGB_TO_LINEAR_PRECISE
+    if (f <= 0.04045f)
+        return f / 12.92f;
+    else
+        return pow((f + 0.055f) / 1.055f, 2.4f);
+#else
+    return pow(f, 2.2f);
+#endif
+}
+
+
+XMFLOAT4 SceneUtils::SrgbColorToFloat(uint8_t r, uint8_t g, uint8_t b, float intensity)
+{
+#ifdef CONVERT_SRGB_INPUT_TO_LINEAR
+    return XMFLOAT4(SrgbValueToLinear(r) * intensity,
+                    SrgbValueToLinear(g) * intensity,
+                    SrgbValueToLinear(b) * intensity,
+                    1.0f);
+#else
+    return XMFLOAT4((r / 255.f) * intensity,
+                    (g / 255.f) * intensity,
+                    (b / 255.f) * intensity,
+                    1.0f);
+#endif
+};
