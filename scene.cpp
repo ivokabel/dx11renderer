@@ -278,16 +278,18 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         }
 
+        AddRotationQuaternionToRoots({ 0.000, -1.000, 0.000, 0.000 }); // 180°y
+
         // debug lights
-        const double amb = 0.f;// 0.5f;//0.3f;//
-        mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
-        const double lum = 2.f;//0.f;//
+        const uint8_t amb = 40u;// 0;//250;//
+        mAmbientLight.luminance = SceneUtils::SrgbColorToFloat(amb, amb, amb);
+        const float lum = 2.5f;// 0.f;//2.5f;//
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-        const double ints = 0.f;// 0.f;//6.5f;//
-        mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
-        mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
-        mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        const float ints = 14.f;// 25.f;//0.f;//
+        mPointLights[0].intensity = XMFLOAT4(1.0f*ints, 1.0f*ints, 1.0f*ints, 1.0f);
+        mPointLights[1].intensity = XMFLOAT4(1.0f*ints, 1.0f*ints, 1.0f*ints, 1.0f);
+        mPointLights[2].intensity = XMFLOAT4(2.0f*ints, 2.0f*ints, 2.0f*ints, 1.0f);
 
         return true;
     }
@@ -547,9 +549,9 @@ bool Scene::Load(IRenderingContext &ctx)
         mDirectLights[0].luminance  = XMFLOAT4(lum, lum, lum, 1.0f);
 
         // coloured point lights
-        mPointLights[0].intensity   = XMFLOAT4(4.000f, 1.800f, 1.200f, 1.0f); // red
-        mPointLights[1].intensity   = XMFLOAT4(1.000f, 2.500f, 1.100f, 1.0f); // green
-        mPointLights[2].intensity   = XMFLOAT4(1.200f, 1.800f, 4.000f, 1.0f); // blue
+        mPointLights[0].intensity   = XMFLOAT4(4.0f, 1.8f, 1.2f, 1.0f); // red
+        mPointLights[1].intensity   = XMFLOAT4(1.0f, 2.5f, 1.1f, 1.0f); // green
+        mPointLights[2].intensity   = XMFLOAT4(1.2f, 1.8f, 4.0f, 1.0f); // blue
 #endif
 
         return true;
@@ -607,9 +609,9 @@ bool Scene::Load(IRenderingContext &ctx)
 
         // coloured point lights
         const float ints = 3.f;
-        //mPointLights[0].intensity   = XMFLOAT4(4.000f * ints, 0.000f * ints, 0.000f * ints, 1.0f); // red
-        //mPointLights[1].intensity   = XMFLOAT4(0.000f * ints, 2.500f * ints, 0.000f * ints, 1.0f); // green
-        //mPointLights[2].intensity   = XMFLOAT4(0.000f * ints, 0.000f * ints, 4.000f * ints, 1.0f); // blue
+        //mPointLights[0].intensity   = XMFLOAT4(4.0f * ints, 0.0f * ints, 0.0f * ints, 1.0f); // red
+        //mPointLights[1].intensity   = XMFLOAT4(0.0f * ints, 2.5f * ints, 0.0f * ints, 1.0f); // green
+        //mPointLights[2].intensity   = XMFLOAT4(0.0f * ints, 0.0f * ints, 4.0f * ints, 1.0f); // blue
         mPointLights[0].intensity   = XMFLOAT4(0.5f * ints, 0.5f * ints, 0.5f * ints, 1.0f);
         mPointLights[1].intensity   = XMFLOAT4(0.5f * ints, 0.5f * ints, 0.5f * ints, 1.0f);
         mPointLights[2].intensity   = XMFLOAT4(0.5f * ints, 0.5f * ints, 0.5f * ints, 1.0f);
@@ -755,12 +757,12 @@ bool Scene::Load(IRenderingContext &ctx)
         //AddRotationQuaternionToRoots({ 0.980, 0., 0., 0.197 }); //22.7°
         AddRotationQuaternionToRoots({ 0.980, 0., 0., 0.198 }); //22.8°
 
-        const double amb = 0.f;//1.f;//
+        const float amb = 0.f;//1.f;//
         mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
-        const double lum = 8.f;//0.f;//
+        const float lum = 8.f;//0.f;//
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-        const double ints = 0.f;//3000.f;//
+        const float ints = 0.f;//3000.f;//
         mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
         mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
         mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
