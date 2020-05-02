@@ -471,7 +471,7 @@ bool Scene::Load(IRenderingContext &ctx)
                                             //L"../Textures/vfx_debug_textures by Chris Judkins/debug_orientation_01.png",
                                             //L"../Textures/vfx_debug_textures by Chris Judkins/debug_offset_01.png",
                                             //L"../Textures/vfx_debug_textures by Chris Judkins/debug_uv_02.png",
-                                            //L"../Scenes/Debugging/GradientBox/VerticalSineWaves8.png",
+                                            //L"../Textures/Debugging/VerticalSineWaves8.png",
                                             //nullptr,
                                             //XMFLOAT4(0.f, 0.f, 0.f, 1.f),
                                             //XMFLOAT4(0.9f, 0.9f, 0.9f, 1.f),
