@@ -2291,14 +2291,16 @@ void SceneNode::Animate(IRenderingContext &ctx)
 }
 
 
-SceneTexture::SceneTexture(ValueType valueType, XMFLOAT4 defaultConstFactor) :
+SceneTexture::SceneTexture(ValueType valueType, XMFLOAT4 neutralConstFactor) :
     mValueType(valueType),
-    mConstFactor(defaultConstFactor),
+    mNeutralConstFactor(neutralConstFactor),
+    mConstFactor(neutralConstFactor),
     srv(nullptr)
 {}
 
 SceneTexture::SceneTexture(const SceneTexture &src) :
     mValueType(src.mValueType),
+    mNeutralConstFactor(src.mNeutralConstFactor),
     mConstFactor(src.mConstFactor),
     srv(src.srv)
 {
@@ -2308,9 +2310,10 @@ SceneTexture::SceneTexture(const SceneTexture &src) :
 
 SceneTexture& SceneTexture::operator =(const SceneTexture &src)
 {
-    mValueType   = src.mValueType;
-    mConstFactor = src.mConstFactor;
-    srv          = src.srv;
+    mValueType          = src.mValueType;
+    mNeutralConstFactor = src.mNeutralConstFactor;
+    mConstFactor        = src.mConstFactor;
+    srv                 = src.srv;
 
     // We are creating new reference of device resource
     Utils::SafeAddRef(srv);
@@ -2320,15 +2323,17 @@ SceneTexture& SceneTexture::operator =(const SceneTexture &src)
 
 SceneTexture::SceneTexture(SceneTexture &&src) :
     mValueType(src.mValueType),
+    mNeutralConstFactor(Utils::Exchange(src.mNeutralConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f))),
     mConstFactor(Utils::Exchange(src.mConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f))),
     srv(Utils::Exchange(src.srv, nullptr))
 {}
 
 SceneTexture& SceneTexture::operator =(SceneTexture &&src)
 {
-    mValueType   = src.mValueType;
-    mConstFactor = Utils::Exchange(src.mConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f));
-    srv          = Utils::Exchange(src.srv, nullptr);
+    mValueType          = src.mValueType;
+    mNeutralConstFactor = Utils::Exchange(src.mNeutralConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f));
+    mConstFactor        = Utils::Exchange(src.mConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f));
+    srv                 = Utils::Exchange(src.srv, nullptr);
 
     return *this;
 }
@@ -2361,16 +2366,20 @@ bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path, XMFLOAT4 
         }
         else
 #endif
+        {
             ili.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        }
 
-        // TODO: Pre-multiply by const factor
         hr = D3DX11CreateShaderResourceViewFromFile(device, path, &ili, nullptr, &srv, nullptr);
-
         if (FAILED(hr))
             return false;
     }
     else
-        SceneUtils::CreateConstantTextureSRV(ctx, srv, mConstFactor);
+    {
+        // Neutral constant texture
+        if (!SceneUtils::CreateConstantTextureSRV(ctx, srv, mNeutralConstFactor))
+            return false;
+    }
 
     return true;
 }
@@ -2449,7 +2458,6 @@ bool SceneTexture::LoadFloatFactorFromGltf(const char *paramName,
 }
 
 
-// Multiplies the values with const factor and creates texture
 bool SceneTexture::LoadTextureFromGltf(const char *paramName,
                                        IRenderingContext &ctx,
                                        const tinygltf::Model &model,
@@ -2523,73 +2531,39 @@ bool SceneTexture::LoadTextureFromGltf(const char *paramName,
             return false;
         }
 
+        DXGI_FORMAT dataFormat;
 #ifdef CONVERT_SRGB_INPUT_TO_LINEAR
         if (mValueType == SceneTexture::eSrgb)
-        {
-            // TODO: Multiply with mConstFactor 
-
-            if (!SceneUtils::CreateTextureSrvFromData(ctx,
-                                                      srv,
-                                                      image.width,
-                                                      image.height,
-                                                      DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
-                                                      image.image.data(),
-                                                      image.width * 4 * sizeof(uint8_t)))
-            {
-                Log::Error(L"%sFailed to create texture & SRV for image \"%s\": \"%s\", %dx%d",
-                           logPrefix.c_str(),
-                           Utils::StringToWstring(image.name).c_str(),
-                           Utils::StringToWstring(image.uri).c_str(),
-                           image.width,
-                           image.height);
-                return false;
-            }
-        }
+            dataFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
         else
 #endif
-        {
-            std::vector<unsigned char> floatImage;
-            if (!SceneUtils::ConvertImageToFloat(floatImage, image, mConstFactor))
-            {
-                Log::Error(L"%sFailed to convert image \"%s\" to float format: \"%s\", %dx%d, %dx%db %s, data %dB",
-                           logPrefix.c_str(),
-                           Utils::StringToWstring(image.name).c_str(),
-                           Utils::StringToWstring(image.uri).c_str(),
-                           image.width,
-                           image.height,
-                           image.component,
-                           image.bits,
-                           GltfUtils::ComponentTypeToWstring(image.pixel_type).c_str(),
-                           image.image.size());
-                return false;
-            }
+            dataFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 
-            if (!SceneUtils::CreateTextureSrvFromData(ctx,
-                                                      srv,
-                                                      image.width,
-                                                      image.height,
-                                                      DXGI_FORMAT_R32G32B32A32_FLOAT,
-                                                      floatImage.data(),
-                                                      image.width * 4 * sizeof(float)))
-            {
-                Log::Error(L"%sFailed to create texture & SRV for image \"%s\": \"%s\", %dx%d",
-                           logPrefix.c_str(),
-                           Utils::StringToWstring(image.name).c_str(),
-                           Utils::StringToWstring(image.uri).c_str(),
-                           image.width,
-                           image.height);
-                return false;
-            }
+        if (!SceneUtils::CreateTextureSrvFromData(ctx,
+                                                  srv,
+                                                  image.width,
+                                                  image.height,
+                                                  dataFormat,
+                                                  image.image.data(),
+                                                  image.width * 4 * sizeof(uint8_t)))
+        {
+            Log::Error(L"%sFailed to create texture & SRV for image \"%s\": \"%s\", %dx%d",
+                       logPrefix.c_str(),
+                       Utils::StringToWstring(image.name).c_str(),
+                       Utils::StringToWstring(image.uri).c_str(),
+                       image.width,
+                       image.height);
+            return false;
         }
 
         // TODO: Sampler
     }
     else
     {
-        // Constant texture
-        if (!SceneUtils::CreateConstantTextureSRV(ctx, srv, mConstFactor))
+        // Neutral constant texture
+        if (!SceneUtils::CreateConstantTextureSRV(ctx, srv, mNeutralConstFactor))
         {
-            Log::Error(L"%sFailed to create constant texture for \"%s\"!",
+            Log::Error(L"%sFailed to create neutral constant texture for \"%s\"!",
                        logPrefix.c_str(),
                        Utils::StringToWstring(paramName).c_str());
             return false;

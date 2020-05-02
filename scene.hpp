@@ -165,8 +165,9 @@ public:
                              const std::wstring &logPrefix);
 
 private:
-    ValueType mValueType;
-    XMFLOAT4 mConstFactor;
+    ValueType   mValueType;
+    XMFLOAT4    mNeutralConstFactor;
+    XMFLOAT4    mConstFactor;
     // TODO: sampler, texCoord
 
 public:
