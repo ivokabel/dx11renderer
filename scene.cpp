@@ -759,14 +759,23 @@ bool Scene::Load(IRenderingContext &ctx)
         if (mRootNodes.size() != 3)
             return false;
 
+        const wchar_t *baseColorTex   = L"../Textures/Debugging/VerticalSineWaves8.png";
+        const wchar_t *baseColorNoTex = nullptr;
+        const XMFLOAT4 baseColorConstFactor   = XMFLOAT4(1.0f, 0.7f, 0.1f, 1.0f);
+        const XMFLOAT4 baseColorNoConstFactor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+        const wchar_t *metallicRoughnessTex = nullptr;
+        const float metallicConstFactor = 0.f;
+        const float roughnessConstFactor = 0.4f;
+
         // Sphere 0
 
         auto &material0 = mMaterials[0];
-        if (!material0.CreatePbrSpecularity(ctx,
-                                            L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
-                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f),
-                                            L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif",
-                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f)))
+        if (!material0.CreatePbrMetalness(ctx,
+                                          baseColorTex,
+                                          baseColorConstFactor,
+                                          metallicRoughnessTex,
+                                          metallicConstFactor,
+                                          roughnessConstFactor))
             return false;
 
         auto &node0 = mRootNodes[0];
@@ -776,16 +785,18 @@ bool Scene::Load(IRenderingContext &ctx)
         if (!primitive0->CreateSphere(ctx, 40, 80))
             return false;
         primitive0->SetMaterialIdx(0);
-        node0.AddScale({ 1.8f, 1.8f, 1.8f });
+        node0.AddScale({ 1.7f, 1.7f, 1.7f });
         node0.AddTranslation({ 0.f, 0.f, 0.f });
 
         // Sphere 1
 
         auto &material1 = mMaterials[1];
-        if (!material1.CreatePbrSpecularity(ctx, L"../Textures/www.solarsystemscope.com/2k_mars.jpg",
-                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f),
-                                            nullptr,
-                                            XMFLOAT4(0.f, 0.f, 0.f, 1.f)))
+        if (!material1.CreatePbrMetalness(ctx,
+                                          baseColorTex,
+                                          baseColorNoConstFactor,
+                                          metallicRoughnessTex,
+                                          metallicConstFactor,
+                                          roughnessConstFactor))
             return false;
 
         auto &node1 = mRootNodes[1];
@@ -795,16 +806,18 @@ bool Scene::Load(IRenderingContext &ctx)
         if (!primitive1->CreateSphere(ctx, 40, 80))
             return false;
         primitive1->SetMaterialIdx(1);
-        node1.AddScale({ 1.8f, 1.8f, 1.8f });
-        node1.AddTranslation({ -3.7f, 0.f, 0.f });
+        node1.AddScale({ 1.7f, 1.7f, 1.7f });
+        node1.AddTranslation({ -3.6f, 0.f, 0.f });
 
         // Sphere 2
 
         auto &material2 = mMaterials[2];
-        if (!material2.CreatePbrSpecularity(ctx, L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg",
-                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f),
-                                            nullptr,
-                                            XMFLOAT4(0.f, 0.f, 0.f, 1.f)))
+        if (!material2.CreatePbrMetalness(ctx,
+                                          baseColorNoTex,
+                                          baseColorConstFactor,
+                                          metallicRoughnessTex,
+                                          metallicConstFactor,
+                                          roughnessConstFactor))
             return false;
 
         auto &node2 = mRootNodes[2];
@@ -814,8 +827,8 @@ bool Scene::Load(IRenderingContext &ctx)
         if (!primitive2->CreateSphere(ctx, 40, 80))
             return false;
         primitive2->SetMaterialIdx(2);
-        node2.AddScale({ 1.8f, 1.8f, 1.8f });
-        node2.AddTranslation({ 3.7f, 0.f, 0.f });
+        node2.AddScale({ 1.7f, 1.7f, 1.7f });
+        node2.AddTranslation({ 3.6f, 0.f, 0.f });
 
         const float amb = 0.f;
         mAmbientLight.luminance     = XMFLOAT4(amb, amb, amb, 1.0f);
