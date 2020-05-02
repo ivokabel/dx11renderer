@@ -747,6 +747,89 @@ bool Scene::Load(IRenderingContext &ctx)
         return true;
     }
 
+    case eDebugMaterialConstFactors:
+    {
+        mMaterials.clear();
+        mMaterials.resize(3, SceneMaterial());
+        if (mMaterials.size() != 3)
+            return false;
+
+        mRootNodes.clear();
+        mRootNodes.resize(3, SceneNode(true));
+        if (mRootNodes.size() != 3)
+            return false;
+
+        // Sphere 0
+
+        auto &material0 = mMaterials[0];
+        if (!material0.CreatePbrSpecularity(ctx,
+                                            L"../Textures/www.solarsystemscope.com/2k_earth_daymap.jpg",
+                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f),
+                                            L"../Textures/www.solarsystemscope.com/2k_earth_specular_map.tif",
+                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f)))
+            return false;
+
+        auto &node0 = mRootNodes[0];
+        auto primitive0 = node0.CreateEmptyPrimitive();
+        if (!primitive0)
+            return false;
+        if (!primitive0->CreateSphere(ctx, 40, 80))
+            return false;
+        primitive0->SetMaterialIdx(0);
+        node0.AddScale({ 1.8f, 1.8f, 1.8f });
+        node0.AddTranslation({ 0.f, 0.f, 0.f });
+
+        // Sphere 1
+
+        auto &material1 = mMaterials[1];
+        if (!material1.CreatePbrSpecularity(ctx, L"../Textures/www.solarsystemscope.com/2k_mars.jpg",
+                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f),
+                                            nullptr,
+                                            XMFLOAT4(0.f, 0.f, 0.f, 1.f)))
+            return false;
+
+        auto &node1 = mRootNodes[1];
+        auto primitive1 = node1.CreateEmptyPrimitive();
+        if (!primitive1)
+            return false;
+        if (!primitive1->CreateSphere(ctx, 40, 80))
+            return false;
+        primitive1->SetMaterialIdx(1);
+        node1.AddScale({ 1.8f, 1.8f, 1.8f });
+        node1.AddTranslation({ -3.7f, 0.f, 0.f });
+
+        // Sphere 2
+
+        auto &material2 = mMaterials[2];
+        if (!material2.CreatePbrSpecularity(ctx, L"../Textures/www.solarsystemscope.com/2k_jupiter.jpg",
+                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f),
+                                            nullptr,
+                                            XMFLOAT4(0.f, 0.f, 0.f, 1.f)))
+            return false;
+
+        auto &node2 = mRootNodes[2];
+        auto primitive2 = node2.CreateEmptyPrimitive();
+        if (!primitive2)
+            return false;
+        if (!primitive2->CreateSphere(ctx, 40, 80))
+            return false;
+        primitive2->SetMaterialIdx(2);
+        node2.AddScale({ 1.8f, 1.8f, 1.8f });
+        node2.AddTranslation({ 3.7f, 0.f, 0.f });
+
+        const float amb = 0.f;
+        mAmbientLight.luminance     = XMFLOAT4(amb, amb, amb, 1.0f);
+        const float lum = 3.0f;
+        mDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance  = XMFLOAT4(lum, lum, lum, 1.0f);
+        const float ints = 4.0f;
+        mPointLights[0].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[1].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[2].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
+
+        return true;
+    }
+
     case  eDebugGradientBox:
     {
         if (!LoadExternal(ctx, L"../Scenes/Debugging/GradientBox/GradientBox.gltf"))

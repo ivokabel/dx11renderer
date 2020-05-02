@@ -280,6 +280,7 @@ public:
         eHardwiredEarth,
         eHardwiredThreePlanets,
 
+        eDebugMaterialConstFactors,
         eDebugGradientBox,
 
         eGltfSampleTriangleWithoutIndices, // Non-indexed geometry not yet supported!
