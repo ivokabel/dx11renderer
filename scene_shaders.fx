@@ -75,7 +75,7 @@ PS_INPUT VS(VS_INPUT input)
     output.PosProj = mul(output.PosWorld, ViewMtrx);
     output.PosProj = mul(output.PosProj, ProjectionMtrx);
 
-    output.Normal = (float3)mul(input.Normal, WorldMtrx);
+    output.Normal = mul(input.Normal, (float3x3)WorldMtrx);
 
     output.Tex = input.Tex;
 
