@@ -11,6 +11,8 @@
 #include <array>
 #include <vector>
 
+#define UNUSED_COLOR XMFLOAT4(1.f, 0.f, 1.f, 1.f)
+
 // debug
 //#include "Libs/tinygltf-2.2.0/loader_example.h"
 
@@ -1394,7 +1396,8 @@ void Scene::RenderNode(IRenderingContext &ctx,
             CbChangedPerScenePrimitive cbPerScenePrimitive;
             cbPerScenePrimitive.BaseColorFactor         = material.GetBaseColorTexture().GetConstFactor();
             cbPerScenePrimitive.MetallicRoughnessFactor = material.GetMetallicRoughnessTexture().GetConstFactor();
-            // TODO: Mark unused members
+            cbPerScenePrimitive.DiffuseColorFactor      = UNUSED_COLOR;
+            cbPerScenePrimitive.SpecularFactor          = UNUSED_COLOR;
             immCtx->UpdateSubresource(mCbChangedPerScenePrimitive, 0, nullptr, &cbPerScenePrimitive, 0, 0);
             break;
         }
@@ -1405,9 +1408,10 @@ void Scene::RenderNode(IRenderingContext &ctx,
             immCtx->PSSetShaderResources(3, 1, &material.GetSpecularTexture().srv);
 
             CbChangedPerScenePrimitive cbPerScenePrimitive;
-            cbPerScenePrimitive.DiffuseColorFactor  = material.GetBaseColorTexture().GetConstFactor();
-            cbPerScenePrimitive.SpecularFactor      = material.GetSpecularTexture().GetConstFactor();
-            // TODO: Mark unused members
+            cbPerScenePrimitive.DiffuseColorFactor      = material.GetBaseColorTexture().GetConstFactor();
+            cbPerScenePrimitive.SpecularFactor          = material.GetSpecularTexture().GetConstFactor();
+            cbPerScenePrimitive.BaseColorFactor         = UNUSED_COLOR;
+            cbPerScenePrimitive.MetallicRoughnessFactor = UNUSED_COLOR;
             immCtx->UpdateSubresource(mCbChangedPerScenePrimitive, 0, nullptr, &cbPerScenePrimitive, 0, 0);
             break;
         }
