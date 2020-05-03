@@ -382,11 +382,11 @@ private:
     ID3D11PixelShader*          mPsConstEmmisive = nullptr;
     ID3D11InputLayout*          mVertexLayout = nullptr;
 
-    ID3D11Buffer*               mCbNeverChanged = nullptr;
-    ID3D11Buffer*               mCbChangedOnResize = nullptr;
-    ID3D11Buffer*               mCbChangedEachFrame = nullptr;
-    ID3D11Buffer*               mCbChangedPerSceneNode = nullptr;
-    ID3D11Buffer*               mCbChangedPerScenePrimitive = nullptr;
+    ID3D11Buffer*               mCbScene = nullptr;
+    ID3D11Buffer*               mCbResize = nullptr;
+    ID3D11Buffer*               mCbFrame = nullptr;
+    ID3D11Buffer*               mCbSceneNode = nullptr;
+    ID3D11Buffer*               mCbScenePrimitive = nullptr;
 
     ID3D11SamplerState*         mSamplerLinear = nullptr;
 };

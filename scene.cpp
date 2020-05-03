@@ -55,18 +55,18 @@ struct {
 };
 
 
-struct CbNeverChanged
+struct CbScene
 {
     XMMATRIX ViewMtrx;
     XMFLOAT4 CameraPos;
 };
 
-struct CbChangedOnResize
+struct CbResize
 {
     XMMATRIX ProjectionMtrx;
 };
 
-struct CbChangedEachFrame
+struct CbFrame
 {
     // Light sources
     XMFLOAT4 AmbientLightLuminance;
@@ -76,13 +76,13 @@ struct CbChangedEachFrame
     XMFLOAT4 PointLightIntensities[POINT_LIGHTS_COUNT];
 };
 
-struct CbChangedPerSceneNode
+struct CbSceneNode
 {
     XMMATRIX WorldMtrx;
     XMFLOAT4 MeshColor; // May be eventually replaced by the emmisive component of the standard surface shader
 };
 
-struct CbChangedPerScenePrimitive
+struct CbScenePrimitive
 {
     // Metallness
     XMFLOAT4 BaseColorFactor;
@@ -146,24 +146,24 @@ bool Scene::Init(IRenderingContext &ctx)
     bd.Usage = D3D11_USAGE_DEFAULT;
     bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     bd.CPUAccessFlags = 0;
-    bd.ByteWidth = sizeof(CbNeverChanged);
-    hr = device->CreateBuffer(&bd, nullptr, &mCbNeverChanged);
+    bd.ByteWidth = sizeof(CbScene);
+    hr = device->CreateBuffer(&bd, nullptr, &mCbScene);
     if (FAILED(hr))
         return false;
-    bd.ByteWidth = sizeof(CbChangedOnResize);
-    hr = device->CreateBuffer(&bd, nullptr, &mCbChangedOnResize);
+    bd.ByteWidth = sizeof(CbResize);
+    hr = device->CreateBuffer(&bd, nullptr, &mCbResize);
     if (FAILED(hr))
         return hr;
-    bd.ByteWidth = sizeof(CbChangedEachFrame);
-    hr = device->CreateBuffer(&bd, nullptr, &mCbChangedEachFrame);
+    bd.ByteWidth = sizeof(CbFrame);
+    hr = device->CreateBuffer(&bd, nullptr, &mCbFrame);
     if (FAILED(hr))
         return hr;
-    bd.ByteWidth = sizeof(CbChangedPerSceneNode);
-    hr = device->CreateBuffer(&bd, nullptr, &mCbChangedPerSceneNode);
+    bd.ByteWidth = sizeof(CbSceneNode);
+    hr = device->CreateBuffer(&bd, nullptr, &mCbSceneNode);
     if (FAILED(hr))
         return hr;
-    bd.ByteWidth = sizeof(CbChangedPerScenePrimitive);
-    hr = device->CreateBuffer(&bd, nullptr, &mCbChangedPerScenePrimitive);
+    bd.ByteWidth = sizeof(CbScenePrimitive);
+    hr = device->CreateBuffer(&bd, nullptr, &mCbScenePrimitive);
     if (FAILED(hr))
         return hr;
 
@@ -189,14 +189,14 @@ bool Scene::Init(IRenderingContext &ctx)
 
     // Update constant buffers which can be updated now
 
-    CbNeverChanged cbNeverChanged;
-    cbNeverChanged.ViewMtrx = XMMatrixTranspose(mViewMtrx);
-    XMStoreFloat4(&cbNeverChanged.CameraPos, sViewData.eye);
-    immCtx->UpdateSubresource(mCbNeverChanged, 0, NULL, &cbNeverChanged, 0, 0);
+    CbScene cbScene;
+    cbScene.ViewMtrx = XMMatrixTranspose(mViewMtrx);
+    XMStoreFloat4(&cbScene.CameraPos, sViewData.eye);
+    immCtx->UpdateSubresource(mCbScene, 0, NULL, &cbScene, 0, 0);
 
-    CbChangedOnResize cbChangedOnResize;
-    cbChangedOnResize.ProjectionMtrx = XMMatrixTranspose(mProjectionMtrx);
-    immCtx->UpdateSubresource(mCbChangedOnResize, 0, NULL, &cbChangedOnResize, 0, 0);
+    CbResize cbResize;
+    cbResize.ProjectionMtrx = XMMatrixTranspose(mProjectionMtrx);
+    immCtx->UpdateSubresource(mCbResize, 0, NULL, &cbResize, 0, 0);
 
     // Load scene
 
@@ -1194,11 +1194,11 @@ void Scene::Destroy()
 
     Utils::ReleaseAndMakeNull(mVertexLayout);
 
-    Utils::ReleaseAndMakeNull(mCbNeverChanged);
-    Utils::ReleaseAndMakeNull(mCbChangedOnResize);
-    Utils::ReleaseAndMakeNull(mCbChangedEachFrame);
-    Utils::ReleaseAndMakeNull(mCbChangedPerSceneNode);
-    Utils::ReleaseAndMakeNull(mCbChangedPerScenePrimitive);
+    Utils::ReleaseAndMakeNull(mCbScene);
+    Utils::ReleaseAndMakeNull(mCbResize);
+    Utils::ReleaseAndMakeNull(mCbFrame);
+    Utils::ReleaseAndMakeNull(mCbSceneNode);
+    Utils::ReleaseAndMakeNull(mCbScenePrimitive);
 
     Utils::ReleaseAndMakeNull(mSamplerLinear);
 
@@ -1262,7 +1262,7 @@ void Scene::RenderFrame(IRenderingContext &ctx)
     auto immCtx = ctx.GetImmediateContext();
 
     // Frame constant buffer
-    CbChangedEachFrame cbEachFrame;
+    CbFrame cbEachFrame;
     cbEachFrame.AmbientLightLuminance = mAmbientLight.luminance;
     for (int i = 0; i < mDirectLights.size(); i++)
     {
@@ -1274,20 +1274,20 @@ void Scene::RenderFrame(IRenderingContext &ctx)
         cbEachFrame.PointLightPositions[i]   = mPointLights[i].posTransf;
         cbEachFrame.PointLightIntensities[i] = mPointLights[i].intensity;
     }
-    immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
+    immCtx->UpdateSubresource(mCbFrame, 0, nullptr, &cbEachFrame, 0, 0);
 
     // Setup vertex shader
     immCtx->VSSetShader(mVertexShader, nullptr, 0);
-    immCtx->VSSetConstantBuffers(0, 1, &mCbNeverChanged);
-    immCtx->VSSetConstantBuffers(1, 1, &mCbChangedOnResize);
-    immCtx->VSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
-    immCtx->VSSetConstantBuffers(3, 1, &mCbChangedPerSceneNode);
+    immCtx->VSSetConstantBuffers(0, 1, &mCbScene);
+    immCtx->VSSetConstantBuffers(1, 1, &mCbResize);
+    immCtx->VSSetConstantBuffers(2, 1, &mCbFrame);
+    immCtx->VSSetConstantBuffers(3, 1, &mCbSceneNode);
 
     // Setup pixel shader data (shader itself is chosen later for each material)
-    immCtx->PSSetConstantBuffers(0, 1, &mCbNeverChanged);
-    immCtx->PSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
-    immCtx->PSSetConstantBuffers(3, 1, &mCbChangedPerSceneNode);
-    immCtx->PSSetConstantBuffers(4, 1, &mCbChangedPerScenePrimitive);
+    immCtx->PSSetConstantBuffers(0, 1, &mCbScene);
+    immCtx->PSSetConstantBuffers(2, 1, &mCbFrame);
+    immCtx->PSSetConstantBuffers(3, 1, &mCbSceneNode);
+    immCtx->PSSetConstantBuffers(4, 1, &mCbScenePrimitive);
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
 
     // Scene geometry
@@ -1297,7 +1297,7 @@ void Scene::RenderFrame(IRenderingContext &ctx)
     // Proxy geometry for point lights
     for (int i = 0; i < mPointLights.size(); i++)
     {
-        CbChangedPerSceneNode cbPerSceneNode;
+        CbSceneNode cbPerSceneNode;
 
         const float radius = 0.07f;
         XMMATRIX lightScaleMtrx = XMMatrixScaling(radius, radius, radius);
@@ -1313,7 +1313,7 @@ void Scene::RenderFrame(IRenderingContext &ctx)
             mPointLights[i].intensity.w / radius2,
         };
 
-        immCtx->UpdateSubresource(mCbChangedPerSceneNode, 0, nullptr, &cbPerSceneNode, 0, 0);
+        immCtx->UpdateSubresource(mCbSceneNode, 0, nullptr, &cbPerSceneNode, 0, 0);
 
         immCtx->PSSetShader(mPsConstEmmisive, nullptr, 0);
         mPointLightProxy.DrawGeometry(ctx, mVertexLayout);
@@ -1368,10 +1368,10 @@ void Scene::RenderNode(IRenderingContext &ctx,
     const auto worldMtrx = node.GetWorldMtrx() * parentWorldMtrx;
 
     // Per-node constant buffer
-    CbChangedPerSceneNode cbPerSceneNode;
+    CbSceneNode cbPerSceneNode;
     cbPerSceneNode.WorldMtrx = XMMatrixTranspose(worldMtrx);
     cbPerSceneNode.MeshColor = { 0.f, 1.f, 0.f, 1.f, };
-    immCtx->UpdateSubresource(mCbChangedPerSceneNode, 0, nullptr, &cbPerSceneNode, 0, 0);
+    immCtx->UpdateSubresource(mCbSceneNode, 0, nullptr, &cbPerSceneNode, 0, 0);
 
     // Draw current node
     for (auto &primitive : node.mPrimitives)
@@ -1393,12 +1393,12 @@ void Scene::RenderNode(IRenderingContext &ctx,
             immCtx->PSSetShaderResources(0, 1, &material.GetBaseColorTexture().srv);
             immCtx->PSSetShaderResources(1, 1, &material.GetMetallicRoughnessTexture().srv);
 
-            CbChangedPerScenePrimitive cbPerScenePrimitive;
+            CbScenePrimitive cbPerScenePrimitive;
             cbPerScenePrimitive.BaseColorFactor         = material.GetBaseColorTexture().GetConstFactor();
             cbPerScenePrimitive.MetallicRoughnessFactor = material.GetMetallicRoughnessTexture().GetConstFactor();
             cbPerScenePrimitive.DiffuseColorFactor      = UNUSED_COLOR;
             cbPerScenePrimitive.SpecularFactor          = UNUSED_COLOR;
-            immCtx->UpdateSubresource(mCbChangedPerScenePrimitive, 0, nullptr, &cbPerScenePrimitive, 0, 0);
+            immCtx->UpdateSubresource(mCbScenePrimitive, 0, nullptr, &cbPerScenePrimitive, 0, 0);
             break;
         }
         case MaterialWorkflow::kPbrSpecularity:
@@ -1407,12 +1407,12 @@ void Scene::RenderNode(IRenderingContext &ctx,
             immCtx->PSSetShaderResources(2, 1, &material.GetBaseColorTexture().srv);
             immCtx->PSSetShaderResources(3, 1, &material.GetSpecularTexture().srv);
 
-            CbChangedPerScenePrimitive cbPerScenePrimitive;
+            CbScenePrimitive cbPerScenePrimitive;
             cbPerScenePrimitive.DiffuseColorFactor      = material.GetBaseColorTexture().GetConstFactor();
             cbPerScenePrimitive.SpecularFactor          = material.GetSpecularTexture().GetConstFactor();
             cbPerScenePrimitive.BaseColorFactor         = UNUSED_COLOR;
             cbPerScenePrimitive.MetallicRoughnessFactor = UNUSED_COLOR;
-            immCtx->UpdateSubresource(mCbChangedPerScenePrimitive, 0, nullptr, &cbPerScenePrimitive, 0, 0);
+            immCtx->UpdateSubresource(mCbScenePrimitive, 0, nullptr, &cbPerScenePrimitive, 0, 0);
             break;
         }
         default:
@@ -2617,10 +2617,8 @@ bool SceneTexture::LoadTextureFromGltf(const char *paramName,
 
 SceneMaterial::SceneMaterial() :
     mWorkflow(MaterialWorkflow::kNone),
-
     mBaseColorTexture(SceneTexture::eSrgb, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
     mMetallicRoughnessTexture(SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
-
     mSpecularTexture(SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f))
 {}
 

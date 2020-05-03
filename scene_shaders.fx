@@ -12,18 +12,18 @@ Texture2D SpecularTexture       : register(t3);
 
 SamplerState LinearSampler : register(s0);
 
-cbuffer cbNeverChanges : register(b0)
+cbuffer cbScene : register(b0)
 {
     matrix ViewMtrx;
     float4 CameraPos;
 };
 
-cbuffer cbChangeOnResize : register(b1)
+cbuffer cbResize : register(b1)
 {
     matrix ProjectionMtrx;
 };
 
-cbuffer cbChangesEachFrame : register(b2)
+cbuffer cbFrame : register(b2)
 {
     // Light sources
     float4 AmbientLightLuminance;
@@ -33,13 +33,13 @@ cbuffer cbChangesEachFrame : register(b2)
     float4 PointLightIntensities[POINT_LIGHTS_COUNT];
 };
 
-cbuffer cbChangesPerSceneNode : register(b3)
+cbuffer cbSceneNode : register(b3)
 {
     matrix WorldMtrx;
     float4 MeshColor;
 };
 
-cbuffer cbChangesPerSceneNode : register(b4)
+cbuffer cbSceneNode : register(b4)
 {
     // Metallness
     float4 BaseColorFactor;
