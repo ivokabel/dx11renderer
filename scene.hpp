@@ -164,9 +164,12 @@ public:
                              const tinygltf::ParameterMap &params,
                              const std::wstring &logPrefix);
 
+    XMFLOAT4 GetConstFactor() const { return mConstFactor; }
+
 private:
-    ValueType mValueType;
-    XMFLOAT4 mConstFactor;
+    ValueType   mValueType;
+    XMFLOAT4    mNeutralConstFactor;
+    XMFLOAT4    mConstFactor; // TODO: This belongs to material!
     // TODO: sampler, texCoord
 
 public:
@@ -210,10 +213,10 @@ public:
 
     MaterialWorkflow GetWorkflow() const { return mWorkflow; }
 
-    ID3D11ShaderResourceView * const * GetBaseColorSRV()         const { return &mBaseColorTexture.srv; };
-    ID3D11ShaderResourceView * const * GetMetallicRoughnessSRV() const { return &mMetallicRoughnessTexture.srv; };
+    const SceneTexture & GetBaseColorTexture()         const { return mBaseColorTexture; };
+    const SceneTexture & GetMetallicRoughnessTexture() const { return mMetallicRoughnessTexture; };
 
-    ID3D11ShaderResourceView * const * GetSpecularSRV() const { return &mSpecularTexture.srv; };
+    const SceneTexture & GetSpecularTexture()          const { return mSpecularTexture; };
 
 private:
 
@@ -280,6 +283,7 @@ public:
         eHardwiredEarth,
         eHardwiredThreePlanets,
 
+        eDebugMaterialConstFactors,
         eDebugGradientBox,
 
         eGltfSampleTriangleWithoutIndices, // Non-indexed geometry not yet supported!
@@ -378,10 +382,11 @@ private:
     ID3D11PixelShader*          mPsConstEmmisive = nullptr;
     ID3D11InputLayout*          mVertexLayout = nullptr;
 
-    ID3D11Buffer*               mCbNeverChanged = nullptr;
-    ID3D11Buffer*               mCbChangedOnResize = nullptr;
-    ID3D11Buffer*               mCbChangedEachFrame = nullptr;
-    ID3D11Buffer*               mCbChangedPerSceneNode = nullptr;
+    ID3D11Buffer*               mCbScene = nullptr;
+    ID3D11Buffer*               mCbResize = nullptr;
+    ID3D11Buffer*               mCbFrame = nullptr;
+    ID3D11Buffer*               mCbSceneNode = nullptr;
+    ID3D11Buffer*               mCbScenePrimitive = nullptr;
 
     ID3D11SamplerState*         mSamplerLinear = nullptr;
 };

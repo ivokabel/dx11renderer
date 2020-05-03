@@ -12,18 +12,18 @@ Texture2D SpecularTexture       : register(t3);
 
 SamplerState LinearSampler : register(s0);
 
-cbuffer cbNeverChanges : register(b0)
+cbuffer cbScene : register(b0)
 {
     matrix ViewMtrx;
     float4 CameraPos;
 };
 
-cbuffer cbChangeOnResize : register(b1)
+cbuffer cbResize : register(b1)
 {
     matrix ProjectionMtrx;
 };
 
-cbuffer cbChangesEachFrame : register(b2)
+cbuffer cbFrame : register(b2)
 {
     // Light sources
     float4 AmbientLightLuminance;
@@ -33,10 +33,21 @@ cbuffer cbChangesEachFrame : register(b2)
     float4 PointLightIntensities[POINT_LIGHTS_COUNT];
 };
 
-cbuffer cbChangesPerSceneNode : register(b3)
+cbuffer cbSceneNode : register(b3)
 {
     matrix WorldMtrx;
     float4 MeshColor;
+};
+
+cbuffer cbSceneNode : register(b4)
+{
+    // Metallness
+    float4 BaseColorFactor;
+    float4 MetallicRoughnessFactor;
+
+    // Specularity
+    float4 DiffuseColorFactor;
+    float4 SpecularFactor;
 };
 
 struct VS_INPUT
@@ -64,7 +75,7 @@ PS_INPUT VS(VS_INPUT input)
     output.PosProj = mul(output.PosWorld, ViewMtrx);
     output.PosProj = mul(output.PosProj, ProjectionMtrx);
 
-    output.Normal = (float3)mul(input.Normal, WorldMtrx);
+    output.Normal = mul(input.Normal, (float3x3)WorldMtrx);
 
     output.Tex = input.Tex;
 
@@ -196,8 +207,8 @@ float4 PsPbrSpecularity(PS_INPUT input) : SV_Target
         lightContribs.Specular += contrib.Specular;
     }
 
-    float4 diffuseColor     = DiffuseTexture.Sample(LinearSampler, input.Tex);
-    float4 specularColor    = SpecularTexture.Sample(LinearSampler, input.Tex);
+    float4 diffuseColor  = DiffuseTexture.Sample( LinearSampler, input.Tex) * DiffuseColorFactor;
+    float4 specularColor = SpecularTexture.Sample(LinearSampler, input.Tex) * SpecularFactor;
 
     float4 output =
           lightContribs.Diffuse  * diffuseColor
@@ -335,8 +346,9 @@ float4 PbrM_PointLightContrib(float3 surfPos,
 
 PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
 {
-    const float4 baseColor      = BaseColorTexture.Sample(LinearSampler, input.Tex);
-    const float4 metalRoughness = MetalRoughnessTexture.Sample(LinearSampler, input.Tex);
+    const float4 baseColor      = BaseColorTexture.Sample(LinearSampler, input.Tex) * BaseColorFactor;
+
+    const float4 metalRoughness = MetalRoughnessTexture.Sample(LinearSampler, input.Tex) * MetallicRoughnessFactor;
     const float4 metalness      = float4(metalRoughness.bbb, 1);
     const float  roughness      = metalRoughness.g;
 

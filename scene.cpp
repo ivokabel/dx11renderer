@@ -11,6 +11,8 @@
 #include <array>
 #include <vector>
 
+#define UNUSED_COLOR XMFLOAT4(1.f, 0.f, 1.f, 1.f)
+
 // debug
 //#include "Libs/tinygltf-2.2.0/loader_example.h"
 
@@ -53,18 +55,18 @@ struct {
 };
 
 
-struct CbNeverChanged
+struct CbScene
 {
     XMMATRIX ViewMtrx;
     XMFLOAT4 CameraPos;
 };
 
-struct CbChangedOnResize
+struct CbResize
 {
     XMMATRIX ProjectionMtrx;
 };
 
-struct CbChangedEachFrame
+struct CbFrame
 {
     // Light sources
     XMFLOAT4 AmbientLightLuminance;
@@ -74,10 +76,21 @@ struct CbChangedEachFrame
     XMFLOAT4 PointLightIntensities[POINT_LIGHTS_COUNT];
 };
 
-struct CbChangedPerSceneNode
+struct CbSceneNode
 {
     XMMATRIX WorldMtrx;
     XMFLOAT4 MeshColor; // May be eventually replaced by the emmisive component of the standard surface shader
+};
+
+struct CbScenePrimitive
+{
+    // Metallness
+    XMFLOAT4 BaseColorFactor;
+    XMFLOAT4 MetallicRoughnessFactor;
+
+    // Specularity
+    XMFLOAT4 DiffuseColorFactor;
+    XMFLOAT4 SpecularFactor;
 };
 
 Scene::Scene(const SceneId sceneId) :
@@ -133,20 +146,24 @@ bool Scene::Init(IRenderingContext &ctx)
     bd.Usage = D3D11_USAGE_DEFAULT;
     bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     bd.CPUAccessFlags = 0;
-    bd.ByteWidth = sizeof(CbNeverChanged);
-    hr = device->CreateBuffer(&bd, nullptr, &mCbNeverChanged);
+    bd.ByteWidth = sizeof(CbScene);
+    hr = device->CreateBuffer(&bd, nullptr, &mCbScene);
     if (FAILED(hr))
         return false;
-    bd.ByteWidth = sizeof(CbChangedOnResize);
-    hr = device->CreateBuffer(&bd, nullptr, &mCbChangedOnResize);
+    bd.ByteWidth = sizeof(CbResize);
+    hr = device->CreateBuffer(&bd, nullptr, &mCbResize);
     if (FAILED(hr))
         return hr;
-    bd.ByteWidth = sizeof(CbChangedEachFrame);
-    hr = device->CreateBuffer(&bd, nullptr, &mCbChangedEachFrame);
+    bd.ByteWidth = sizeof(CbFrame);
+    hr = device->CreateBuffer(&bd, nullptr, &mCbFrame);
     if (FAILED(hr))
         return hr;
-    bd.ByteWidth = sizeof(CbChangedPerSceneNode);
-    hr = device->CreateBuffer(&bd, nullptr, &mCbChangedPerSceneNode);
+    bd.ByteWidth = sizeof(CbSceneNode);
+    hr = device->CreateBuffer(&bd, nullptr, &mCbSceneNode);
+    if (FAILED(hr))
+        return hr;
+    bd.ByteWidth = sizeof(CbScenePrimitive);
+    hr = device->CreateBuffer(&bd, nullptr, &mCbScenePrimitive);
     if (FAILED(hr))
         return hr;
 
@@ -172,14 +189,14 @@ bool Scene::Init(IRenderingContext &ctx)
 
     // Update constant buffers which can be updated now
 
-    CbNeverChanged cbNeverChanged;
-    cbNeverChanged.ViewMtrx = XMMatrixTranspose(mViewMtrx);
-    XMStoreFloat4(&cbNeverChanged.CameraPos, sViewData.eye);
-    immCtx->UpdateSubresource(mCbNeverChanged, 0, NULL, &cbNeverChanged, 0, 0);
+    CbScene cbScene;
+    cbScene.ViewMtrx = XMMatrixTranspose(mViewMtrx);
+    XMStoreFloat4(&cbScene.CameraPos, sViewData.eye);
+    immCtx->UpdateSubresource(mCbScene, 0, NULL, &cbScene, 0, 0);
 
-    CbChangedOnResize cbChangedOnResize;
-    cbChangedOnResize.ProjectionMtrx = XMMatrixTranspose(mProjectionMtrx);
-    immCtx->UpdateSubresource(mCbChangedOnResize, 0, NULL, &cbChangedOnResize, 0, 0);
+    CbResize cbResize;
+    cbResize.ProjectionMtrx = XMMatrixTranspose(mProjectionMtrx);
+    immCtx->UpdateSubresource(mCbResize, 0, NULL, &cbResize, 0, 0);
 
     // Load scene
 
@@ -471,7 +488,7 @@ bool Scene::Load(IRenderingContext &ctx)
                                             //L"../Textures/vfx_debug_textures by Chris Judkins/debug_orientation_01.png",
                                             //L"../Textures/vfx_debug_textures by Chris Judkins/debug_offset_01.png",
                                             //L"../Textures/vfx_debug_textures by Chris Judkins/debug_uv_02.png",
-                                            //L"../Scenes/Debugging/GradientBox/VerticalSineWaves8.png",
+                                            //L"../Textures/Debugging/VerticalSineWaves8.png",
                                             //nullptr,
                                             //XMFLOAT4(0.f, 0.f, 0.f, 1.f),
                                             //XMFLOAT4(0.9f, 0.9f, 0.9f, 1.f),
@@ -743,6 +760,102 @@ bool Scene::Load(IRenderingContext &ctx)
         mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
         mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
         mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+
+        return true;
+    }
+
+    case eDebugMaterialConstFactors:
+    {
+        mMaterials.clear();
+        mMaterials.resize(3, SceneMaterial());
+        if (mMaterials.size() != 3)
+            return false;
+
+        mRootNodes.clear();
+        mRootNodes.resize(3, SceneNode(true));
+        if (mRootNodes.size() != 3)
+            return false;
+
+        const wchar_t *baseColorTex   = L"../Textures/Debugging/VerticalSineWaves8.png";
+        const wchar_t *baseColorNoTex = nullptr;
+        const XMFLOAT4 baseColorConstFactor   = XMFLOAT4(1.0f, 0.7f, 0.1f, 1.0f);
+        const XMFLOAT4 baseColorNoConstFactor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+        const wchar_t *metallicRoughnessTex = nullptr;
+        const float metallicConstFactor = 0.f;
+        const float roughnessConstFactor = 0.4f;
+
+        // Sphere 0
+
+        auto &material0 = mMaterials[0];
+        if (!material0.CreatePbrMetalness(ctx,
+                                          baseColorTex,
+                                          baseColorConstFactor,
+                                          metallicRoughnessTex,
+                                          metallicConstFactor,
+                                          roughnessConstFactor))
+            return false;
+
+        auto &node0 = mRootNodes[0];
+        auto primitive0 = node0.CreateEmptyPrimitive();
+        if (!primitive0)
+            return false;
+        if (!primitive0->CreateSphere(ctx, 40, 80))
+            return false;
+        primitive0->SetMaterialIdx(0);
+        node0.AddScale({ 1.7f, 1.7f, 1.7f });
+        node0.AddTranslation({ 0.f, 0.f, 0.f });
+
+        // Sphere 1
+
+        auto &material1 = mMaterials[1];
+        if (!material1.CreatePbrMetalness(ctx,
+                                          baseColorTex,
+                                          baseColorNoConstFactor,
+                                          metallicRoughnessTex,
+                                          metallicConstFactor,
+                                          roughnessConstFactor))
+            return false;
+
+        auto &node1 = mRootNodes[1];
+        auto primitive1 = node1.CreateEmptyPrimitive();
+        if (!primitive1)
+            return false;
+        if (!primitive1->CreateSphere(ctx, 40, 80))
+            return false;
+        primitive1->SetMaterialIdx(1);
+        node1.AddScale({ 1.7f, 1.7f, 1.7f });
+        node1.AddTranslation({ -3.6f, 0.f, 0.f });
+
+        // Sphere 2
+
+        auto &material2 = mMaterials[2];
+        if (!material2.CreatePbrMetalness(ctx,
+                                          baseColorNoTex,
+                                          baseColorConstFactor,
+                                          metallicRoughnessTex,
+                                          metallicConstFactor,
+                                          roughnessConstFactor))
+            return false;
+
+        auto &node2 = mRootNodes[2];
+        auto primitive2 = node2.CreateEmptyPrimitive();
+        if (!primitive2)
+            return false;
+        if (!primitive2->CreateSphere(ctx, 40, 80))
+            return false;
+        primitive2->SetMaterialIdx(2);
+        node2.AddScale({ 1.7f, 1.7f, 1.7f });
+        node2.AddTranslation({ 3.6f, 0.f, 0.f });
+
+        const float amb = 0.f;
+        mAmbientLight.luminance     = XMFLOAT4(amb, amb, amb, 1.0f);
+        const float lum = 3.0f;
+        mDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance  = XMFLOAT4(lum, lum, lum, 1.0f);
+        const float ints = 4.0f;
+        mPointLights[0].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[1].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
+        mPointLights[2].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
 
         return true;
     }
@@ -1074,14 +1187,19 @@ bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
 void Scene::Destroy()
 {
     Utils::ReleaseAndMakeNull(mVertexShader);
+
     Utils::ReleaseAndMakeNull(mPsPbrMetalness);
     Utils::ReleaseAndMakeNull(mPsPbrSpecularity);
     Utils::ReleaseAndMakeNull(mPsConstEmmisive);
+
     Utils::ReleaseAndMakeNull(mVertexLayout);
-    Utils::ReleaseAndMakeNull(mCbNeverChanged);
-    Utils::ReleaseAndMakeNull(mCbChangedOnResize);
-    Utils::ReleaseAndMakeNull(mCbChangedEachFrame);
-    Utils::ReleaseAndMakeNull(mCbChangedPerSceneNode);
+
+    Utils::ReleaseAndMakeNull(mCbScene);
+    Utils::ReleaseAndMakeNull(mCbResize);
+    Utils::ReleaseAndMakeNull(mCbFrame);
+    Utils::ReleaseAndMakeNull(mCbSceneNode);
+    Utils::ReleaseAndMakeNull(mCbScenePrimitive);
+
     Utils::ReleaseAndMakeNull(mSamplerLinear);
 
     mRootNodes.clear();
@@ -1144,7 +1262,7 @@ void Scene::RenderFrame(IRenderingContext &ctx)
     auto immCtx = ctx.GetImmediateContext();
 
     // Frame constant buffer
-    CbChangedEachFrame cbEachFrame;
+    CbFrame cbEachFrame;
     cbEachFrame.AmbientLightLuminance = mAmbientLight.luminance;
     for (int i = 0; i < mDirectLights.size(); i++)
     {
@@ -1156,19 +1274,20 @@ void Scene::RenderFrame(IRenderingContext &ctx)
         cbEachFrame.PointLightPositions[i]   = mPointLights[i].posTransf;
         cbEachFrame.PointLightIntensities[i] = mPointLights[i].intensity;
     }
-    immCtx->UpdateSubresource(mCbChangedEachFrame, 0, nullptr, &cbEachFrame, 0, 0);
+    immCtx->UpdateSubresource(mCbFrame, 0, nullptr, &cbEachFrame, 0, 0);
 
     // Setup vertex shader
     immCtx->VSSetShader(mVertexShader, nullptr, 0);
-    immCtx->VSSetConstantBuffers(0, 1, &mCbNeverChanged);
-    immCtx->VSSetConstantBuffers(1, 1, &mCbChangedOnResize);
-    immCtx->VSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
-    immCtx->VSSetConstantBuffers(3, 1, &mCbChangedPerSceneNode);
+    immCtx->VSSetConstantBuffers(0, 1, &mCbScene);
+    immCtx->VSSetConstantBuffers(1, 1, &mCbResize);
+    immCtx->VSSetConstantBuffers(2, 1, &mCbFrame);
+    immCtx->VSSetConstantBuffers(3, 1, &mCbSceneNode);
 
     // Setup pixel shader data (shader itself is chosen later for each material)
-    immCtx->PSSetConstantBuffers(0, 1, &mCbNeverChanged);
-    immCtx->PSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
-    immCtx->PSSetConstantBuffers(3, 1, &mCbChangedPerSceneNode);
+    immCtx->PSSetConstantBuffers(0, 1, &mCbScene);
+    immCtx->PSSetConstantBuffers(2, 1, &mCbFrame);
+    immCtx->PSSetConstantBuffers(3, 1, &mCbSceneNode);
+    immCtx->PSSetConstantBuffers(4, 1, &mCbScenePrimitive);
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
 
     // Scene geometry
@@ -1178,7 +1297,7 @@ void Scene::RenderFrame(IRenderingContext &ctx)
     // Proxy geometry for point lights
     for (int i = 0; i < mPointLights.size(); i++)
     {
-        CbChangedPerSceneNode cbPerSceneNode;
+        CbSceneNode cbPerSceneNode;
 
         const float radius = 0.07f;
         XMMATRIX lightScaleMtrx = XMMatrixScaling(radius, radius, radius);
@@ -1194,7 +1313,7 @@ void Scene::RenderFrame(IRenderingContext &ctx)
             mPointLights[i].intensity.w / radius2,
         };
 
-        immCtx->UpdateSubresource(mCbChangedPerSceneNode, 0, nullptr, &cbPerSceneNode, 0, 0);
+        immCtx->UpdateSubresource(mCbSceneNode, 0, nullptr, &cbPerSceneNode, 0, 0);
 
         immCtx->PSSetShader(mPsConstEmmisive, nullptr, 0);
         mPointLightProxy.DrawGeometry(ctx, mVertexLayout);
@@ -1248,11 +1367,11 @@ void Scene::RenderNode(IRenderingContext &ctx,
 
     const auto worldMtrx = node.GetWorldMtrx() * parentWorldMtrx;
 
-    // Update per-node constant buffer
-    CbChangedPerSceneNode cbPerSceneNode;
+    // Per-node constant buffer
+    CbSceneNode cbPerSceneNode;
     cbPerSceneNode.WorldMtrx = XMMatrixTranspose(worldMtrx);
     cbPerSceneNode.MeshColor = { 0.f, 1.f, 0.f, 1.f, };
-    immCtx->UpdateSubresource(mCbChangedPerSceneNode, 0, nullptr, &cbPerSceneNode, 0, 0);
+    immCtx->UpdateSubresource(mCbSceneNode, 0, nullptr, &cbPerSceneNode, 0, 0);
 
     // Draw current node
     for (auto &primitive : node.mPrimitives)
@@ -1269,15 +1388,33 @@ void Scene::RenderNode(IRenderingContext &ctx,
         switch (material.GetWorkflow())
         {
         case MaterialWorkflow::kPbrMetalness:
+        {
             immCtx->PSSetShader(mPsPbrMetalness, nullptr, 0);
-            immCtx->PSSetShaderResources(0, 1, material.GetBaseColorSRV());
-            immCtx->PSSetShaderResources(1, 1, material.GetMetallicRoughnessSRV());
+            immCtx->PSSetShaderResources(0, 1, &material.GetBaseColorTexture().srv);
+            immCtx->PSSetShaderResources(1, 1, &material.GetMetallicRoughnessTexture().srv);
+
+            CbScenePrimitive cbPerScenePrimitive;
+            cbPerScenePrimitive.BaseColorFactor         = material.GetBaseColorTexture().GetConstFactor();
+            cbPerScenePrimitive.MetallicRoughnessFactor = material.GetMetallicRoughnessTexture().GetConstFactor();
+            cbPerScenePrimitive.DiffuseColorFactor      = UNUSED_COLOR;
+            cbPerScenePrimitive.SpecularFactor          = UNUSED_COLOR;
+            immCtx->UpdateSubresource(mCbScenePrimitive, 0, nullptr, &cbPerScenePrimitive, 0, 0);
             break;
+        }
         case MaterialWorkflow::kPbrSpecularity:
+        {
             immCtx->PSSetShader(mPsPbrSpecularity, nullptr, 0);
-            immCtx->PSSetShaderResources(2, 1, material.GetBaseColorSRV());
-            immCtx->PSSetShaderResources(3, 1, material.GetSpecularSRV());
+            immCtx->PSSetShaderResources(2, 1, &material.GetBaseColorTexture().srv);
+            immCtx->PSSetShaderResources(3, 1, &material.GetSpecularTexture().srv);
+
+            CbScenePrimitive cbPerScenePrimitive;
+            cbPerScenePrimitive.DiffuseColorFactor      = material.GetBaseColorTexture().GetConstFactor();
+            cbPerScenePrimitive.SpecularFactor          = material.GetSpecularTexture().GetConstFactor();
+            cbPerScenePrimitive.BaseColorFactor         = UNUSED_COLOR;
+            cbPerScenePrimitive.MetallicRoughnessFactor = UNUSED_COLOR;
+            immCtx->UpdateSubresource(mCbScenePrimitive, 0, nullptr, &cbPerScenePrimitive, 0, 0);
             break;
+        }
         default:
             continue;
         }
@@ -2195,14 +2332,16 @@ void SceneNode::Animate(IRenderingContext &ctx)
 }
 
 
-SceneTexture::SceneTexture(ValueType valueType, XMFLOAT4 defaultConstFactor) :
+SceneTexture::SceneTexture(ValueType valueType, XMFLOAT4 neutralConstFactor) :
     mValueType(valueType),
-    mConstFactor(defaultConstFactor),
+    mNeutralConstFactor(neutralConstFactor),
+    mConstFactor(neutralConstFactor),
     srv(nullptr)
 {}
 
 SceneTexture::SceneTexture(const SceneTexture &src) :
     mValueType(src.mValueType),
+    mNeutralConstFactor(src.mNeutralConstFactor),
     mConstFactor(src.mConstFactor),
     srv(src.srv)
 {
@@ -2212,9 +2351,10 @@ SceneTexture::SceneTexture(const SceneTexture &src) :
 
 SceneTexture& SceneTexture::operator =(const SceneTexture &src)
 {
-    mValueType   = src.mValueType;
-    mConstFactor = src.mConstFactor;
-    srv          = src.srv;
+    mValueType          = src.mValueType;
+    mNeutralConstFactor = src.mNeutralConstFactor;
+    mConstFactor        = src.mConstFactor;
+    srv                 = src.srv;
 
     // We are creating new reference of device resource
     Utils::SafeAddRef(srv);
@@ -2224,15 +2364,17 @@ SceneTexture& SceneTexture::operator =(const SceneTexture &src)
 
 SceneTexture::SceneTexture(SceneTexture &&src) :
     mValueType(src.mValueType),
+    mNeutralConstFactor(Utils::Exchange(src.mNeutralConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f))),
     mConstFactor(Utils::Exchange(src.mConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f))),
     srv(Utils::Exchange(src.srv, nullptr))
 {}
 
 SceneTexture& SceneTexture::operator =(SceneTexture &&src)
 {
-    mValueType   = src.mValueType;
-    mConstFactor = Utils::Exchange(src.mConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f));
-    srv          = Utils::Exchange(src.srv, nullptr);
+    mValueType          = src.mValueType;
+    mNeutralConstFactor = Utils::Exchange(src.mNeutralConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f));
+    mConstFactor        = Utils::Exchange(src.mConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f));
+    srv                 = Utils::Exchange(src.srv, nullptr);
 
     return *this;
 }
@@ -2265,16 +2407,20 @@ bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path, XMFLOAT4 
         }
         else
 #endif
+        {
             ili.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        }
 
-        // TODO: Pre-multiply by const factor
         hr = D3DX11CreateShaderResourceViewFromFile(device, path, &ili, nullptr, &srv, nullptr);
-
         if (FAILED(hr))
             return false;
     }
     else
-        SceneUtils::CreateConstantTextureSRV(ctx, srv, mConstFactor);
+    {
+        // Neutral constant texture
+        if (!SceneUtils::CreateConstantTextureSRV(ctx, srv, mNeutralConstFactor))
+            return false;
+    }
 
     return true;
 }
@@ -2353,7 +2499,6 @@ bool SceneTexture::LoadFloatFactorFromGltf(const char *paramName,
 }
 
 
-// Multiplies the values with const factor and creates texture
 bool SceneTexture::LoadTextureFromGltf(const char *paramName,
                                        IRenderingContext &ctx,
                                        const tinygltf::Model &model,
@@ -2427,73 +2572,39 @@ bool SceneTexture::LoadTextureFromGltf(const char *paramName,
             return false;
         }
 
+        DXGI_FORMAT dataFormat;
 #ifdef CONVERT_SRGB_INPUT_TO_LINEAR
         if (mValueType == SceneTexture::eSrgb)
-        {
-            // TODO: Multiply with mConstFactor 
-
-            if (!SceneUtils::CreateTextureSrvFromData(ctx,
-                                                      srv,
-                                                      image.width,
-                                                      image.height,
-                                                      DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
-                                                      image.image.data(),
-                                                      image.width * 4 * sizeof(uint8_t)))
-            {
-                Log::Error(L"%sFailed to create texture & SRV for image \"%s\": \"%s\", %dx%d",
-                           logPrefix.c_str(),
-                           Utils::StringToWstring(image.name).c_str(),
-                           Utils::StringToWstring(image.uri).c_str(),
-                           image.width,
-                           image.height);
-                return false;
-            }
-        }
+            dataFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
         else
 #endif
-        {
-            std::vector<unsigned char> floatImage;
-            if (!SceneUtils::ConvertImageToFloat(floatImage, image, mConstFactor))
-            {
-                Log::Error(L"%sFailed to convert image \"%s\" to float format: \"%s\", %dx%d, %dx%db %s, data %dB",
-                           logPrefix.c_str(),
-                           Utils::StringToWstring(image.name).c_str(),
-                           Utils::StringToWstring(image.uri).c_str(),
-                           image.width,
-                           image.height,
-                           image.component,
-                           image.bits,
-                           GltfUtils::ComponentTypeToWstring(image.pixel_type).c_str(),
-                           image.image.size());
-                return false;
-            }
+            dataFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 
-            if (!SceneUtils::CreateTextureSrvFromData(ctx,
-                                                      srv,
-                                                      image.width,
-                                                      image.height,
-                                                      DXGI_FORMAT_R32G32B32A32_FLOAT,
-                                                      floatImage.data(),
-                                                      image.width * 4 * sizeof(float)))
-            {
-                Log::Error(L"%sFailed to create texture & SRV for image \"%s\": \"%s\", %dx%d",
-                           logPrefix.c_str(),
-                           Utils::StringToWstring(image.name).c_str(),
-                           Utils::StringToWstring(image.uri).c_str(),
-                           image.width,
-                           image.height);
-                return false;
-            }
+        if (!SceneUtils::CreateTextureSrvFromData(ctx,
+                                                  srv,
+                                                  image.width,
+                                                  image.height,
+                                                  dataFormat,
+                                                  image.image.data(),
+                                                  image.width * 4 * sizeof(uint8_t)))
+        {
+            Log::Error(L"%sFailed to create texture & SRV for image \"%s\": \"%s\", %dx%d",
+                       logPrefix.c_str(),
+                       Utils::StringToWstring(image.name).c_str(),
+                       Utils::StringToWstring(image.uri).c_str(),
+                       image.width,
+                       image.height);
+            return false;
         }
 
         // TODO: Sampler
     }
     else
     {
-        // Constant texture
-        if (!SceneUtils::CreateConstantTextureSRV(ctx, srv, mConstFactor))
+        // Neutral constant texture
+        if (!SceneUtils::CreateConstantTextureSRV(ctx, srv, mNeutralConstFactor))
         {
-            Log::Error(L"%sFailed to create constant texture for \"%s\"!",
+            Log::Error(L"%sFailed to create neutral constant texture for \"%s\"!",
                        logPrefix.c_str(),
                        Utils::StringToWstring(paramName).c_str());
             return false;
@@ -2506,10 +2617,8 @@ bool SceneTexture::LoadTextureFromGltf(const char *paramName,
 
 SceneMaterial::SceneMaterial() :
     mWorkflow(MaterialWorkflow::kNone),
-
     mBaseColorTexture(SceneTexture::eSrgb, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
     mMetallicRoughnessTexture(SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
-
     mSpecularTexture(SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f))
 {}
 
