@@ -39,6 +39,17 @@ cbuffer cbChangesPerSceneNode : register(b3)
     float4 MeshColor;
 };
 
+cbuffer cbChangesPerSceneNode : register(b4)
+{
+    // Metallness
+    float4 BaseColorFactor;
+    float4 MetallicRoughnessFactor;
+
+    // Specularity
+    float4 DiffuseColorFactor;
+    float4 SpecularFactor;
+};
+
 struct VS_INPUT
 {
     float4 Pos      : POSITION;
@@ -196,8 +207,8 @@ float4 PsPbrSpecularity(PS_INPUT input) : SV_Target
         lightContribs.Specular += contrib.Specular;
     }
 
-    float4 diffuseColor     = DiffuseTexture.Sample(LinearSampler, input.Tex);
-    float4 specularColor    = SpecularTexture.Sample(LinearSampler, input.Tex);
+    float4 diffuseColor  = DiffuseTexture.Sample( LinearSampler, input.Tex) * DiffuseColorFactor;
+    float4 specularColor = SpecularTexture.Sample(LinearSampler, input.Tex) * SpecularFactor;
 
     float4 output =
           lightContribs.Diffuse  * diffuseColor
@@ -335,8 +346,9 @@ float4 PbrM_PointLightContrib(float3 surfPos,
 
 PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
 {
-    const float4 baseColor      = BaseColorTexture.Sample(LinearSampler, input.Tex);
-    const float4 metalRoughness = MetalRoughnessTexture.Sample(LinearSampler, input.Tex);
+    const float4 baseColor      = BaseColorTexture.Sample(LinearSampler, input.Tex) * BaseColorFactor;
+
+    const float4 metalRoughness = MetalRoughnessTexture.Sample(LinearSampler, input.Tex) * MetallicRoughnessFactor;
     const float4 metalness      = float4(metalRoughness.bbb, 1);
     const float  roughness      = metalRoughness.g;
 

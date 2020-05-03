@@ -80,6 +80,17 @@ struct CbChangedPerSceneNode
     XMFLOAT4 MeshColor; // May be eventually replaced by the emmisive component of the standard surface shader
 };
 
+struct CbChangedPerScenePrimitive
+{
+    // Metallness
+    XMFLOAT4 BaseColorFactor;
+    XMFLOAT4 MetallicRoughnessFactor;
+
+    // Specularity
+    XMFLOAT4 DiffuseColorFactor;
+    XMFLOAT4 SpecularFactor;
+};
+
 Scene::Scene(const SceneId sceneId) :
     mSceneId(sceneId)
 {}
@@ -147,6 +158,10 @@ bool Scene::Init(IRenderingContext &ctx)
         return hr;
     bd.ByteWidth = sizeof(CbChangedPerSceneNode);
     hr = device->CreateBuffer(&bd, nullptr, &mCbChangedPerSceneNode);
+    if (FAILED(hr))
+        return hr;
+    bd.ByteWidth = sizeof(CbChangedPerScenePrimitive);
+    hr = device->CreateBuffer(&bd, nullptr, &mCbChangedPerScenePrimitive);
     if (FAILED(hr))
         return hr;
 
@@ -1170,14 +1185,19 @@ bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
 void Scene::Destroy()
 {
     Utils::ReleaseAndMakeNull(mVertexShader);
+
     Utils::ReleaseAndMakeNull(mPsPbrMetalness);
     Utils::ReleaseAndMakeNull(mPsPbrSpecularity);
     Utils::ReleaseAndMakeNull(mPsConstEmmisive);
+
     Utils::ReleaseAndMakeNull(mVertexLayout);
+
     Utils::ReleaseAndMakeNull(mCbNeverChanged);
     Utils::ReleaseAndMakeNull(mCbChangedOnResize);
     Utils::ReleaseAndMakeNull(mCbChangedEachFrame);
     Utils::ReleaseAndMakeNull(mCbChangedPerSceneNode);
+    Utils::ReleaseAndMakeNull(mCbChangedPerScenePrimitive);
+
     Utils::ReleaseAndMakeNull(mSamplerLinear);
 
     mRootNodes.clear();
@@ -1265,6 +1285,7 @@ void Scene::RenderFrame(IRenderingContext &ctx)
     immCtx->PSSetConstantBuffers(0, 1, &mCbNeverChanged);
     immCtx->PSSetConstantBuffers(2, 1, &mCbChangedEachFrame);
     immCtx->PSSetConstantBuffers(3, 1, &mCbChangedPerSceneNode);
+    immCtx->PSSetConstantBuffers(4, 1, &mCbChangedPerScenePrimitive);
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
 
     // Scene geometry
@@ -1344,7 +1365,7 @@ void Scene::RenderNode(IRenderingContext &ctx,
 
     const auto worldMtrx = node.GetWorldMtrx() * parentWorldMtrx;
 
-    // Update per-node constant buffer
+    // Per-node constant buffer
     CbChangedPerSceneNode cbPerSceneNode;
     cbPerSceneNode.WorldMtrx = XMMatrixTranspose(worldMtrx);
     cbPerSceneNode.MeshColor = { 0.f, 1.f, 0.f, 1.f, };
@@ -1365,15 +1386,31 @@ void Scene::RenderNode(IRenderingContext &ctx,
         switch (material.GetWorkflow())
         {
         case MaterialWorkflow::kPbrMetalness:
+        {
             immCtx->PSSetShader(mPsPbrMetalness, nullptr, 0);
-            immCtx->PSSetShaderResources(0, 1, material.GetBaseColorSRV());
-            immCtx->PSSetShaderResources(1, 1, material.GetMetallicRoughnessSRV());
+            immCtx->PSSetShaderResources(0, 1, &material.GetBaseColorTexture().srv);
+            immCtx->PSSetShaderResources(1, 1, &material.GetMetallicRoughnessTexture().srv);
+
+            CbChangedPerScenePrimitive cbPerScenePrimitive;
+            cbPerScenePrimitive.BaseColorFactor         = material.GetBaseColorTexture().GetConstFactor();
+            cbPerScenePrimitive.MetallicRoughnessFactor = material.GetMetallicRoughnessTexture().GetConstFactor();
+            // TODO: Mark unused members
+            immCtx->UpdateSubresource(mCbChangedPerScenePrimitive, 0, nullptr, &cbPerScenePrimitive, 0, 0);
             break;
+        }
         case MaterialWorkflow::kPbrSpecularity:
+        {
             immCtx->PSSetShader(mPsPbrSpecularity, nullptr, 0);
-            immCtx->PSSetShaderResources(2, 1, material.GetBaseColorSRV());
-            immCtx->PSSetShaderResources(3, 1, material.GetSpecularSRV());
+            immCtx->PSSetShaderResources(2, 1, &material.GetBaseColorTexture().srv);
+            immCtx->PSSetShaderResources(3, 1, &material.GetSpecularTexture().srv);
+
+            CbChangedPerScenePrimitive cbPerScenePrimitive;
+            cbPerScenePrimitive.DiffuseColorFactor  = material.GetBaseColorTexture().GetConstFactor();
+            cbPerScenePrimitive.SpecularFactor      = material.GetSpecularTexture().GetConstFactor();
+            // TODO: Mark unused members
+            immCtx->UpdateSubresource(mCbChangedPerScenePrimitive, 0, nullptr, &cbPerScenePrimitive, 0, 0);
             break;
+        }
         default:
             continue;
         }
