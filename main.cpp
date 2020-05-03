@@ -30,7 +30,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eHardwiredEarth
         //Scene::eHardwiredThreePlanets
 
-        Scene::eDebugMaterialConstFactors
+        //Scene::eDebugMaterialConstFactors
         //Scene::eDebugGradientBox
 
         //Scene::eGltfSampleTriangleWithoutIndices // Non-indexed geometry not yet supported!
@@ -45,7 +45,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eGltfSampleDuck
         //Scene::eGltfSampleBoomBox
         //Scene::eGltfSampleBoomBoxWithAxes
-        //Scene::eGltfSampleDamagedHelmet
+        Scene::eGltfSampleDamagedHelmet
         //Scene::eGltfSampleFlightHelmet
 
         //Scene::eWolfBaseMesh

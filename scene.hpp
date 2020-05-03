@@ -169,7 +169,7 @@ public:
 private:
     ValueType   mValueType;
     XMFLOAT4    mNeutralConstFactor;
-    XMFLOAT4    mConstFactor;
+    XMFLOAT4    mConstFactor; // TODO: This belongs to material!
     // TODO: sampler, texCoord
 
 public:
