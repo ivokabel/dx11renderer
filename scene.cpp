@@ -68,12 +68,17 @@ struct CbResize
 
 struct CbFrame
 {
-    // Light sources
     XMFLOAT4 AmbientLightLuminance;
-    XMFLOAT4 DirectLightDirs[DIRECT_LIGHTS_COUNT];
-    XMFLOAT4 DirectLightLuminances[DIRECT_LIGHTS_COUNT];
-    XMFLOAT4 PointLightPositions[POINT_LIGHTS_COUNT];
-    XMFLOAT4 PointLightIntensities[POINT_LIGHTS_COUNT];
+
+    XMFLOAT4 DirectLightDirs[DIRECT_LIGHTS_MAX_COUNT];
+    XMFLOAT4 DirectLightLuminances[DIRECT_LIGHTS_MAX_COUNT];
+
+    XMFLOAT4 PointLightPositions[POINT_LIGHTS_MAX_COUNT];
+    XMFLOAT4 PointLightIntensities[POINT_LIGHTS_MAX_COUNT];
+
+    int32_t  DirectLightsCount; // at the end to avoid 16-byte packing issues
+    int32_t  PointLightsCount;  // at the end to avoid 16-byte packing issues
+    int32_t  dummy_padding[2];  // padding 16 bytes multiple
 };
 
 struct CbSceneNode
@@ -1264,12 +1269,14 @@ void Scene::RenderFrame(IRenderingContext &ctx)
     // Frame constant buffer
     CbFrame cbFrame;
     cbFrame.AmbientLightLuminance = mAmbientLight.luminance;
-    for (int i = 0; i < mDirectLights.size(); i++)
+    cbFrame.DirectLightsCount = (int32_t)mDirectLights.size();
+    for (int i = 0; i < cbFrame.DirectLightsCount; i++)
     {
         cbFrame.DirectLightDirs[i]       = mDirectLights[i].dirTransf;
         cbFrame.DirectLightLuminances[i] = mDirectLights[i].luminance;
     }
-    for (int i = 0; i < mPointLights.size(); i++)
+    cbFrame.PointLightsCount = (int32_t)mPointLights.size();
+    for (int i = 0; i < cbFrame.PointLightsCount; i++)
     {
         cbFrame.PointLightPositions[i]   = mPointLights[i].posTransf;
         cbFrame.PointLightIntensities[i] = mPointLights[i].intensity;

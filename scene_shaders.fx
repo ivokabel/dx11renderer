@@ -25,12 +25,16 @@ cbuffer cbResize : register(b1)
 
 cbuffer cbFrame : register(b2)
 {
-    // Light sources
     float4 AmbientLightLuminance;
-    float4 DirectLightDirs[DIRECT_LIGHTS_COUNT];
-    float4 DirectLightLuminances[DIRECT_LIGHTS_COUNT];
-    float4 PointLightPositions[POINT_LIGHTS_COUNT];
-    float4 PointLightIntensities[POINT_LIGHTS_COUNT];
+
+    float4 DirectLightDirs[DIRECT_LIGHTS_MAX_COUNT];
+    float4 DirectLightLuminances[DIRECT_LIGHTS_MAX_COUNT];
+
+    float4 PointLightPositions[POINT_LIGHTS_MAX_COUNT];
+    float4 PointLightIntensities[POINT_LIGHTS_MAX_COUNT];
+
+    int    DirectLightsCount;
+    int    PointLightsCount;
 };
 
 cbuffer cbSceneNode : register(b3)
@@ -184,7 +188,7 @@ float4 PsPbrSpecularity(PS_INPUT input) : SV_Target
     lightContribs = PbrS_AmbLightContrib(AmbientLightLuminance);
 
     int i;
-    for (i = 0; i < DIRECT_LIGHTS_COUNT; i++)
+    for (i = 0; i < DirectLightsCount; i++)
     {
         PbrS_LightContrib contrib = PbrS_DirLightContrib((float3)DirectLightDirs[i],
                                                          normal,
@@ -195,7 +199,7 @@ float4 PsPbrSpecularity(PS_INPUT input) : SV_Target
         lightContribs.Specular += contrib.Specular;
     }
 
-    for (i = 0; i < POINT_LIGHTS_COUNT; i++)
+    for (i = 0; i < PointLightsCount; i++)
     {
         PbrS_LightContrib contrib = PbrS_PointLightContrib((float3)input.PosWorld,
                                                            (float3)PointLightPositions[i],
@@ -382,14 +386,14 @@ float4 PsPbrMetalness(PS_INPUT input) : SV_Target
     output += PbrM_AmbLightContrib(normal, viewDir, AmbientLightLuminance, matInfo);
 
     int i;
-    for (i = 0; i < DIRECT_LIGHTS_COUNT; i++)
+    for (i = 0; i < DirectLightsCount; i++)
         output += PbrM_DirLightContrib((float3)DirectLightDirs[i],
                                        normal,
                                        viewDir,
                                        DirectLightLuminances[i],
                                        matInfo);
 
-    for (i = 0; i < POINT_LIGHTS_COUNT; i++)
+    for (i = 0; i < PointLightsCount; i++)
         output += PbrM_PointLightContrib((float3)input.PosWorld,
                                          (float3)PointLightPositions[i],
                                          normal,

@@ -366,9 +366,9 @@ private:
     SceneMaterial               mDefaultMaterial;
 
     // Lights
-    AmbientLight                                    mAmbientLight;
-    std::array<DirectLight, DIRECT_LIGHTS_COUNT>    mDirectLights;
-    std::array<PointLight, POINT_LIGHTS_COUNT>      mPointLights;
+    AmbientLight                                     mAmbientLight;
+    std::array<DirectLight, DIRECT_LIGHTS_MAX_COUNT> mDirectLights;
+    std::array<PointLight, POINT_LIGHTS_MAX_COUNT>   mPointLights;
 
     // Camera
     XMMATRIX                    mViewMtrx;
