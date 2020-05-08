@@ -1262,19 +1262,19 @@ void Scene::RenderFrame(IRenderingContext &ctx)
     auto immCtx = ctx.GetImmediateContext();
 
     // Frame constant buffer
-    CbFrame cbEachFrame;
-    cbEachFrame.AmbientLightLuminance = mAmbientLight.luminance;
+    CbFrame cbFrame;
+    cbFrame.AmbientLightLuminance = mAmbientLight.luminance;
     for (int i = 0; i < mDirectLights.size(); i++)
     {
-        cbEachFrame.DirectLightDirs[i]       = mDirectLights[i].dirTransf;
-        cbEachFrame.DirectLightLuminances[i] = mDirectLights[i].luminance;
+        cbFrame.DirectLightDirs[i]       = mDirectLights[i].dirTransf;
+        cbFrame.DirectLightLuminances[i] = mDirectLights[i].luminance;
     }
     for (int i = 0; i < mPointLights.size(); i++)
     {
-        cbEachFrame.PointLightPositions[i]   = mPointLights[i].posTransf;
-        cbEachFrame.PointLightIntensities[i] = mPointLights[i].intensity;
+        cbFrame.PointLightPositions[i]   = mPointLights[i].posTransf;
+        cbFrame.PointLightIntensities[i] = mPointLights[i].intensity;
     }
-    immCtx->UpdateSubresource(mCbFrame, 0, nullptr, &cbEachFrame, 0, 0);
+    immCtx->UpdateSubresource(mCbFrame, 0, nullptr, &cbFrame, 0, 0);
 
     // Setup vertex shader
     immCtx->VSSetShader(mVertexShader, nullptr, 0);
@@ -1297,23 +1297,23 @@ void Scene::RenderFrame(IRenderingContext &ctx)
     // Proxy geometry for point lights
     for (int i = 0; i < mPointLights.size(); i++)
     {
-        CbSceneNode cbPerSceneNode;
+        CbSceneNode cbSceneNode;
 
         const float radius = 0.07f;
         XMMATRIX lightScaleMtrx = XMMatrixScaling(radius, radius, radius);
         XMMATRIX lightTrnslMtrx = XMMatrixTranslationFromVector(XMLoadFloat4(&mPointLights[i].posTransf));
         XMMATRIX lightMtrx = lightScaleMtrx * lightTrnslMtrx;
-        cbPerSceneNode.WorldMtrx = XMMatrixTranspose(lightMtrx);
+        cbSceneNode.WorldMtrx = XMMatrixTranspose(lightMtrx);
 
         const float radius2 = radius * radius;
-        cbPerSceneNode.MeshColor = {
+        cbSceneNode.MeshColor = {
             mPointLights[i].intensity.x / radius2,
             mPointLights[i].intensity.y / radius2,
             mPointLights[i].intensity.z / radius2,
             mPointLights[i].intensity.w / radius2,
         };
 
-        immCtx->UpdateSubresource(mCbSceneNode, 0, nullptr, &cbPerSceneNode, 0, 0);
+        immCtx->UpdateSubresource(mCbSceneNode, 0, nullptr, &cbSceneNode, 0, 0);
 
         immCtx->PSSetShader(mPsConstEmmisive, nullptr, 0);
         mPointLightProxy.DrawGeometry(ctx, mVertexLayout);
@@ -1368,10 +1368,10 @@ void Scene::RenderNode(IRenderingContext &ctx,
     const auto worldMtrx = node.GetWorldMtrx() * parentWorldMtrx;
 
     // Per-node constant buffer
-    CbSceneNode cbPerSceneNode;
-    cbPerSceneNode.WorldMtrx = XMMatrixTranspose(worldMtrx);
-    cbPerSceneNode.MeshColor = { 0.f, 1.f, 0.f, 1.f, };
-    immCtx->UpdateSubresource(mCbSceneNode, 0, nullptr, &cbPerSceneNode, 0, 0);
+    CbSceneNode cbSceneNode;
+    cbSceneNode.WorldMtrx = XMMatrixTranspose(worldMtrx);
+    cbSceneNode.MeshColor = { 0.f, 1.f, 0.f, 1.f, };
+    immCtx->UpdateSubresource(mCbSceneNode, 0, nullptr, &cbSceneNode, 0, 0);
 
     // Draw current node
     for (auto &primitive : node.mPrimitives)
@@ -1393,12 +1393,12 @@ void Scene::RenderNode(IRenderingContext &ctx,
             immCtx->PSSetShaderResources(0, 1, &material.GetBaseColorTexture().srv);
             immCtx->PSSetShaderResources(1, 1, &material.GetMetallicRoughnessTexture().srv);
 
-            CbScenePrimitive cbPerScenePrimitive;
-            cbPerScenePrimitive.BaseColorFactor         = material.GetBaseColorTexture().GetConstFactor();
-            cbPerScenePrimitive.MetallicRoughnessFactor = material.GetMetallicRoughnessTexture().GetConstFactor();
-            cbPerScenePrimitive.DiffuseColorFactor      = UNUSED_COLOR;
-            cbPerScenePrimitive.SpecularFactor          = UNUSED_COLOR;
-            immCtx->UpdateSubresource(mCbScenePrimitive, 0, nullptr, &cbPerScenePrimitive, 0, 0);
+            CbScenePrimitive cbScenePrimitive;
+            cbScenePrimitive.BaseColorFactor         = material.GetBaseColorTexture().GetConstFactor();
+            cbScenePrimitive.MetallicRoughnessFactor = material.GetMetallicRoughnessTexture().GetConstFactor();
+            cbScenePrimitive.DiffuseColorFactor      = UNUSED_COLOR;
+            cbScenePrimitive.SpecularFactor          = UNUSED_COLOR;
+            immCtx->UpdateSubresource(mCbScenePrimitive, 0, nullptr, &cbScenePrimitive, 0, 0);
             break;
         }
         case MaterialWorkflow::kPbrSpecularity:
@@ -1407,12 +1407,12 @@ void Scene::RenderNode(IRenderingContext &ctx,
             immCtx->PSSetShaderResources(2, 1, &material.GetBaseColorTexture().srv);
             immCtx->PSSetShaderResources(3, 1, &material.GetSpecularTexture().srv);
 
-            CbScenePrimitive cbPerScenePrimitive;
-            cbPerScenePrimitive.DiffuseColorFactor      = material.GetBaseColorTexture().GetConstFactor();
-            cbPerScenePrimitive.SpecularFactor          = material.GetSpecularTexture().GetConstFactor();
-            cbPerScenePrimitive.BaseColorFactor         = UNUSED_COLOR;
-            cbPerScenePrimitive.MetallicRoughnessFactor = UNUSED_COLOR;
-            immCtx->UpdateSubresource(mCbScenePrimitive, 0, nullptr, &cbPerScenePrimitive, 0, 0);
+            CbScenePrimitive cbScenePrimitive;
+            cbScenePrimitive.DiffuseColorFactor      = material.GetBaseColorTexture().GetConstFactor();
+            cbScenePrimitive.SpecularFactor          = material.GetSpecularTexture().GetConstFactor();
+            cbScenePrimitive.BaseColorFactor         = UNUSED_COLOR;
+            cbScenePrimitive.MetallicRoughnessFactor = UNUSED_COLOR;
+            immCtx->UpdateSubresource(mCbScenePrimitive, 0, nullptr, &cbScenePrimitive, 0, 0);
             break;
         }
         default:
