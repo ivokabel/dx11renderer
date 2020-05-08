@@ -891,6 +891,13 @@ bool Scene::Load(IRenderingContext &ctx)
     default:
         return false;
     }
+
+    // TODO: Sanity checking after loading a scene
+    // (after loading is separated into smaller functions)
+    //if (mPointLights.size() > POINT_LIGHTS_MAX_COUNT)
+    //    return;
+    //if (mDirectLights.size() > DIRECT_LIGHTS_MAX_COUNT)
+    //    return;
 }
 
 
@@ -1066,9 +1073,11 @@ bool Scene::LoadGLTF(IRenderingContext &ctx,
     const uint8_t amb = 60;
     mAmbientLight.luminance = SceneUtils::SrgbColorToFloat(amb, amb, amb);
     const float lum = 3.0f;
+    mDirectLights.resize(1);
     mDirectLights[0].dir       = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
     mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
     const float ints = 6.5f;
+    mPointLights.resize(3);
     mPointLights[0].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
     mPointLights[1].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
     mPointLights[2].intensity = XMFLOAT4(ints, ints, ints, 1.0f);
@@ -1262,6 +1271,11 @@ void Scene::AnimateFrame(IRenderingContext &ctx)
 void Scene::RenderFrame(IRenderingContext &ctx)
 {
     if (!ctx.IsValid())
+        return;
+
+    if (mPointLights.size() > POINT_LIGHTS_MAX_COUNT)
+        return;
+    if (mDirectLights.size() > DIRECT_LIGHTS_MAX_COUNT)
         return;
 
     auto immCtx = ctx.GetImmediateContext();
