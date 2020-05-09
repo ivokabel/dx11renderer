@@ -289,10 +289,10 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         }
 
-        //AddRotationQuaternionToRoots({ 0.000, -1.000, 0.000, 0.000 }); // 180°y
+        AddRotationQuaternionToRoots({ 0.000, -1.000, 0.000, 0.000 }); // 180°y
 
         //AddRotationQuaternionToRoots({ 0.980, 0., 0., 0.197 }); //22.7°
-        AddRotationQuaternionToRoots({ 0.980, 0., 0., 0.198 }); //22.8°
+        //AddRotationQuaternionToRoots({ 0.980, 0., 0., 0.198 }); //22.8°
 
         // debug lights
         const uint8_t amb = 40u;// 0;//250;//
@@ -307,6 +307,10 @@ bool Scene::Load(IRenderingContext &ctx)
         mPointLights.resize(16);
         for (auto &light : mPointLights)
             light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+
+        // Camera pos
+        sViewData.eye = XMVectorSet(0.0f, 0.0f, 11.0f, 1.0f);
+        sViewData.at  = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 
         return true;
     }
