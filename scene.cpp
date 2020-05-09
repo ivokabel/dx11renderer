@@ -199,7 +199,7 @@ bool Scene::Init(IRenderingContext &ctx)
                                                (FLOAT)wndWidth / wndHeight,
                                                0.01f, 100.0f);
 
-    // Update constant buffers which can be updated now
+    // Scene constant buffer can be updated now
 
     CbScene cbScene;
     cbScene.ViewMtrx = XMMatrixTranspose(mViewMtrx);
