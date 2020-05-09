@@ -186,6 +186,21 @@ bool Scene::Init(IRenderingContext &ctx)
     if (FAILED(hr))
         return hr;
 
+    // Load scene
+
+    if (!Load(ctx))
+        return false;
+
+    if (!mPointLightProxy.CreateSphere(ctx, 8, 16))
+        return false;
+
+    if (!mDefaultMaterial.CreatePbrSpecularity(ctx,
+                                               nullptr,
+                                               XMFLOAT4(0.5f, 0.5f, 0.5f, 1.f),
+                                               nullptr,
+                                               XMFLOAT4(0.f, 0.f, 0.f, 1.f)))
+        return false;
+
     // Matrices
     mViewMtrx = XMMatrixLookAtLH(sViewData.eye, sViewData.at, sViewData.up);
     mProjectionMtrx = XMMatrixPerspectiveFovLH(XM_PIDIV4,
@@ -202,21 +217,6 @@ bool Scene::Init(IRenderingContext &ctx)
     CbResize cbResize;
     cbResize.ProjectionMtrx = XMMatrixTranspose(mProjectionMtrx);
     immCtx->UpdateSubresource(mCbResize, 0, NULL, &cbResize, 0, 0);
-
-    // Load scene
-
-    if (!Load(ctx))
-        return false;
-
-    if (!mPointLightProxy.CreateSphere(ctx, 8, 16))
-        return false;
-
-    if (!mDefaultMaterial.CreatePbrSpecularity(ctx,
-                                               nullptr,
-                                               XMFLOAT4(0.5f, 0.5f, 0.5f, 1.f),
-                                               nullptr,
-                                               XMFLOAT4(0.f, 0.f, 0.f, 1.f)))
-        return false;
 
     return true;
 }
