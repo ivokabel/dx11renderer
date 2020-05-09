@@ -377,6 +377,11 @@ private:
     std::vector<PointLight>     mPointLights;
 
     // Camera
+    struct {
+        XMVECTOR eye;
+        XMVECTOR at;
+        XMVECTOR up;
+    }                           mViewData;
     XMMATRIX                    mViewMtrx;
     XMMATRIX                    mProjectionMtrx;
 

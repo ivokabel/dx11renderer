@@ -17,6 +17,7 @@ set(RENDERER_SOURCES
     iscene.hpp
     scene.hpp
     scene.cpp
+    scene_load.cpp
     scene_shaders.fx
     scene_utils.hpp
     scene_utils.cpp
