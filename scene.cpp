@@ -78,7 +78,7 @@ struct CbFrame
 
     int32_t  DirectLightsCount; // at the end to avoid 16-byte packing issues
     int32_t  PointLightsCount;  // at the end to avoid 16-byte packing issues
-    int32_t  dummy_padding[2];  // padding 16 bytes multiple
+    int32_t  dummy_padding[2];  // padding to 16 bytes multiple
 };
 
 struct CbSceneNode
@@ -300,19 +300,22 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         }
 
-        AddRotationQuaternionToRoots({ 0.000, -1.000, 0.000, 0.000 }); // 180°y
+        //AddRotationQuaternionToRoots({ 0.000, -1.000, 0.000, 0.000 }); // 180°y
+
+        //AddRotationQuaternionToRoots({ 0.980, 0., 0., 0.197 }); //22.7°
+        AddRotationQuaternionToRoots({ 0.980, 0., 0., 0.198 }); //22.8°
 
         // debug lights
         const uint8_t amb = 40u;// 0;//250;//
         mAmbientLight.luminance = SceneUtils::SrgbColorToFloat(amb, amb, amb);
-        const float lum = 2.5f;// 0.f;//2.5f;//
+        const float lum = 1.5f;//2.5f;//
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-        const float ints = 14.f;// 25.f;//0.f;//
+        const float ints = 300.f;//0.f;//14.f;// 
         //mPointLights[0].intensity = XMFLOAT4(1.0f*ints, 1.0f*ints, 1.0f*ints, 1.0f);
         //mPointLights[1].intensity = XMFLOAT4(1.0f*ints, 1.0f*ints, 1.0f*ints, 1.0f);
         //mPointLights[2].intensity = XMFLOAT4(2.0f*ints, 2.0f*ints, 2.0f*ints, 1.0f);
-        mPointLights.resize(12);
+        mPointLights.resize(16);
         for (auto &light : mPointLights)
             light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
 
@@ -1229,7 +1232,7 @@ void Scene::AnimateFrame(IRenderingContext &ctx)
     for (auto &dirLight : mDirectLights)
         dirLight.dirTransf = dirLight.dir;
 
-    // Animate point lights
+    // Animate point lights (harwired animation for now)
 
     const float time = ctx.GetFrameAnimationTime();
     const float period = 15.f; //seconds
@@ -1242,14 +1245,15 @@ void Scene::AnimateFrame(IRenderingContext &ctx)
         const float lightRelOffset = (float)i / pointCount;
 
         const float orbitRadius =
-            (mSceneId == eHardwiredThreePlanets)
-            ? 5.2f
-            : 5.5f;
+            //(mSceneId == eHardwiredThreePlanets)
+            //? 5.2f
+            //: 5.5f;
+            20.f;
         const float rotationAngle = -2.f * angle - lightRelOffset * XM_2PI;
-        const float orbitInclination =
-            (mSceneId == eHardwiredThreePlanets)
-            ? (lightRelOffset - 0.5f) * XM_PIDIV2
-            : lightRelOffset * XM_PI;
+        //const float orbitInclination = (mSceneId == eHardwiredThreePlanets)
+        //                               ? (lightRelOffset - 0.5f) * XM_PIDIV2
+        //                               : lightRelOffset * XM_PI;
+        const float orbitInclination = 0.f;
 
         const XMMATRIX translationMtrx  = XMMatrixTranslation(orbitRadius, 0.f, 0.f);
         const XMMATRIX rotationMtrx     = XMMatrixRotationY(rotationAngle);
