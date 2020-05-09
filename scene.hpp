@@ -268,7 +268,13 @@ struct PointLight
         pos{ 0.f, 0.f, 0.f, 0.f },
         posTransf{ 0.f, 0.f, 0.f, 0.f },
         intensity{ 0.f, 0.f, 0.f, 0.f }
-    {}
+    {};
+
+    PointLight(XMFLOAT4 intensity) :
+        PointLight()
+    {
+        this->intensity = intensity;
+    };
 };
 
 

@@ -276,14 +276,14 @@ bool Scene::Load(IRenderingContext &ctx)
         case eGltfSampleMetalRoughSpheres:
             if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/MetalRoughSpheres/MetalRoughSpheres.gltf"))
                 return false;
-            AddTranslationToRoots({ 0., 0.4, 1.6 });
-            AddScaleToRoots(0.8);
+            AddTranslationToRoots({ 0., 0.0, 1.6 });
+            AddScaleToRoots(0.85);
             break;
         case eGltfSampleMetalRoughSpheresNoTextures:
             if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/MetalRoughSpheresNoTextures/MetalRoughSpheresNoTextures.gltf"))
                 return false;
-            AddScaleToRoots(900);
-            AddTranslationToRoots({ -2.5, -2.3, 1.5 });
+            AddScaleToRoots(1000);
+            AddTranslationToRoots({ -3.0, -3.0, 1.5 });
             break;
         default:
             return false;
@@ -291,25 +291,19 @@ bool Scene::Load(IRenderingContext &ctx)
 
         AddRotationQuaternionToRoots({ 0.000, -1.000, 0.000, 0.000 }); // 180°y
 
-        //AddRotationQuaternionToRoots({ 0.980, 0., 0., 0.197 }); //22.7°
-        //AddRotationQuaternionToRoots({ 0.980, 0., 0., 0.198 }); //22.8°
-
-        // debug lights
-        const uint8_t amb = 40u;// 0;//250;//
+        // Lights
+        const uint8_t amb = 20u;// 0;//250;//
         mAmbientLight.luminance = SceneUtils::SrgbColorToFloat(amb, amb, amb);
         const float lum = 1.5f;//2.5f;//
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-        const float ints = 300.f;//0.f;//14.f;// 
-        //mPointLights[0].intensity = XMFLOAT4(1.0f*ints, 1.0f*ints, 1.0f*ints, 1.0f);
-        //mPointLights[1].intensity = XMFLOAT4(1.0f*ints, 1.0f*ints, 1.0f*ints, 1.0f);
-        //mPointLights[2].intensity = XMFLOAT4(2.0f*ints, 2.0f*ints, 2.0f*ints, 1.0f);
-        mPointLights.resize(16);
-        for (auto &light : mPointLights)
-            light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        const size_t pointLightCount = 14;
+        const float ints = 4000.f / pointLightCount;//0.f;//14.f;// 
+        mPointLights.clear();
+        mPointLights.resize(pointLightCount, PointLight(XMFLOAT4(ints, ints, ints, 1.0f)));
 
         // Camera pos
-        sViewData.eye = XMVectorSet(0.0f, 0.0f, 11.0f, 1.0f);
+        sViewData.eye = XMVectorSet(0.0f, 0.0f, 10.f, 1.0f);
         sViewData.at  = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 
         return true;

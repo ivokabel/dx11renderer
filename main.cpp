@@ -39,8 +39,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eGltfSampleBox
         //Scene::eGltfSampleBoxInterleaved
         //Scene::eGltfSampleBoxTextured
-        Scene::eGltfSampleMetalRoughSpheres
-        //Scene::eGltfSampleMetalRoughSpheresNoTextures
+        //Scene::eGltfSampleMetalRoughSpheres
+        Scene::eGltfSampleMetalRoughSpheresNoTextures
         //Scene::eGltfSample2CylinderEngine
         //Scene::eGltfSampleDuck
         //Scene::eGltfSampleBoomBox
