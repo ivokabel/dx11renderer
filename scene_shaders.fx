@@ -16,14 +16,10 @@ cbuffer cbScene : register(b0)
 {
     matrix ViewMtrx;
     float4 CameraPos;
-};
-
-cbuffer cbResize : register(b1)
-{
     matrix ProjectionMtrx;
 };
 
-cbuffer cbFrame : register(b2)
+cbuffer cbFrame : register(b1)
 {
     float4 AmbientLightLuminance;
 
@@ -37,13 +33,13 @@ cbuffer cbFrame : register(b2)
     int    PointLightsCount;
 };
 
-cbuffer cbSceneNode : register(b3)
+cbuffer cbSceneNode : register(b2)
 {
     matrix WorldMtrx;
     float4 MeshColor;
 };
 
-cbuffer cbSceneNode : register(b4)
+cbuffer cbSceneNode : register(b3)
 {
     // Metallness
     float4 BaseColorFactor;

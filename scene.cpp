@@ -59,10 +59,6 @@ struct CbScene
 {
     XMMATRIX ViewMtrx;
     XMFLOAT4 CameraPos;
-};
-
-struct CbResize
-{
     XMMATRIX ProjectionMtrx;
 };
 
@@ -155,10 +151,6 @@ bool Scene::Init(IRenderingContext &ctx)
     hr = device->CreateBuffer(&bd, nullptr, &mCbScene);
     if (FAILED(hr))
         return false;
-    bd.ByteWidth = sizeof(CbResize);
-    hr = device->CreateBuffer(&bd, nullptr, &mCbResize);
-    if (FAILED(hr))
-        return hr;
     bd.ByteWidth = sizeof(CbFrame);
     hr = device->CreateBuffer(&bd, nullptr, &mCbFrame);
     if (FAILED(hr))
@@ -212,11 +204,8 @@ bool Scene::Init(IRenderingContext &ctx)
     CbScene cbScene;
     cbScene.ViewMtrx = XMMatrixTranspose(mViewMtrx);
     XMStoreFloat4(&cbScene.CameraPos, sViewData.eye);
+    cbScene.ProjectionMtrx = XMMatrixTranspose(mProjectionMtrx);
     immCtx->UpdateSubresource(mCbScene, 0, NULL, &cbScene, 0, 0);
-
-    CbResize cbResize;
-    cbResize.ProjectionMtrx = XMMatrixTranspose(mProjectionMtrx);
-    immCtx->UpdateSubresource(mCbResize, 0, NULL, &cbResize, 0, 0);
 
     return true;
 }
@@ -1207,7 +1196,6 @@ void Scene::Destroy()
     Utils::ReleaseAndMakeNull(mVertexLayout);
 
     Utils::ReleaseAndMakeNull(mCbScene);
-    Utils::ReleaseAndMakeNull(mCbResize);
     Utils::ReleaseAndMakeNull(mCbFrame);
     Utils::ReleaseAndMakeNull(mCbSceneNode);
     Utils::ReleaseAndMakeNull(mCbScenePrimitive);
@@ -1299,15 +1287,14 @@ void Scene::RenderFrame(IRenderingContext &ctx)
     // Setup vertex shader
     immCtx->VSSetShader(mVertexShader, nullptr, 0);
     immCtx->VSSetConstantBuffers(0, 1, &mCbScene);
-    immCtx->VSSetConstantBuffers(1, 1, &mCbResize);
-    immCtx->VSSetConstantBuffers(2, 1, &mCbFrame);
-    immCtx->VSSetConstantBuffers(3, 1, &mCbSceneNode);
+    immCtx->VSSetConstantBuffers(1, 1, &mCbFrame);
+    immCtx->VSSetConstantBuffers(2, 1, &mCbSceneNode);
 
     // Setup pixel shader data (shader itself is chosen later for each material)
     immCtx->PSSetConstantBuffers(0, 1, &mCbScene);
-    immCtx->PSSetConstantBuffers(2, 1, &mCbFrame);
-    immCtx->PSSetConstantBuffers(3, 1, &mCbSceneNode);
-    immCtx->PSSetConstantBuffers(4, 1, &mCbScenePrimitive);
+    immCtx->PSSetConstantBuffers(1, 1, &mCbFrame);
+    immCtx->PSSetConstantBuffers(2, 1, &mCbSceneNode);
+    immCtx->PSSetConstantBuffers(3, 1, &mCbScenePrimitive);
     immCtx->PSSetSamplers(0, 1, &mSamplerLinear);
 
     // Scene geometry

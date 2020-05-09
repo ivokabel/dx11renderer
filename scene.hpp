@@ -383,7 +383,6 @@ private:
     ID3D11InputLayout*          mVertexLayout = nullptr;
 
     ID3D11Buffer*               mCbScene = nullptr;
-    ID3D11Buffer*               mCbResize = nullptr;
     ID3D11Buffer*               mCbFrame = nullptr;
     ID3D11Buffer*               mCbSceneNode = nullptr;
     ID3D11Buffer*               mCbScenePrimitive = nullptr;
