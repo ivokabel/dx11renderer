@@ -547,7 +547,7 @@ bool Scene::Load(IRenderingContext &ctx)
         return true;
     }
 
-    case eDebugMaterialConstFactors:
+    case eHardwiredMaterialConstFactors:
     {
         mMaterials.clear();
         mMaterials.resize(3, SceneMaterial());
