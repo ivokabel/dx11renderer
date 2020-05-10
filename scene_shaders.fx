@@ -1,5 +1,7 @@
 #include "constants.hpp"
 
+//#define USE_SMOOTH_REFRACTION_APPROX_BSDF
+
 static const float PI = 3.14159265f;
 
 // Metalness workflow
@@ -283,8 +285,8 @@ float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo ma
     const float4 specular = fresnelHV * vis * distr;
 
 #ifdef USE_SMOOTH_REFRACTION_APPROX_BSDF
-    const float4 fresnelNV = FresnelSchlick(matInfo, NdotV);
-    const float4 diffuse = DiffuseBRDF() * matInfo.diffuse * (1.0 - fresnelNV);
+    const float4 fresnelNV  = FresnelSchlick(matInfo, NdotV);
+    const float4 diffuse    = DiffuseBRDF() * matInfo.diffuse * (1.0 - fresnelNV);
 #else
     const float4 diffuse = DiffuseBRDF() * matInfo.diffuse;
 #endif
