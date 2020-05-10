@@ -32,6 +32,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eHardwiredThreePlanets
 
         //Scene::eDebugGradientBox
+        Scene::eDebugMetalRoughSpheresNoTextures
 
         //Scene::eGltfSampleTriangleWithoutIndices // Non-indexed geometry not yet supported!
         //Scene::eGltfSampleTriangle
@@ -40,7 +41,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eGltfSampleBoxInterleaved
         //Scene::eGltfSampleBoxTextured
         //Scene::eGltfSampleMetalRoughSpheres
-        Scene::eGltfSampleMetalRoughSpheresNoTextures
+        //Scene::eGltfSampleMetalRoughSpheresNoTextures
         //Scene::eGltfSample2CylinderEngine
         //Scene::eGltfSampleDuck
         //Scene::eGltfSampleBoomBox

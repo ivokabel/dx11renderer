@@ -61,6 +61,7 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eGltfSampleMetalRoughSpheres:
     case eGltfSampleMetalRoughSpheresNoTextures:
+    case eDebugMetalRoughSpheresNoTextures:
     {
         switch (mSceneId)
         {
@@ -72,6 +73,12 @@ bool Scene::Load(IRenderingContext &ctx)
             break;
         case eGltfSampleMetalRoughSpheresNoTextures:
             if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/MetalRoughSpheresNoTextures/MetalRoughSpheresNoTextures.gltf"))
+                return false;
+            AddScaleToRoots(1000);
+            AddTranslationToRoots({ -3.0, -3.0, 1.5 });
+            break;
+        case eDebugMetalRoughSpheresNoTextures:
+            if (!LoadExternal(ctx, L"../Scenes/Debugging/MetalRoughSpheresNoTextures/MetalRoughSpheresNoTextures.gltf"))
                 return false;
             AddScaleToRoots(1000);
             AddTranslationToRoots({ -3.0, -3.0, 1.5 });
