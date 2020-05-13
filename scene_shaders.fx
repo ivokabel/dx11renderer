@@ -1,6 +1,7 @@
 #include "constants.hpp"
 
-//#define USE_SMOOTH_REFRACTION_APPROX_BSDF
+//#define USE_SMOOTH_REFRACTION_APPROX_BSDF_V
+#define USE_SMOOTH_REFRACTION_APPROX_BSDF_VL
 
 static const float PI = 3.14159265f;
 
@@ -284,9 +285,13 @@ float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo ma
 
     const float4 specular = fresnelHV * vis * distr;
 
-#ifdef USE_SMOOTH_REFRACTION_APPROX_BSDF
+#if defined USE_SMOOTH_REFRACTION_APPROX_BSDF_V
     const float4 fresnelNV  = FresnelSchlick(matInfo, NdotV);
     const float4 diffuse    = DiffuseBRDF() * matInfo.diffuse * (1.0 - fresnelNV);
+#elif defined USE_SMOOTH_REFRACTION_APPROX_BSDF_VL
+    const float4 fresnelNV  = FresnelSchlick(matInfo, NdotV);
+    const float4 fresnelNL  = FresnelSchlick(matInfo, NdotL);
+    const float4 diffuse    = DiffuseBRDF() * matInfo.diffuse * (1.0 - fresnelNV) * (1.0 - fresnelNL);
 #else
     const float4 diffuse = DiffuseBRDF() * matInfo.diffuse;
 #endif
@@ -297,11 +302,19 @@ float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo ma
 
 float4 PbrM_AmbLightContrib(float3 normal, float3 viewDir, float4 luminance, PbrM_MatInfo matInfo)
 {
-#ifdef USE_SMOOTH_REFRACTION_APPROX_BSDF
+#if defined USE_SMOOTH_REFRACTION_APPROX_BSDF_V
     const float NdotV = max(dot(normal, viewDir), 0.);
     const float4 fresnelNV = FresnelSchlick(matInfo, NdotV);
 
     const float4 diffuse = matInfo.diffuse * (1.0 - fresnelNV);
+    const float4 specular = fresnelNV; // assuming that full specular lobe integrates to 1
+#elif defined USE_SMOOTH_REFRACTION_APPROX_BSDF_VL
+    const float NdotV = max(dot(normal, viewDir), 0.);
+    const float4 fresnelNV = FresnelSchlick(matInfo, NdotV);
+
+    const float4 fresnelNLIntegralApprox = lerp(matInfo.f0, 1.f, 0.3f);
+
+    const float4 diffuse = matInfo.diffuse * (1.0 - fresnelNV) * (1.0 - fresnelNLIntegralApprox);
     const float4 specular = fresnelNV; // assuming that full specular lobe integrates to 1
 #else
     const float4 diffuse = matInfo.diffuse;
@@ -355,7 +368,7 @@ PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
     const float  roughness      = metalRoughness.g;
 
     const float4 f0Diel         = float4(0.04, 0.04, 0.04, 1);
-#ifdef USE_SMOOTH_REFRACTION_APPROX_BSDF
+#if defined USE_SMOOTH_REFRACTION_APPROX_BSDF_V || defined USE_SMOOTH_REFRACTION_APPROX_BSDF_VL
     const float4 diffuseDiel    = baseColor;
 #else
     const float4 diffuseDiel    = (float4(1, 1, 1, 1) - f0Diel) * baseColor;

@@ -90,13 +90,30 @@ bool Scene::Load(IRenderingContext &ctx)
         AddRotationQuaternionToRoots({ 0.000, -1.000, 0.000, 0.000 }); // 180°y
 
         // Lights
-        const uint8_t amb = 0;//80u;//200u;//
+//#define DIRECTIONAL
+//#define POINT
+//#define AMBIENT
+        const size_t pointLightCount = 14;
+#if defined DIRECTIONAL
+        const uint8_t amb = 0;
+        const float lum = 2.5f;
+        const float ints = 0.f;
+#elif defined POINT
+        const uint8_t amb = 0;
+        const float lum = 0.f;
+        const float ints = 4000.f / pointLightCount;
+#elif defined AMBIENT
+        const uint8_t amb = 200u;
+        const float lum = 0.f;
+        const float ints = 0.f;
+#else
+        const uint8_t amb = 80u;
+        const float lum = 2.5f;
+        const float ints = 4000.f / pointLightCount;
+#endif
         mAmbientLight.luminance = SceneUtils::SrgbColorToFloat(amb, amb, amb);
-        const float lum = 2.5f;//0.f;//
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-        const size_t pointLightCount = 14;
-        const float ints = 0.f;//4000.f / pointLightCount;//
         mPointLights.clear();
         mPointLights.resize(pointLightCount, PointLight(XMFLOAT4(ints, ints, ints, 1.0f)));
 
