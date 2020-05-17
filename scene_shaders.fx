@@ -1,6 +1,5 @@
 #include "constants.hpp"
 
-//#define USE_SMOOTH_REFRACTION_APPROX_BSDF_V
 //#define USE_SMOOTH_REFRACTION_APPROX_BSDF_VL
 #define USE_ROUGH_REFRACTION_APPROX_BSDF_VL
 
@@ -292,10 +291,7 @@ float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo ma
 
     const float4 specular = fresnelHV * vis * distr;
 
-#if defined USE_SMOOTH_REFRACTION_APPROX_BSDF_V
-    const float4 fresnelNV  = FresnelSchlick(matInfo, NdotV); // TODO: Pre-compute
-    const float4 diffuse    = DiffuseBRDF() * matInfo.diffuse * (1.0 - fresnelNV);
-#elif defined USE_SMOOTH_REFRACTION_APPROX_BSDF_VL
+#if defined USE_SMOOTH_REFRACTION_APPROX_BSDF_VL
     const float4 fresnelNV  = FresnelSchlick(matInfo, NdotV); // TODO: Pre-compute
     const float4 fresnelNL  = FresnelSchlick(matInfo, NdotL);
     const float4 diffuse    = DiffuseBRDF() * matInfo.diffuse * (1.0 - fresnelNV) * (1.0 - fresnelNL);
@@ -319,13 +315,7 @@ float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo ma
 
 float4 PbrM_AmbLightContrib(float3 normal, float3 viewDir, float4 luminance, PbrM_MatInfo matInfo)
 {
-#if defined USE_SMOOTH_REFRACTION_APPROX_BSDF_V
-    const float NdotV = max(dot(normal, viewDir), 0.);
-    const float4 fresnelNV = FresnelSchlick(matInfo, NdotV);
-
-    const float4 diffuse  = matInfo.diffuse * (1.0 - fresnelNV);
-    const float4 specular = fresnelNV; // assuming that full specular lobe integrates to 1
-#elif defined USE_SMOOTH_REFRACTION_APPROX_BSDF_VL
+#if defined USE_SMOOTH_REFRACTION_APPROX_BSDF_VL
     const float NdotV = max(dot(normal, viewDir), 0.);
     const float4 fresnelNV = FresnelSchlick(matInfo, NdotV);
 
@@ -395,8 +385,7 @@ PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
     const float  roughness      = metalRoughness.g;
 
     const float4 f0Diel         = float4(0.04, 0.04, 0.04, 1);
-#if defined USE_SMOOTH_REFRACTION_APPROX_BSDF_V  || \
-    defined USE_SMOOTH_REFRACTION_APPROX_BSDF_VL || \
+#if defined USE_SMOOTH_REFRACTION_APPROX_BSDF_VL || \
     defined USE_ROUGH_REFRACTION_APPROX_BSDF_VL
     const float4 diffuseDiel    = baseColor;
 #else
