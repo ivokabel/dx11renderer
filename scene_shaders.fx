@@ -262,7 +262,7 @@ float GgxVisibilityOcclusion(PbrM_MatInfo matInfo, float NdotL, float NdotV)
 
 float4 FresnelIntegralApprox(float4 f0)
 {
-    return lerp(f0, 1.f, 0.1f); // Very ad-hoc approximation :-)
+    return lerp(f0, 1.f, 0.05f); // Very ad-hoc approximation :-)
 }
 
 
@@ -331,8 +331,8 @@ float4 PbrM_AmbLightContrib(float3 normal, float3 viewDir, float4 luminance, Pbr
 
     const float4 roughFresnelNV = lerp(fresnelNV, fresnelIntegral, matInfo.alphaSq); // TODO Pre-compute
     
-    const float4 diffuse = matInfo.diffuse * (1.0 - roughFresnelNV) * (1.0 - fresnelIntegral); // TODO
-    const float4 specular = fresnelNV; // assuming that full specular lobe integrates to 1
+    const float4 diffuse  = matInfo.diffuse * (1.0 - roughFresnelNV) /** (1.0 - fresnelIntegral)*/;
+    const float4 specular = roughFresnelNV;
 #else
     const float4 diffuse  = matInfo.diffuse;
     const float4 specular = matInfo.f0; // assuming that full specular lobe integrates to 1

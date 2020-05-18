@@ -79,7 +79,10 @@ bool Scene::Load(IRenderingContext &ctx)
             break;
         case eDebugMetalRoughSpheresNoTextures:
             //if (!LoadExternal(ctx, L"../Scenes/Debugging/MetalRoughSpheresNoTextures/MetalRoughSpheresNoTextures.gltf"))
+            //if (!LoadExternal(ctx, L"../Scenes/Debugging/MetalRoughSpheresNoTextures/MetalRoughSpheresNoTextures yellow.gltf"))
             if (!LoadExternal(ctx, L"../Scenes/Debugging/MetalRoughSpheresNoTextures/MetalRoughSpheresNoTextures brown.gltf"))
+            //if (!LoadExternal(ctx, L"../Scenes/Debugging/MetalRoughSpheresNoTextures/MetalRoughSpheresNoTextures white.gltf"))
+            //if (!LoadExternal(ctx, L"../Scenes/Debugging/MetalRoughSpheresNoTextures/MetalRoughSpheresNoTextures black.gltf"))
                 return false;
             AddScaleToRoots(1000);
             AddTranslationToRoots({ -3.0, -3.0, 1.5 });
