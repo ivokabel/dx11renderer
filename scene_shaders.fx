@@ -1,5 +1,8 @@
 #include "constants.hpp"
 
+//#define USE_SMOOTH_REFRACTION_APPROX
+#define USE_ROUGH_REFRACTION_APPROX
+
 static const float PI = 3.14159265f;
 
 // Metalness workflow
@@ -16,30 +19,30 @@ cbuffer cbScene : register(b0)
 {
     matrix ViewMtrx;
     float4 CameraPos;
-};
-
-cbuffer cbResize : register(b1)
-{
     matrix ProjectionMtrx;
 };
 
-cbuffer cbFrame : register(b2)
+cbuffer cbFrame : register(b1)
 {
-    // Light sources
     float4 AmbientLightLuminance;
-    float4 DirectLightDirs[DIRECT_LIGHTS_COUNT];
-    float4 DirectLightLuminances[DIRECT_LIGHTS_COUNT];
-    float4 PointLightPositions[POINT_LIGHTS_COUNT];
-    float4 PointLightIntensities[POINT_LIGHTS_COUNT];
+
+    float4 DirectLightDirs[DIRECT_LIGHTS_MAX_COUNT];
+    float4 DirectLightLuminances[DIRECT_LIGHTS_MAX_COUNT];
+
+    float4 PointLightPositions[POINT_LIGHTS_MAX_COUNT];
+    float4 PointLightIntensities[POINT_LIGHTS_MAX_COUNT];
+
+    int    DirectLightsCount;
+    int    PointLightsCount;
 };
 
-cbuffer cbSceneNode : register(b3)
+cbuffer cbSceneNode : register(b2)
 {
     matrix WorldMtrx;
     float4 MeshColor;
 };
 
-cbuffer cbSceneNode : register(b4)
+cbuffer cbSceneNode : register(b3)
 {
     // Metallness
     float4 BaseColorFactor;
@@ -184,7 +187,7 @@ float4 PsPbrSpecularity(PS_INPUT input) : SV_Target
     lightContribs = PbrS_AmbLightContrib(AmbientLightLuminance);
 
     int i;
-    for (i = 0; i < DIRECT_LIGHTS_COUNT; i++)
+    for (i = 0; i < DirectLightsCount; i++)
     {
         PbrS_LightContrib contrib = PbrS_DirLightContrib((float3)DirectLightDirs[i],
                                                          normal,
@@ -195,7 +198,7 @@ float4 PsPbrSpecularity(PS_INPUT input) : SV_Target
         lightContribs.Specular += contrib.Specular;
     }
 
-    for (i = 0; i < POINT_LIGHTS_COUNT; i++)
+    for (i = 0; i < PointLightsCount; i++)
     {
         PbrS_LightContrib contrib = PbrS_PointLightContrib((float3)input.PosWorld,
                                                            (float3)PointLightPositions[i],
@@ -257,6 +260,12 @@ float GgxVisibilityOcclusion(PbrM_MatInfo matInfo, float NdotL, float NdotV)
 }
 
 
+float4 FresnelIntegralApprox(float4 f0)
+{
+    return lerp(f0, 1.f, 0.05f); // Very ad-hoc approximation :-)
+}
+
+
 float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo matInfo)
 {
     float NdotL = dot(lightDir, normal);
@@ -266,7 +275,7 @@ float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo ma
         return float4(0, 0, 0, 1);
 
     NdotL = max(NdotL, 0.01f);
-    NdotV = max(NdotV, 0.01f);
+    NdotV = max(NdotV, 0.01f);  // TODO: Pre-compute
 
     // Halfway vector
     const float3 halfwayRaw = lightDir + viewDir;
@@ -282,11 +291,22 @@ float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo ma
 
     const float4 specular = fresnelHV * vis * distr;
 
-#ifndef USE_SMOOTH_REFRACTION_APPROX_BSDF
-    const float4 diffuse = DiffuseBRDF() * matInfo.diffuse;
+#if defined USE_SMOOTH_REFRACTION_APPROX
+    const float4 fresnelNV  = FresnelSchlick(matInfo, NdotV); // TODO: Pre-compute
+    const float4 fresnelNL  = FresnelSchlick(matInfo, NdotL);
+    const float4 diffuse    = DiffuseBRDF() * matInfo.diffuse * (1.0 - fresnelNV) * (1.0 - fresnelNL);
+#elif defined USE_ROUGH_REFRACTION_APPROX
+    const float4 fresnelNV  = FresnelSchlick(matInfo, NdotV); // TODO: Pre-compute
+    const float4 fresnelNL  = FresnelSchlick(matInfo, NdotL);
+
+    const float4 fresnelIntegral = FresnelIntegralApprox(matInfo.f0); // TODO: Pre-compute
+
+    const float4 roughFresnelNV = lerp(fresnelNV, fresnelIntegral, matInfo.alphaSq);
+    const float4 roughFresnelNL = lerp(fresnelNL, fresnelIntegral, matInfo.alphaSq);
+
+    const float4 diffuse = DiffuseBRDF() * matInfo.diffuse * (1.0 - roughFresnelNV) * (1.0 - roughFresnelNL);
 #else
-    const float4 fresnelNV = FresnelSchlick(matInfo, NdotV);
-    const float4 diffuse = DiffuseBRDF() * matInfo.diffuse * (1.0 - fresnelNV);
+    const float4 diffuse = DiffuseBRDF() * matInfo.diffuse;
 #endif
 
     return specular + diffuse;
@@ -295,15 +315,27 @@ float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo ma
 
 float4 PbrM_AmbLightContrib(float3 normal, float3 viewDir, float4 luminance, PbrM_MatInfo matInfo)
 {
-#ifndef USE_SMOOTH_REFRACTION_APPROX_BSDF
-    const float4 diffuse  = matInfo.diffuse;
-    const float4 specular = matInfo.f0; // assuming that full specular lobe integrates to 1
-#else
+#if defined USE_SMOOTH_REFRACTION_APPROX
     const float NdotV = max(dot(normal, viewDir), 0.);
     const float4 fresnelNV = FresnelSchlick(matInfo, NdotV);
 
-    const float4 diffuse = matInfo.diffuse * (1.0 - fresnelNV);
+    const float4 fresnelIntegral = FresnelIntegralApprox(matInfo.f0);
+
+    const float4 diffuse  = matInfo.diffuse * (1.0 - fresnelNV) * (1.0 - fresnelIntegral);
     const float4 specular = fresnelNV; // assuming that full specular lobe integrates to 1
+#elif defined USE_ROUGH_REFRACTION_APPROX
+    const float NdotV = max(dot(normal, viewDir), 0.);
+    const float4 fresnelNV = FresnelSchlick(matInfo, NdotV); // TODO: Pre-compute
+
+    const float4 fresnelIntegral = FresnelIntegralApprox(matInfo.f0); // TODO: Pre-compute
+
+    const float4 roughFresnelNV = lerp(fresnelNV, fresnelIntegral, matInfo.alphaSq); // TODO Pre-compute
+    
+    const float4 diffuse  = matInfo.diffuse * (1.0 - roughFresnelNV) /** (1.0 - fresnelIntegral)*/;
+    const float4 specular = roughFresnelNV;
+#else
+    const float4 diffuse  = matInfo.diffuse;
+    const float4 specular = matInfo.f0; // assuming that full specular lobe integrates to 1
 #endif
 
     return (diffuse + specular) * luminance;
@@ -353,10 +385,10 @@ PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
     const float  roughness      = metalRoughness.g;
 
     const float4 f0Diel         = float4(0.04, 0.04, 0.04, 1);
-#ifndef USE_SMOOTH_REFRACTION_APPROX_BSDF
-    const float4 diffuseDiel    = (float4(1, 1, 1, 1) - f0Diel) * baseColor;
-#else
+#if defined USE_SMOOTH_REFRACTION_APPROX || defined USE_ROUGH_REFRACTION_APPROX
     const float4 diffuseDiel    = baseColor;
+#else
+    const float4 diffuseDiel    = (float4(1, 1, 1, 1) - f0Diel) * baseColor;
 #endif
 
     const float4 f0Metal        = baseColor;
@@ -382,14 +414,14 @@ float4 PsPbrMetalness(PS_INPUT input) : SV_Target
     output += PbrM_AmbLightContrib(normal, viewDir, AmbientLightLuminance, matInfo);
 
     int i;
-    for (i = 0; i < DIRECT_LIGHTS_COUNT; i++)
+    for (i = 0; i < DirectLightsCount; i++)
         output += PbrM_DirLightContrib((float3)DirectLightDirs[i],
                                        normal,
                                        viewDir,
                                        DirectLightLuminances[i],
                                        matInfo);
 
-    for (i = 0; i < POINT_LIGHTS_COUNT; i++)
+    for (i = 0; i < PointLightsCount; i++)
         output += PbrM_PointLightContrib((float3)input.PosWorld,
                                          (float3)PointLightPositions[i],
                                          normal,

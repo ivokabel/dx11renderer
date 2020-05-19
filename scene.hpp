@@ -268,7 +268,13 @@ struct PointLight
         pos{ 0.f, 0.f, 0.f, 0.f },
         posTransf{ 0.f, 0.f, 0.f, 0.f },
         intensity{ 0.f, 0.f, 0.f, 0.f }
-    {}
+    {};
+
+    PointLight(XMFLOAT4 intensity) :
+        PointLight()
+    {
+        this->intensity = intensity;
+    };
 };
 
 
@@ -279,12 +285,13 @@ public:
     enum SceneId
     {
         eHardwiredSimpleDebugSphere,
+        eHardwiredMaterialConstFactors,
         eHardwiredPbrMetalnesDebugSphere,
         eHardwiredEarth,
         eHardwiredThreePlanets,
 
-        eDebugMaterialConstFactors,
         eDebugGradientBox,
+        eDebugMetalRoughSpheresNoTextures,
 
         eGltfSampleTriangleWithoutIndices, // Non-indexed geometry not yet supported!
         eGltfSampleTriangle,
@@ -366,11 +373,16 @@ private:
     SceneMaterial               mDefaultMaterial;
 
     // Lights
-    AmbientLight                                    mAmbientLight;
-    std::array<DirectLight, DIRECT_LIGHTS_COUNT>    mDirectLights;
-    std::array<PointLight, POINT_LIGHTS_COUNT>      mPointLights;
+    AmbientLight                mAmbientLight;
+    std::vector<DirectLight>    mDirectLights;
+    std::vector<PointLight>     mPointLights;
 
     // Camera
+    struct {
+        XMVECTOR eye;
+        XMVECTOR at;
+        XMVECTOR up;
+    }                           mViewData;
     XMMATRIX                    mViewMtrx;
     XMMATRIX                    mProjectionMtrx;
 
@@ -383,7 +395,6 @@ private:
     ID3D11InputLayout*          mVertexLayout = nullptr;
 
     ID3D11Buffer*               mCbScene = nullptr;
-    ID3D11Buffer*               mCbResize = nullptr;
     ID3D11Buffer*               mCbFrame = nullptr;
     ID3D11Buffer*               mCbSceneNode = nullptr;
     ID3D11Buffer*               mCbScenePrimitive = nullptr;
