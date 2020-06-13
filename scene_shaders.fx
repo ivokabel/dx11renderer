@@ -301,7 +301,7 @@ float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo ma
 
     const float4 fresnelIntegral = FresnelIntegralApprox(matInfo.f0); // TODO: Pre-compute
 
-    const float4 roughFresnelNV = lerp(fresnelNV, fresnelIntegral, matInfo.alphaSq);
+    const float4 roughFresnelNV = lerp(fresnelNV, fresnelIntegral, matInfo.alphaSq); // TODO: Pre-compute?
     const float4 roughFresnelNL = lerp(fresnelNL, fresnelIntegral, matInfo.alphaSq);
 
     const float4 diffuse = DiffuseBRDF() * matInfo.diffuse * (1.0 - roughFresnelNV) * (1.0 - roughFresnelNL);
@@ -404,6 +404,7 @@ PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
 
 float4 PsPbrMetalness(PS_INPUT input) : SV_Target
 {
+    // TODO: Wrap into shading context/...
     const float3 normal  = normalize(input.Normal); // normal is interpolated - renormalize 
     const float3 viewDir = normalize((float3)CameraPos - (float3)input.PosWorld);
 
