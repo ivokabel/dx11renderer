@@ -233,6 +233,13 @@ struct PbrM_MatInfo
 };
 
 
+struct PbrM_ShadingCtx
+{
+    float3 normal;
+    float3 viewDir;
+};
+
+
 float4 FresnelSchlick(PbrM_MatInfo matInfo, float cosTheta)
 {
     const float4 f0 = matInfo.f0;
@@ -266,10 +273,10 @@ float4 FresnelIntegralApprox(float4 f0)
 }
 
 
-float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo matInfo)
+float4 PbrM_BRDF(float3 lightDir, PbrM_ShadingCtx shadingCtx, PbrM_MatInfo matInfo)
 {
-    float NdotL = dot(lightDir, normal);
-    float NdotV = dot(viewDir, normal);
+    float NdotL = dot(lightDir, shadingCtx.normal);
+    float NdotV = dot(shadingCtx.viewDir, shadingCtx.normal);
 
     if (NdotL < 0)
         return float4(0, 0, 0, 1);
@@ -278,11 +285,11 @@ float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo ma
     NdotV = max(NdotV, 0.01f);  // TODO: Pre-compute
 
     // Halfway vector
-    const float3 halfwayRaw = lightDir + viewDir;
+    const float3 halfwayRaw = lightDir + shadingCtx.viewDir;
     const float  halfwayLen = length(halfwayRaw);
-    const float3 halfway = (halfwayLen > 0.001f) ? (halfwayRaw / halfwayLen) : normal;
-    const float  halfwayCos = max(dot(halfway, normal), 0);
-    const float  HdotV = max(dot(halfway, viewDir), 0.);
+    const float3 halfway = (halfwayLen > 0.001f) ? (halfwayRaw / halfwayLen) : shadingCtx.normal;
+    const float  halfwayCos = max(dot(halfway, shadingCtx.normal), 0);
+    const float  HdotV = max(dot(halfway, shadingCtx.viewDir), 0.);
 
     // Microfacet-based specular component
     const float4 fresnelHV  = FresnelSchlick(matInfo, HdotV);
@@ -313,10 +320,12 @@ float4 PbrM_BRDF(float3 lightDir, float3 normal, float3 viewDir, PbrM_MatInfo ma
 }
 
 
-float4 PbrM_AmbLightContrib(float3 normal, float3 viewDir, float4 luminance, PbrM_MatInfo matInfo)
+float4 PbrM_AmbLightContrib(float4 luminance,
+                            PbrM_ShadingCtx shadingCtx,
+                            PbrM_MatInfo matInfo)
 {
 #if defined USE_SMOOTH_REFRACTION_APPROX
-    const float NdotV = max(dot(normal, viewDir), 0.);
+    const float NdotV = max(dot(shadingCtx.normal, shadingCtx.viewDir), 0.);
     const float4 fresnelNV = FresnelSchlick(matInfo, NdotV);
 
     const float4 fresnelIntegral = FresnelIntegralApprox(matInfo.f0);
@@ -324,7 +333,7 @@ float4 PbrM_AmbLightContrib(float3 normal, float3 viewDir, float4 luminance, Pbr
     const float4 diffuse  = matInfo.diffuse * (1.0 - fresnelNV) * (1.0 - fresnelIntegral);
     const float4 specular = fresnelNV; // assuming that full specular lobe integrates to 1
 #elif defined USE_ROUGH_REFRACTION_APPROX
-    const float NdotV = max(dot(normal, viewDir), 0.);
+    const float NdotV = max(dot(shadingCtx.normal, shadingCtx.viewDir), 0.);
     const float4 fresnelNV = FresnelSchlick(matInfo, NdotV); // TODO: Pre-compute
 
     const float4 fresnelIntegral = FresnelIntegralApprox(matInfo.f0); // TODO: Pre-compute
@@ -343,14 +352,13 @@ float4 PbrM_AmbLightContrib(float3 normal, float3 viewDir, float4 luminance, Pbr
 
 
 float4 PbrM_DirLightContrib(float3 lightDir,
-                            float3 normal,
-                            float3 viewDir,
                             float4 luminance,
+                            PbrM_ShadingCtx shadingCtx,
                             PbrM_MatInfo matInfo)
 {
-    const float thetaCos = ThetaCos(normal, lightDir);
+    const float thetaCos = ThetaCos(shadingCtx.normal, lightDir);
 
-    const float4 brdf = PbrM_BRDF(lightDir, normal, viewDir, matInfo);
+    const float4 brdf = PbrM_BRDF(lightDir, shadingCtx, matInfo);
 
     return brdf * thetaCos * luminance;
 }
@@ -358,9 +366,8 @@ float4 PbrM_DirLightContrib(float3 lightDir,
 
 float4 PbrM_PointLightContrib(float3 surfPos,
                               float3 lightPos,
-                              float3 normal,
-                              float3 viewDir,
                               float4 intensity,
+                              PbrM_ShadingCtx shadingCtx,
                               PbrM_MatInfo matInfo)
 {
     const float3 dirRaw = lightPos - surfPos;
@@ -368,9 +375,9 @@ float4 PbrM_PointLightContrib(float3 surfPos,
     const float3 lightDir = dirRaw / len;
     const float  distSqr = len * len;
 
-    const float thetaCos = ThetaCos(normal, lightDir);
+    const float thetaCos = ThetaCos(shadingCtx.normal, lightDir);
 
-    const float4 brdf = PbrM_BRDF(lightDir, normal, viewDir, matInfo);
+    const float4 brdf = PbrM_BRDF(lightDir, shadingCtx, matInfo);
 
     return brdf * thetaCos * intensity / distSqr;
 }
@@ -405,29 +412,28 @@ PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
 float4 PsPbrMetalness(PS_INPUT input) : SV_Target
 {
     // TODO: Wrap into shading context/...
-    const float3 normal  = normalize(input.Normal); // normal is interpolated - renormalize 
-    const float3 viewDir = normalize((float3)CameraPos - (float3)input.PosWorld);
+    PbrM_ShadingCtx shadingCtx;
+    shadingCtx.normal  = normalize(input.Normal); // normal is interpolated - renormalize 
+    shadingCtx.viewDir = normalize((float3)CameraPos - (float3)input.PosWorld);
 
     const PbrM_MatInfo matInfo = PbrM_ComputeMatInfo(input);
 
     float4 output = float4(0, 0, 0, 0);
 
-    output += PbrM_AmbLightContrib(normal, viewDir, AmbientLightLuminance, matInfo);
+    output += PbrM_AmbLightContrib(AmbientLightLuminance, shadingCtx, matInfo);
 
     int i;
     for (i = 0; i < DirectLightsCount; i++)
         output += PbrM_DirLightContrib((float3)DirectLightDirs[i],
-                                       normal,
-                                       viewDir,
                                        DirectLightLuminances[i],
+                                       shadingCtx,
                                        matInfo);
 
     for (i = 0; i < PointLightsCount; i++)
         output += PbrM_PointLightContrib((float3)input.PosWorld,
                                          (float3)PointLightPositions[i],
-                                         normal,
-                                         viewDir,
                                          PointLightIntensities[i],
+                                         shadingCtx,
                                          matInfo);
 
     output.a = 1;
