@@ -213,5 +213,5 @@ private: // Options
 
     const bool                  mUseMSAA = true;
     PostProcessingModes         mPostProcessingMode = kNone;// PostProcessingModes(kBloom | kDebug);
-    bool                        mIsAnimationActive = false;//debug; was true;
+    bool                        mIsAnimationActive = true;
 };
