@@ -175,7 +175,7 @@ int SimpleDX11Renderer::Run()
     Log::Debug(L"Running renderer...");
     Log::Debug(L"-------------------");
 
-    const auto startTime = GetCurrentAnimationTime();
+    const DWORD startTime = GetTickCount();
     uint32_t frameCount = 0;
 
     // Message loop
@@ -198,8 +198,7 @@ int SimpleDX11Renderer::Run()
     }
 
     // Statistics
-    const auto endTime = GetCurrentAnimationTime();
-    const auto timeElapsed = endTime - startTime;
+    const auto timeElapsed = (GetTickCount() - startTime) / 1000.f;
     const auto avgFps = (timeElapsed > 0.0001f) ? frameCount / timeElapsed : 0;
     const auto avgDuration = frameCount ? timeElapsed / frameCount : 0;
 
@@ -1109,6 +1108,7 @@ float SimpleDX11Renderer::GetCurrentAnimationTime() const
     else
     {
         static DWORD timeStart = 0;
+
         const DWORD timeCur = GetTickCount();
         if (timeStart == 0)
             timeStart = timeCur;
