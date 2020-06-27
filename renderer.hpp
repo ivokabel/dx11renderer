@@ -43,6 +43,7 @@ public:
               int cmdShow,
               uint32_t wndWidth,
               uint32_t wndHeight);
+    void SetTimeout(double timeout);
     int Run();
 
     // IRenderingContext interface
@@ -128,6 +129,9 @@ private:
 
     HINSTANCE                   mInstance = nullptr;
     HWND                        mWnd = nullptr;
+
+    double                      mTimeout = 0.;
+    const UINT_PTR              mTimeoutTimerID = 1;
 
     D3D_DRIVER_TYPE             mDriverType = D3D_DRIVER_TYPE_NULL;
     D3D_FEATURE_LEVEL           mFeatureLevel = D3D_FEATURE_LEVEL_11_0;
