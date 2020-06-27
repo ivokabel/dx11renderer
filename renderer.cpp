@@ -138,8 +138,18 @@ LRESULT CALLBACK SimpleDX11Renderer::WndProc(HWND wnd,
         break;
     }
 
+
     case WM_DESTROY:
         PostQuitMessage(0);
+        break;
+
+    case WM_TIMER:
+        if (wParam == mTimeoutTimerID)
+        {
+            Log::Debug(L"Stopping on timeout timer (%.1fs)", mTimeout);
+            KillTimer(wnd, mTimeoutTimerID);
+            ::DestroyWindow(wnd);
+        }
         break;
 
     case WM_KEYDOWN:
@@ -170,10 +180,22 @@ LRESULT CALLBACK SimpleDX11Renderer::WndProc(HWND wnd,
 }
 
 
+void SimpleDX11Renderer::SetTimeout(double timeout)
+{
+    mTimeout = timeout;
+}
+
+
 int SimpleDX11Renderer::Run()
 {
     Log::Debug(L"Running renderer...");
     Log::Debug(L"-------------------");
+
+    if (mTimeout > 0.)
+    {
+        Log::Debug(L"Setting timeout timer to (%.1fs)", mTimeout);
+        SetTimer(mWnd, mTimeoutTimerID, (UINT)(mTimeout * 1000), NULL);
+    }
 
     const DWORD startTime = GetTickCount();
     uint32_t frameCount = 0;

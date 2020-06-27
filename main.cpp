@@ -63,5 +63,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
     if (!renderer.Init(instance, cmdShow, 1000u, 750u))
         return -1;
 
+    renderer.SetTimeout(15.);
+
     return renderer.Run();
 }
