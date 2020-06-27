@@ -282,7 +282,7 @@ float4 PbrM_BRDF(float3 lightDir, PbrM_ShadingCtx shadingCtx, PbrM_MatInfo matIn
         return float4(0, 0, 0, 1);
 
     NdotL = max(NdotL, 0.01f);
-    NdotV = max(NdotV, 0.01f);  // TODO: Pre-compute
+    NdotV = max(NdotV, 0.01f);
 
     // Halfway vector
     const float3 halfwayRaw = lightDir + shadingCtx.viewDir;
@@ -299,16 +299,16 @@ float4 PbrM_BRDF(float3 lightDir, PbrM_ShadingCtx shadingCtx, PbrM_MatInfo matIn
     const float4 specular = fresnelHV * vis * distr;
 
 #if defined USE_SMOOTH_REFRACTION_APPROX
-    const float4 fresnelNV  = FresnelSchlick(matInfo, NdotV); // TODO: Pre-compute
+    const float4 fresnelNV  = FresnelSchlick(matInfo, NdotV);
     const float4 fresnelNL  = FresnelSchlick(matInfo, NdotL);
     const float4 diffuse    = DiffuseBRDF() * matInfo.diffuse * (1.0 - fresnelNV) * (1.0 - fresnelNL);
 #elif defined USE_ROUGH_REFRACTION_APPROX
-    const float4 fresnelNV  = FresnelSchlick(matInfo, NdotV); // TODO: Pre-compute
+    const float4 fresnelNV  = FresnelSchlick(matInfo, NdotV);
     const float4 fresnelNL  = FresnelSchlick(matInfo, NdotL);
 
-    const float4 fresnelIntegral = FresnelIntegralApprox(matInfo.f0); // TODO: Pre-compute
+    const float4 fresnelIntegral = FresnelIntegralApprox(matInfo.f0);
 
-    const float4 roughFresnelNV = lerp(fresnelNV, fresnelIntegral, matInfo.alphaSq); // TODO: Pre-compute?
+    const float4 roughFresnelNV = lerp(fresnelNV, fresnelIntegral, matInfo.alphaSq);
     const float4 roughFresnelNL = lerp(fresnelNL, fresnelIntegral, matInfo.alphaSq);
 
     const float4 diffuse = DiffuseBRDF() * matInfo.diffuse * (1.0 - roughFresnelNV) * (1.0 - roughFresnelNL);
@@ -334,11 +334,11 @@ float4 PbrM_AmbLightContrib(float4 luminance,
     const float4 specular = fresnelNV; // assuming that full specular lobe integrates to 1
 #elif defined USE_ROUGH_REFRACTION_APPROX
     const float NdotV = max(dot(shadingCtx.normal, shadingCtx.viewDir), 0.);
-    const float4 fresnelNV = FresnelSchlick(matInfo, NdotV); // TODO: Pre-compute
+    const float4 fresnelNV = FresnelSchlick(matInfo, NdotV);
 
-    const float4 fresnelIntegral = FresnelIntegralApprox(matInfo.f0); // TODO: Pre-compute
+    const float4 fresnelIntegral = FresnelIntegralApprox(matInfo.f0);
 
-    const float4 roughFresnelNV = lerp(fresnelNV, fresnelIntegral, matInfo.alphaSq); // TODO Pre-compute
+    const float4 roughFresnelNV = lerp(fresnelNV, fresnelIntegral, matInfo.alphaSq);
     
     const float4 diffuse  = matInfo.diffuse * (1.0 - roughFresnelNV) /** (1.0 - fresnelIntegral)*/;
     const float4 specular = roughFresnelNV;
@@ -411,7 +411,6 @@ PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
 
 float4 PsPbrMetalness(PS_INPUT input) : SV_Target
 {
-    // TODO: Wrap into shading context/...
     PbrM_ShadingCtx shadingCtx;
     shadingCtx.normal  = normalize(input.Normal); // normal is interpolated - renormalize 
     shadingCtx.viewDir = normalize((float3)CameraPos - (float3)input.PosWorld);
