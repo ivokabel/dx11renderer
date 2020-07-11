@@ -203,7 +203,7 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eLowPolyDrifter:
     {
-        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Ivan Norman/Low-poly truck (car Drifter)/scene.gltf"))
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Ivan Norman - Low-poly truck (car Drifter)/scene.gltf"))
             return false;
         AddScaleToRoots(0.015);
         AddTranslationToRoots({ 0.5, -1.2, 0. });
@@ -212,7 +212,7 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eWolfBaseMesh:
     {
-        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/TheCharliEZM/Wolf base mesh/scene.gltf"))
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/TheCharliEZM - Wolf base mesh/scene.gltf"))
             return false;
         AddScaleToRoots(0.008);
         AddTranslationToRoots({ 0.7, -2.4, 0. });
@@ -221,7 +221,7 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eNintendoGameBoyClassic:
     {
-        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/hunter333d/Nintendo Game Boy Classic/scene.gltf"))
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/hunter333d - Nintendo Game Boy Classic/scene.gltf"))
             return false;
         AddScaleToRoots(0.50);
         AddTranslationToRoots({ 0., -1.7, 0. });
@@ -230,7 +230,7 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eWeltron2001SpaceballRadio:
     {
-        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/ArneDC/Prinzsound SM8 - Weltron 2001 Spaceball Radio/scene.gltf"))
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/ArneDC - Prinzsound SM8 - Weltron 2001 Spaceball Radio/scene.gltf"))
             return false;
         AddScaleToRoots(.016);
         AddTranslationToRoots({ 0., -3.6, 0. });
@@ -239,7 +239,7 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eSpotMiniRigged:
     {
-        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Greg McKechnie/Spot Mini (Rigged)/scene.gltf"))
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Greg McKechnie - Spot Mini (Rigged)/scene.gltf"))
             return false;
         AddScaleToRoots(.00028f);
         AddTranslationToRoots({ 0., 0., 2.8 });
@@ -248,7 +248,7 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eMandaloriansHelmet:
     {
-        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/arn204/The Mandalorian's Helmet/scene.gltf"))
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/arn204 - The Mandalorian's Helmet/scene.gltf"))
             return false;
 
         AddTranslationToRoots({ -35., -70., 85. });
@@ -272,7 +272,7 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eTheRocket:
     {
-        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/TuppsM/The Rocket/scene.gltf"))
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/TuppsM - The Rocket/scene.gltf"))
             return false;
         AddScaleToRoots(.012);
         AddTranslationToRoots({ -0.1, -1., 0. });
@@ -281,7 +281,7 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eRoboV1:
     {
-        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/_Sef_/Robo_V1/scene.gltf"))
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/_Sef_ - Robo_V1/scene.gltf"))
             return false;
         AddTranslationToRoots({ 0., -100., -240. });
         AddScaleToRoots(.10);
@@ -290,7 +290,7 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eRockJacket:
     {
-        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Teliri/Rock Jacket (mid-poly)/scene.gltf"))
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Teliri - Rock Jacket (mid-poly)/scene.gltf"))
             return false;
         AddScaleToRoots(2.2);
         AddTranslationToRoots({ 0., -3.2, 0. });
@@ -299,7 +299,7 @@ bool Scene::Load(IRenderingContext &ctx)
 
     case eSalazarSkull:
     {
-        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/jvitorsouzadesign/Skull Salazar/scene.gltf"))
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/jvitorsouzadesign - Skull Salazar/scene.gltf"))
             return false;
         AddScaleToRoots(4.1);
         AddTranslationToRoots({ 0., 0.7, 0. });
