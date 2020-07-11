@@ -57,6 +57,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eWeltron2001SpaceballRadio
         //Scene::eTheRocket
         //Scene::eRoboV1
+        //Scene::eRockJacket
+        //Scene::eSalazarSkull
         );
     SimpleDX11Renderer renderer(scene);
 

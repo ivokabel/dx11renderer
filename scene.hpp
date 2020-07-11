@@ -316,6 +316,8 @@ public:
         eMandaloriansHelmet,
         eTheRocket,
         eRoboV1,
+        eRockJacket,
+        eSalazarSkull,
     };
 
     Scene(const SceneId sceneId);

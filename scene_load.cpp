@@ -288,6 +288,25 @@ bool Scene::Load(IRenderingContext &ctx)
         return true;
     }
 
+    case eRockJacket:
+    {
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Teliri/Rock Jacket (mid-poly)/scene.gltf"))
+            return false;
+        AddScaleToRoots(2.2);
+        AddTranslationToRoots({ 0., -3.2, 0. });
+        return true;
+    }
+
+    case eSalazarSkull:
+    {
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/jvitorsouzadesign/Skull Salazar/scene.gltf"))
+            return false;
+        AddScaleToRoots(4.1);
+        AddTranslationToRoots({ 0., 0.7, 0. });
+        AddRotationQuaternionToRoots({ 0.000, 0.609, 0.000, 0.793 }); // 75°y
+        return true;
+    }
+
     case eHardwiredSimpleDebugSphere:
     {
         mMaterials.clear();
