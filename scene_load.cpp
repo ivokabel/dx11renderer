@@ -1,6 +1,7 @@
 #include "scene.hpp"
 
 #include "scene_utils.hpp"
+#include "log.hpp"
 
 bool Scene::Load(IRenderingContext &ctx)
 {
@@ -11,7 +12,7 @@ bool Scene::Load(IRenderingContext &ctx)
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/TriangleWithoutIndices/TriangleWithoutIndices.gltf"))
             return false;
         AddScaleToRoots(3.);
-        return true;
+        break;
     }
 
     case eGltfSampleTriangle:
@@ -20,7 +21,7 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddScaleToRoots(4.5);
         AddTranslationToRoots({ 0., -1.5, 0. });
-        return true;
+        break;
     }
 
     case eGltfSampleSimpleMeshes:
@@ -29,7 +30,7 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddScaleToRoots(2.5);
         AddTranslationToRoots({ 0., -0.5, 0. });
-        return true;
+        break;
     }
 
     case eGltfSampleBox:
@@ -38,7 +39,7 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddScaleToRoots(4.);
         AddTranslationToRoots({ 0., 0., 0. });
-        return true;
+        break;
     }
 
     case eGltfSampleBoxInterleaved:
@@ -47,7 +48,7 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddScaleToRoots(4.);
         AddTranslationToRoots({ 0., 0., 0. });
-        return true;
+        break;
     }
 
     case eGltfSampleBoxTextured:
@@ -56,7 +57,7 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddScaleToRoots(4.);
         AddTranslationToRoots({ 0., 0., 0. });
-        return true;
+        break;
     }
 
     case eGltfSampleMetalRoughSpheres:
@@ -125,7 +126,7 @@ bool Scene::Load(IRenderingContext &ctx)
         mViewData.eye = XMVectorSet(0.0f, 0.0f, 10.f, 1.0f);
         mViewData.at  = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 
-        return true;
+        break;
     }
 
     case eGltfSample2CylinderEngine:
@@ -134,7 +135,7 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddScaleToRoots(0.012f);
         AddTranslationToRoots({ 0., 0.2, 0. });
-        return true;
+        break;
     }
 
     case eGltfSampleDuck:
@@ -143,7 +144,7 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddScaleToRoots(3.8);
         AddTranslationToRoots({ -0.5, -3.3, 0. });
-        return true;
+        break;
     }
 
     case eGltfSampleBoomBox:
@@ -152,7 +153,7 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddScaleToRoots(330.);
         AddTranslationToRoots({ 0., 0., 0. });
-        return true;
+        break;
     }
 
     case eGltfSampleBoomBoxWithAxes:
@@ -161,7 +162,7 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddScaleToRoots(230.);
         AddTranslationToRoots({ 0., -2.2, 0. });
-        return true;
+        break;
     }
 
     case eGltfSampleDamagedHelmet:
@@ -189,7 +190,7 @@ bool Scene::Load(IRenderingContext &ctx)
         for (auto &light : mPointLights)
             light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
 
-        return true;
+        break;
     }
 
     case eGltfSampleFlightHelmet:
@@ -198,7 +199,7 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddScaleToRoots(11.0);
         AddTranslationToRoots({ 0., 1.2, 0. });
-        return true;
+        break;
     }
 
     case eLowPolyDrifter:
@@ -207,7 +208,7 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddScaleToRoots(0.015);
         AddTranslationToRoots({ 0.5, -1.2, 0. });
-        return true;
+        break;
     }
 
     case eWolfBaseMesh:
@@ -216,7 +217,7 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddScaleToRoots(0.008);
         AddTranslationToRoots({ 0.7, -2.4, 0. });
-        return true;
+        break;
     }
 
     case eNintendoGameBoyClassic:
@@ -225,7 +226,7 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddScaleToRoots(0.50);
         AddTranslationToRoots({ 0., -1.7, 0. });
-        return true;
+        break;
     }
 
     case eWeltron2001SpaceballRadio:
@@ -234,7 +235,7 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddScaleToRoots(.016);
         AddTranslationToRoots({ 0., -3.6, 0. });
-        return true;
+        break;
     }
 
     case eSpotMiniRigged:
@@ -243,7 +244,7 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddScaleToRoots(.00028f);
         AddTranslationToRoots({ 0., 0., 2.8 });
-        return true;
+        break;
     }
 
     case eMandaloriansHelmet:
@@ -267,7 +268,7 @@ bool Scene::Load(IRenderingContext &ctx)
         for (auto &light : mPointLights)
             light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
 
-        return true;
+        break;
     }
 
     case eTheRocket:
@@ -276,7 +277,7 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddScaleToRoots(.012);
         AddTranslationToRoots({ -0.1, -1., 0. });
-        return true;
+        break;
     }
 
     case eRoboV1:
@@ -285,7 +286,7 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddTranslationToRoots({ 0., -100., -240. });
         AddScaleToRoots(.10);
-        return true;
+        break;
     }
 
     case eRockJacket:
@@ -294,7 +295,7 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddScaleToRoots(2.2);
         AddTranslationToRoots({ 0., -3.2, 0. });
-        return true;
+        break;
     }
 
     case eSalazarSkull:
@@ -304,7 +305,7 @@ bool Scene::Load(IRenderingContext &ctx)
         AddScaleToRoots(4.1);
         AddTranslationToRoots({ 0., 0.7, 0. });
         AddRotationQuaternionToRoots({ 0.000, 0.609, 0.000, 0.793 }); // 75°y
-        return true;
+        break;
     }
 
     case eHardwiredSimpleDebugSphere:
@@ -404,7 +405,7 @@ bool Scene::Load(IRenderingContext &ctx)
         mPointLights[2].intensity   = XMFLOAT4(1.2f, 1.8f, 4.0f, 1.0f); // blue
 #endif
 
-        return true;
+        break;
     }
 
     case eHardwiredPbrMetalnesDebugSphere:
@@ -475,7 +476,7 @@ bool Scene::Load(IRenderingContext &ctx)
             mPointLights[i].intensity.z *= pointScale;
         }
 
-        return true;
+        break;
     }
 
     case eHardwiredEarth:
@@ -521,7 +522,7 @@ bool Scene::Load(IRenderingContext &ctx)
         mPointLights[1].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
         mPointLights[2].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
 
-        return true;
+        break;
     }
 
     case eHardwiredThreePlanets:
@@ -599,7 +600,7 @@ bool Scene::Load(IRenderingContext &ctx)
         for (auto &light : mPointLights)
             light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
 
-        return true;
+        break;
     }
 
     case eHardwiredMaterialConstFactors:
@@ -697,7 +698,7 @@ bool Scene::Load(IRenderingContext &ctx)
         mPointLights[1].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
         mPointLights[2].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
 
-        return true;
+        break;
     }
 
     case  eDebugGradientBox:
@@ -721,17 +722,25 @@ bool Scene::Load(IRenderingContext &ctx)
         for (auto &light : mPointLights)
             light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
 
-        return true;
+        break;
     }
 
     default:
         return false;
     }
 
-    // TODO: Sanity checking after loading a scene
-    // (after loading is separated into smaller functions)
-    //if (mPointLights.size() > POINT_LIGHTS_MAX_COUNT)
-    //    return;
-    //if (mDirectLights.size() > DIRECT_LIGHTS_MAX_COUNT)
-    //    return;
+    if (mPointLights.size() > POINT_LIGHTS_MAX_COUNT)
+    {
+        Log::Error(L"Point lights count (%d) exceeded maximum limit (%d)!",
+                   mPointLights.size(), POINT_LIGHTS_MAX_COUNT);
+        return false;
+    }
+    if (mDirectLights.size() > DIRECT_LIGHTS_MAX_COUNT)
+    {
+        Log::Error(L"Directional lights count (%d) exceeded maximum limit (%d)!",
+                   mDirectLights.size(), DIRECT_LIGHTS_MAX_COUNT);
+        return false;
+    }
+
+    return true;
 }
