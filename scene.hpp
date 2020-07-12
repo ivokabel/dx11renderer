@@ -262,20 +262,16 @@ struct PointLight
 {
     // Parameters
     XMFLOAT4 intensity; // luminuous intensity [cd = lm * sr-1] = luminuous flux / 4Pi
+    float orbitRadius;
 
     // Internals
     XMFLOAT4 posTransf; // Final position after animation
 
     PointLight() :
         intensity{ 0.f, 0.f, 0.f, 0.f },
+        orbitRadius(5.5f),
         posTransf{ 0.f, 0.f, 0.f, 0.f }
     {};
-
-    PointLight(XMFLOAT4 intensity) :
-        PointLight()
-    {
-        this->intensity = intensity;
-    };
 };
 
 

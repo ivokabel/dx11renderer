@@ -119,8 +119,11 @@ bool Scene::Load(IRenderingContext &ctx)
         mAmbientLight.luminance = SceneUtils::SrgbColorToFloat(amb, amb, amb);
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+        PointLight pointLight;
+        pointLight.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        pointLight.orbitRadius = 20.f;
         mPointLights.clear();
-        mPointLights.resize(pointLightCount, PointLight(XMFLOAT4(ints, ints, ints, 1.0f)));
+        mPointLights.resize(pointLightCount, pointLight);
 
         // Camera pos
         mViewData.eye = XMVectorSet(0.0f, 0.0f, 10.f, 1.0f);
@@ -598,7 +601,10 @@ bool Scene::Load(IRenderingContext &ctx)
         const float ints = 4.0f;
         mPointLights.resize(3);
         for (auto &light : mPointLights)
+        {
             light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+            light.orbitRadius = 5.3f;
+        }
 
         break;
     }
