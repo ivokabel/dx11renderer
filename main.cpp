@@ -60,12 +60,10 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eRockJacket
         //Scene::eSalazarSkull
         );
-    SimpleDX11Renderer renderer(scene);
 
+    SimpleDX11Renderer renderer(scene);
     if (!renderer.Init(instance, cmdShow, 1000u, 750u))
         return -1;
-
-    //renderer.SetTimeout(15.); // For more deterministic measuring
-
+    //renderer.SetTimeout(5.); // For more deterministic measurements
     return renderer.Run();
 }

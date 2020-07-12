@@ -261,17 +261,13 @@ struct DirectLight
 struct PointLight
 {
     // Parameters
-    XMFLOAT4 intensity; // luminuous intensity [cd = lm * sr-1] = luminuous flux / 4Pi
-    float orbitRadius;
+    XMFLOAT4 intensity = XMFLOAT4{ 0.f, 0.f, 0.f, 0.f }; // luminuous intensity [cd = lm * sr-1] = luminuous flux / 4Pi
+    float orbitRadius = 5.5f;
+    float orbitInclinationMin = -XM_PIDIV4;
+    float orbitInclinationMax =  XM_PIDIV4;
 
     // Internals
-    XMFLOAT4 posTransf; // Final position after animation
-
-    PointLight() :
-        intensity{ 0.f, 0.f, 0.f, 0.f },
-        orbitRadius(5.5f),
-        posTransf{ 0.f, 0.f, 0.f, 0.f }
-    {};
+    XMFLOAT4 posTransf = XMFLOAT4{ 0.f, 0.f, 0.f, 0.f }; // Final position after animation
 };
 
 

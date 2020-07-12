@@ -122,6 +122,8 @@ bool Scene::Load(IRenderingContext &ctx)
         PointLight pointLight;
         pointLight.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
         pointLight.orbitRadius = 20.f;
+        pointLight.orbitInclinationMin = 0;
+        pointLight.orbitInclinationMax = 0;
         mPointLights.clear();
         mPointLights.resize(pointLightCount, pointLight);
 

@@ -535,12 +535,12 @@ void Scene::AnimateFrame(IRenderingContext &ctx)
     for (int i = 0; i < pointCount; i++)
     {
         const float lightRelOffset = (float)i / pointCount;
+        const float lightRelOffsetInterval = (float)i / (pointCount - 1);
 
         const float rotationAngle = -2.f * angle - lightRelOffset * XM_2PI;
-        //const float orbitInclination = (mSceneId == eHardwiredThreePlanets)
-        //                               ? (lightRelOffset - 0.5f) * XM_PIDIV2
-        //                               : lightRelOffset * XM_PI;
-        const float orbitInclination = 0.f;
+        const float orbitInclination =
+            (1.f - lightRelOffsetInterval) * mPointLights[i].orbitInclinationMin +
+                   lightRelOffsetInterval  * mPointLights[i].orbitInclinationMax;
 
         const XMMATRIX translationMtrx  = XMMatrixTranslation(mPointLights[i].orbitRadius, 0.f, 0.f);
         const XMMATRIX rotationMtrx     = XMMatrixRotationY(rotationAngle);
