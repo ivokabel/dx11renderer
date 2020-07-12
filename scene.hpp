@@ -260,14 +260,15 @@ struct DirectLight
 
 struct PointLight
 {
-    XMFLOAT4 pos;
-    XMFLOAT4 posTransf;
+    // Parameters
     XMFLOAT4 intensity; // luminuous intensity [cd = lm * sr-1] = luminuous flux / 4Pi
 
+    // Internals
+    XMFLOAT4 posTransf; // Final position after animation
+
     PointLight() :
-        pos{ 0.f, 0.f, 0.f, 0.f },
-        posTransf{ 0.f, 0.f, 0.f, 0.f },
-        intensity{ 0.f, 0.f, 0.f, 0.f }
+        intensity{ 0.f, 0.f, 0.f, 0.f },
+        posTransf{ 0.f, 0.f, 0.f, 0.f }
     {};
 
     PointLight(XMFLOAT4 intensity) :

@@ -552,7 +552,8 @@ void Scene::AnimateFrame(IRenderingContext &ctx)
         const XMMATRIX inclinationMtrx  = XMMatrixRotationZ(orbitInclination);
         const XMMATRIX transfMtrx = translationMtrx * rotationMtrx * inclinationMtrx;
 
-        const XMVECTOR lightVec = XMLoadFloat4(&mPointLights[i].pos);
+        const XMFLOAT4 basePos{ 0.f, 0.f, 0.f, 0.f };
+        const XMVECTOR lightVec = XMLoadFloat4(&basePos);
         const XMVECTOR lightVecTransf = XMVector3Transform(lightVec, transfMtrx);
         XMStoreFloat4(&mPointLights[i].posTransf, lightVecTransf);
     }
