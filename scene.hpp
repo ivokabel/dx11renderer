@@ -351,6 +351,9 @@ private:
                                int nodeIdx,
                                const std::wstring &logPrefix);
 
+    // Lights
+    void SetupDefaultLights();
+
     // Transformations
     void AddScaleToRoots(double scale);
     void AddScaleToRoots(const std::vector<double> &vec);

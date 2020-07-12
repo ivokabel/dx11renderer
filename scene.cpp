@@ -369,19 +369,9 @@ bool Scene::LoadGLTF(IRenderingContext &ctx,
     if (!LoadSceneFromGltf(ctx, model, logPrefix))
         return false;
 
-    Log::Debug(L"");
+    SetupDefaultLights();
 
-    // debug lights
-    const uint8_t amb = 60;
-    mAmbientLight.luminance = SceneUtils::SrgbColorToFloat(amb, amb, amb);
-    const float lum = 3.0f;
-    mDirectLights.resize(1);
-    mDirectLights[0].dir       = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
-    mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-    const float ints = 6.5f;
-    mPointLights.resize(3);
-    for (auto &light : mPointLights)
-        light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+    Log::Debug(L"");
 
     return true;
 }
@@ -639,6 +629,23 @@ void Scene::RenderFrame(IRenderingContext &ctx)
         immCtx->PSSetShader(mPsConstEmmisive, nullptr, 0);
         mPointLightProxy.DrawGeometry(ctx, mVertexLayout);
     }
+}
+
+
+void Scene::SetupDefaultLights()
+{
+    const uint8_t amb = 60;
+    mAmbientLight.luminance = SceneUtils::SrgbColorToFloat(amb, amb, amb);
+
+    const float lum = 3.0f;
+    mDirectLights.resize(1);
+    mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+    mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+
+    const float ints = 6.5f;
+    mPointLights.resize(3);
+    for (auto &light : mPointLights)
+        light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
 }
 
 

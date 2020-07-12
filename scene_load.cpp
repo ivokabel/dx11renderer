@@ -110,7 +110,7 @@ bool Scene::Load(IRenderingContext &ctx)
         const uint8_t amb = 200u;
         const float lum = 0.f;
         const float ints = 0.f;
-#else
+#else   // all lights
         const uint8_t amb = 80u;
         const float lum = 2.5f;
         const float ints = 4000.f / pointLightCount;
@@ -356,6 +356,8 @@ bool Scene::Load(IRenderingContext &ctx)
 //#define USE_PURE_AMBIENT_LIGHT
 //#define USE_PURE_DIRECTIONAL_LIGHT
 //#define USE_PURE_POINT_LIGHT
+        mDirectLights.resize(1);
+        mPointLights.resize(3);
 #ifdef USE_PURE_AMBIENT_LIGHT
         const float amb = 0.9f;
         mAmbientLight.luminance     = XMFLOAT4(amb, amb, amb, 1.0f);
@@ -452,11 +454,13 @@ bool Scene::Load(IRenderingContext &ctx)
         mAmbientLight.luminance     = XMFLOAT4(amb, amb, amb, 1.0f);
 
         const float lum = 3.f;
+        mDirectLights.resize(1);
         mDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance  = XMFLOAT4(lum, lum, lum, 1.0f);
 
         // coloured point lights
         const float ints = 3.f;
+        mPointLights.resize(3);
         //mPointLights[0].intensity   = XMFLOAT4(4.0f * ints, 0.0f * ints, 0.0f * ints, 1.0f); // red
         //mPointLights[1].intensity   = XMFLOAT4(0.0f * ints, 2.5f * ints, 0.0f * ints, 1.0f); // green
         //mPointLights[2].intensity   = XMFLOAT4(0.0f * ints, 0.0f * ints, 4.0f * ints, 1.0f); // blue
@@ -507,10 +511,12 @@ bool Scene::Load(IRenderingContext &ctx)
         mAmbientLight.luminance     = XMFLOAT4(0.f, 0.f, 0.f, 1.0f);
 
         const float lum = 3.5f;
+        mDirectLights.resize(1);
         mDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance  = XMFLOAT4(lum, lum, lum, 1.0f);
 
         const float ints = 3.5f;
+        mPointLights.resize(3);
         mPointLights[0].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
         mPointLights[1].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
         mPointLights[2].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
@@ -585,9 +591,11 @@ bool Scene::Load(IRenderingContext &ctx)
         const float amb = 0.f;
         mAmbientLight.luminance     = XMFLOAT4(amb, amb, amb, 1.0f);
         const float lum = 3.0f;
+        mDirectLights.resize(1);
         mDirectLights[0].dir       = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
         const float ints = 4.0f;
+        mPointLights.resize(3);
         for (auto &light : mPointLights)
             light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
 
@@ -680,9 +688,11 @@ bool Scene::Load(IRenderingContext &ctx)
         const float amb = 0.f;
         mAmbientLight.luminance     = XMFLOAT4(amb, amb, amb, 1.0f);
         const float lum = 3.0f;
+        mDirectLights.resize(1);
         mDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance  = XMFLOAT4(lum, lum, lum, 1.0f);
         const float ints = 4.0f;
+        mPointLights.resize(3);
         mPointLights[0].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
         mPointLights[1].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
         mPointLights[2].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
@@ -703,9 +713,11 @@ bool Scene::Load(IRenderingContext &ctx)
         const float amb = 0.f;//1.f;//
         mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
         const float lum = 8.f;//0.f;//
+        mDirectLights.resize(1);
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
         const float ints = 0.f;//3000.f;//
+        mPointLights.resize(3);
         for (auto &light : mPointLights)
             light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
 
