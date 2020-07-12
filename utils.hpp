@@ -37,6 +37,12 @@ namespace Utils
         return static_cast<T>(aVal ^ aMask);
     }
 
+    template <typename T>
+    inline T Lerp(const T &min, const T &max, const float c)
+    {
+        return (1.f - c) * min + c * max;
+    }
+
     std::wstring GetFilePathExt(const std::wstring &path);
     std::string  GetFilePathExt(const std::string  &path);
 

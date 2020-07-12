@@ -534,13 +534,13 @@ void Scene::AnimateFrame(IRenderingContext &ctx)
     const auto pointCount = mPointLights.size();
     for (int i = 0; i < pointCount; i++)
     {
-        const float lightRelOffset = (float)i / pointCount;
+        const float lightRelOffsetCircular = (float)i / pointCount;
         const float lightRelOffsetInterval = (float)i / (pointCount - 1);
 
-        const float rotationAngle = -2.f * angle - lightRelOffset * XM_2PI;
-        const float orbitInclination =
-            (1.f - lightRelOffsetInterval) * mPointLights[i].orbitInclinationMin +
-                   lightRelOffsetInterval  * mPointLights[i].orbitInclinationMax;
+        const float rotationAngle = -2.f * angle - lightRelOffsetCircular * XM_2PI;
+        const float orbitInclination = Utils::Lerp(mPointLights[i].orbitInclinationMin,
+                                                   mPointLights[i].orbitInclinationMax,
+                                                   lightRelOffsetInterval);
 
         const XMMATRIX translationMtrx  = XMMatrixTranslation(mPointLights[i].orbitRadius, 0.f, 0.f);
         const XMMATRIX rotationMtrx     = XMMatrixRotationY(rotationAngle);
