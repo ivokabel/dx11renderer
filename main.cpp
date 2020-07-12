@@ -32,7 +32,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eHardwiredThreePlanets
 
         //Scene::eDebugGradientBox
-        Scene::eDebugMetalRoughSpheresNoTextures
+        //Scene::eDebugMetalRoughSpheresNoTextures
 
         //Scene::eGltfSampleTriangleWithoutIndices // Non-indexed geometry not yet supported!
         //Scene::eGltfSampleTriangle
@@ -58,7 +58,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eTheRocket
         //Scene::eRoboV1
         //Scene::eRockJacket
-        //Scene::eSalazarSkull
+        Scene::eSalazarSkull
         );
 
     SimpleDX11Renderer renderer(scene);

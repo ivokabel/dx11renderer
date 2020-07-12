@@ -140,6 +140,9 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddScaleToRoots(0.012f);
         AddTranslationToRoots({ 0., 0.2, 0. });
+
+        for (auto &light : mPointLights)
+            light.orbitRadius = 6.0f;
         break;
     }
 
@@ -204,6 +207,7 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddScaleToRoots(11.0);
         AddTranslationToRoots({ 0., 1.2, 0. });
+        AddRotationQuaternionToRoots({ 0.000, 0.259, 0.000, 0.966 }); // 30°y
         break;
     }
 
@@ -240,6 +244,7 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddScaleToRoots(.016);
         AddTranslationToRoots({ 0., -3.6, 0. });
+        AddRotationQuaternionToRoots({ 0.000, 0.131, 0.000, 0.991 }); // 15°y
         break;
     }
 
@@ -300,6 +305,7 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
         AddScaleToRoots(2.2);
         AddTranslationToRoots({ 0., -3.2, 0. });
+        AddRotationQuaternionToRoots({ 0.000, 0.259, 0.000, 0.966 }); // 30°y
         break;
     }
 
@@ -307,9 +313,23 @@ bool Scene::Load(IRenderingContext &ctx)
     {
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/jvitorsouzadesign - Skull Salazar/scene.gltf"))
             return false;
+
         AddScaleToRoots(4.1);
         AddTranslationToRoots({ 0., 0.7, 0. });
-        AddRotationQuaternionToRoots({ 0.000, 0.609, 0.000, 0.793 }); // 75°y
+        AddRotationQuaternionToRoots({ 0.000, 0.383, 0.000, 0.924 }); // 45°y
+
+        const float amb = 0.03f;
+        mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
+        const float lum = 0.7f;
+        mDirectLights.resize(1);
+        mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+        const float ints = 5.0f;
+        PointLight pointLight;
+        pointLight.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        pointLight.orbitRadius = 4.f;
+        mPointLights.resize(3, pointLight);
+
         break;
     }
 
@@ -606,6 +626,8 @@ bool Scene::Load(IRenderingContext &ctx)
         {
             light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
             light.orbitRadius = 5.3f;
+            light.orbitInclinationMin = -XM_PI / 8;
+            light.orbitInclinationMax =  XM_PI / 8;
         }
 
         break;
@@ -701,10 +723,10 @@ bool Scene::Load(IRenderingContext &ctx)
         mDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance  = XMFLOAT4(lum, lum, lum, 1.0f);
         const float ints = 4.0f;
-        mPointLights.resize(3);
-        mPointLights[0].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
-        mPointLights[1].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
-        mPointLights[2].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
+        PointLight pointLight;
+        pointLight.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+        pointLight.orbitRadius = 6.5f;
+        mPointLights.resize(3, pointLight);
 
         break;
     }
