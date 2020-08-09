@@ -189,14 +189,20 @@ bool Scene::Load(IRenderingContext &ctx)
         //AddRotationQuaternionToRoots({ 0.000, 0.676, 0.000, 0.737 }); // 85°y
         //AddRotationQuaternionToRoots({ 0.000, 0.707, 0.000, 0.707 }); // 90°y
 
-        const uint8_t amb = 50;
+        const uint8_t amb = 40;
         mAmbientLight.luminance = SceneUtils::SrgbColorToFloat(amb, amb, amb);
-        const float lum = 1.4f;
+        const float lum = 2.0f;
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-        const float ints = 4.5f;
+        const float ints = 12.0f;
+        mPointLights.resize(5);
         for (auto &light : mPointLights)
+        {
             light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+            light.orbitRadius = 6.5f;
+            light.orbitInclinationMin = 0;
+            light.orbitInclinationMax = 0;
+        }
 
         break;
     }
@@ -205,9 +211,25 @@ bool Scene::Load(IRenderingContext &ctx)
     {
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/FlightHelmet/FlightHelmet.gltf"))
             return false;
+
         AddScaleToRoots(11.0);
         AddTranslationToRoots({ 0., 1.2, 0. });
         AddRotationQuaternionToRoots({ 0.000, 0.259, 0.000, 0.966 }); // 30°y
+
+        const uint8_t amb = 40;
+        mAmbientLight.luminance = SceneUtils::SrgbColorToFloat(amb, amb, amb);
+        const float lum = 4.0f;
+        mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+        const float ints = 9.0f;
+        mPointLights.resize(5);
+        for (auto &light : mPointLights)
+        {
+            light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+            //light.orbitRadius = 6.5f;
+            light.orbitInclinationMin = 0;
+            light.orbitInclinationMax = 0;
+        }
         break;
     }
 
@@ -303,9 +325,29 @@ bool Scene::Load(IRenderingContext &ctx)
     {
         if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Teliri - Rock Jacket (mid-poly)/scene.gltf"))
             return false;
+
         AddScaleToRoots(2.2);
         AddTranslationToRoots({ 0., -3.2, 0. });
         AddRotationQuaternionToRoots({ 0.000, 0.259, 0.000, 0.966 }); // 30°y
+
+        const uint8_t amb = 30;
+        mAmbientLight.luminance = SceneUtils::SrgbColorToFloat(amb, amb, amb);
+
+        //const float lum = 0.5f;
+        //mDirectLights.resize(1);
+        //mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        //mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+
+        const float ints = 14.0f;
+        mPointLights.resize(5);
+        for (auto &light : mPointLights)
+        {
+            light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+            light.orbitRadius = 4.63f;
+            light.orbitInclinationMin = 0;
+            light.orbitInclinationMax = 0;
+        }
+
         break;
     }
 
@@ -320,15 +362,20 @@ bool Scene::Load(IRenderingContext &ctx)
 
         const float amb = 0.03f;
         mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
-        const float lum = 0.7f;
+
+        const float lum = 0.5f;
         mDirectLights.resize(1);
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-        const float ints = 5.0f;
-        PointLight pointLight;
-        pointLight.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
-        pointLight.orbitRadius = 4.f;
-        mPointLights.resize(3, pointLight);
+
+        const float ints = 14.0f;
+        mPointLights.resize(3);
+        for (auto &light : mPointLights)
+        {
+            light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+            light.orbitInclinationMin = 0;
+            light.orbitInclinationMax = 0;
+        }
 
         break;
     }
