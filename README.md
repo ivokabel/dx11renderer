@@ -1,19 +1,25 @@
-Simple DirectX 11 pet renderer heavily based on DX11 SDK tutorials.
+Simple DirectX 11 pet renderer.
 
-# Things done
+## Things done
 
- - Lights:
+ - Lights
    - Point, directional, ambient (constant background)
    - Defined in physical quantities/units
- - Blinn-Phong material
- - Physically-based bloom
- - Hard-wired scenes
- - glTF scene loader
-   - Static geometry
-   - PBR metalness material
+ - Materials
+    - PBR metalness material with layered approximation
+    - Simple Blinn-Phong material
+ - Scenes
+    - Static glTF
+    - Hard-wired
+ - Post processing
+    - Physically-based bloom
 
-# Screenshots
+## Screenshots
 
-![Screenshot 3](/Doc/screenshot3-specular.jpg)
+![Battle Damaged Sci-fi Helmet](./Doc/Screenshots/1.jpg)
 
-![Screenshot PBR Metalness](/Doc/screenshot4-metalness.jpg)
+Model by [theblueturtle_](https://sketchfab.com/theblueturtle_).
+
+![Skull Salazar](./Doc/Screenshots/2.jpg)
+
+Model by [João Vitor Souza](https://sketchfab.com/jvitorsouzadesign).
