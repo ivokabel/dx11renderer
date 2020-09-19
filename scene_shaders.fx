@@ -8,10 +8,11 @@ static const float PI = 3.14159265f;
 // Metalness workflow
 Texture2D BaseColorTexture      : register(t0);
 Texture2D MetalRoughnessTexture : register(t1);
+Texture2D NormalTexture         : register(t2);
 
 // Specularity workflow
-Texture2D DiffuseTexture        : register(t2);
-Texture2D SpecularTexture       : register(t3);
+Texture2D DiffuseTexture        : register(t3);
+Texture2D SpecularTexture       : register(t4);
 
 SamplerState LinearSampler : register(s0);
 
@@ -47,6 +48,7 @@ cbuffer cbSceneNode : register(b3)
     // Metallness
     float4 BaseColorFactor;
     float4 MetallicRoughnessFactor;
+    // TODO: Normal scale?
 
     // Specularity
     float4 DiffuseColorFactor;
@@ -88,9 +90,14 @@ PS_INPUT VS(VS_INPUT input)
 
 float4 PsNormalVisualizer(PS_INPUT input) : SV_Target
 {
-    const float3 normal = normalize(input.Normal); // normal is interpolated - renormalize 
-    const float3 positiveNormal = (normal + float3(1.f, 1.f, 1.f)) / 2.;
-    return float4(positiveNormal.x, positiveNormal.y, positiveNormal.z, 1.);
+    //const float3 normal = normalize(input.Normal); // normal is interpolated - renormalize 
+
+    const float4 normal = NormalTexture.Sample(LinearSampler, input.Tex);// *NormalScale;
+    return float4(normal.rgb, 1.);
+
+    //const float3 normalColor = (normal * 0.5f) + 0.5f;
+    //const float3 positiveNormal = (normal + float3(1.f, 1.f, 1.f)) / 2.;
+    //return float4(positiveNormal.rgb, 1.);
 }
 
 
@@ -411,6 +418,9 @@ PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
 
 float4 PsPbrMetalness(PS_INPUT input) : SV_Target
 {
+    // debug
+    return PsNormalVisualizer(input);
+
     PbrM_ShadingCtx shadingCtx;
     shadingCtx.normal  = normalize(input.Normal); // normal is interpolated - renormalize 
     shadingCtx.viewDir = normalize((float3)CameraPos - (float3)input.PosWorld);

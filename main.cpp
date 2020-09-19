@@ -44,7 +44,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eGltfSampleMetalRoughSpheresNoTextures
         //Scene::eGltfSample2CylinderEngine
         //Scene::eGltfSampleDuck
-        //Scene::eGltfSampleBoomBox
+        Scene::eGltfSampleBoomBox
         //Scene::eGltfSampleBoomBoxWithAxes
         //Scene::eGltfSampleDamagedHelmet
         //Scene::eGltfSampleFlightHelmet
@@ -58,7 +58,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eTheRocket
         //Scene::eRoboV1
         //Scene::eRockJacket
-        Scene::eSalazarSkull
+        //Scene::eSalazarSkull
         );
 
     SimpleDX11Renderer renderer(scene);

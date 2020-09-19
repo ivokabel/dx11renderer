@@ -215,6 +215,7 @@ public:
 
     const SceneTexture & GetBaseColorTexture()         const { return mBaseColorTexture; };
     const SceneTexture & GetMetallicRoughnessTexture() const { return mMetallicRoughnessTexture; };
+    const SceneTexture & GetNormalTexture()            const { return mNormalTexture; };
 
     const SceneTexture & GetSpecularTexture()          const { return mSpecularTexture; };
 
@@ -225,6 +226,7 @@ private:
     // PBR metal/roughness workflow
     SceneTexture        mBaseColorTexture;
     SceneTexture        mMetallicRoughnessTexture;
+    SceneTexture        mNormalTexture;
 
     // PBR specularity workflow
     SceneTexture        mSpecularTexture;

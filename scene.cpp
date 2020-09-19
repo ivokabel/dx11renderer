@@ -716,6 +716,7 @@ void Scene::RenderNode(IRenderingContext &ctx,
             immCtx->PSSetShader(mPsPbrMetalness, nullptr, 0);
             immCtx->PSSetShaderResources(0, 1, &material.GetBaseColorTexture().srv);
             immCtx->PSSetShaderResources(1, 1, &material.GetMetallicRoughnessTexture().srv);
+            immCtx->PSSetShaderResources(2, 1, &material.GetNormalTexture().srv);
 
             CbScenePrimitive cbScenePrimitive;
             cbScenePrimitive.BaseColorFactor         = material.GetBaseColorTexture().GetConstFactor();
@@ -728,8 +729,8 @@ void Scene::RenderNode(IRenderingContext &ctx,
         case MaterialWorkflow::kPbrSpecularity:
         {
             immCtx->PSSetShader(mPsPbrSpecularity, nullptr, 0);
-            immCtx->PSSetShaderResources(2, 1, &material.GetBaseColorTexture().srv);
-            immCtx->PSSetShaderResources(3, 1, &material.GetSpecularTexture().srv);
+            immCtx->PSSetShaderResources(3, 1, &material.GetBaseColorTexture().srv);
+            immCtx->PSSetShaderResources(4, 1, &material.GetSpecularTexture().srv);
 
             CbScenePrimitive cbScenePrimitive;
             cbScenePrimitive.DiffuseColorFactor      = material.GetBaseColorTexture().GetConstFactor();
@@ -1926,6 +1927,11 @@ bool SceneTexture::LoadTextureFromGltf(const char *paramName,
     else
     {
         // Neutral constant texture
+
+        Log::Debug(L"%s%s: Not found - loading neutral constant texture",
+                   logPrefix.c_str(),
+                   Utils::StringToWstring(paramName).c_str());
+
         if (!SceneUtils::CreateConstantTextureSRV(ctx, srv, mNeutralConstFactor))
         {
             Log::Error(L"%sFailed to create neutral constant texture for \"%s\"!",
@@ -1943,7 +1949,8 @@ SceneMaterial::SceneMaterial() :
     mWorkflow(MaterialWorkflow::kNone),
     mBaseColorTexture(SceneTexture::eSrgb, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
     mMetallicRoughnessTexture(SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
-    mSpecularTexture(SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f))
+    mSpecularTexture(SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
+    mNormalTexture(SceneTexture::eLinear, XMFLOAT4(0.5f, 0.5f, 1.f, 1.f))
 {}
 
 
@@ -1993,6 +2000,7 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
 {
     if (Log::sLoggingLevel >= Log::eDebug)
     {
+        Log::Debug(L"%s[ Available params ]:", logPrefix.c_str());
         for (const auto &value : material.values)
         {
             Log::Debug(L"%s%s: %s",
@@ -2007,10 +2015,11 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
                        Utils::StringToWstring(value.first).c_str(),
                        GltfUtils::ParameterValueToWstring(value.second).c_str());
         }
-        Log::Debug(L"%s---", logPrefix.c_str());
+        Log::Debug(L"%s[ Loaded params ]", logPrefix.c_str());
     }
 
     auto &values = material.values;
+    auto &addValues = material.additionalValues;
 
     if (!mBaseColorTexture.LoadFloat4FactorFromGltf("baseColorFactor", values, logPrefix))
         return false;
@@ -2023,6 +2032,10 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
         return false;
     if (!mMetallicRoughnessTexture.LoadTextureFromGltf("metallicRoughnessTexture", ctx, model, values, logPrefix))
         return false;
+
+    if (!mNormalTexture.LoadTextureFromGltf("normalTexture", ctx, model, addValues, logPrefix))
+        return false;
+    // TODO: Scale
 
     mWorkflow = MaterialWorkflow::kPbrMetalness;
 
