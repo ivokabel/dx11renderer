@@ -36,11 +36,14 @@ private:
 };
 
 typedef D3D11_INPUT_ELEMENT_DESC InputElmDesc;
+#define AUTO_ALIGN      D3D11_APPEND_ALIGNED_ELEMENT
+#define VERTEX_DATA     D3D11_INPUT_PER_VERTEX_DATA
 const std::vector<InputElmDesc> sVertexLayoutDesc =
 {
-    InputElmDesc{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    InputElmDesc{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    InputElmDesc{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    InputElmDesc{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, AUTO_ALIGN, VERTEX_DATA, 0 },
+    InputElmDesc{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, AUTO_ALIGN, VERTEX_DATA, 0 },
+    InputElmDesc{ "TANGENT",  0, DXGI_FORMAT_R32G32B32_FLOAT, 0, AUTO_ALIGN, VERTEX_DATA, 0 },
+    InputElmDesc{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, AUTO_ALIGN, VERTEX_DATA, 0 },
 };
 
 struct CbScene
@@ -863,40 +866,40 @@ bool ScenePrimitive::GenerateCubeGeometry()
     mVertices =
     {
         // Up
-        SceneVertex{ XMFLOAT3(-1.0f, 1.0f, -1.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(0.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(1.0f, 1.0f, -1.0f),   XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(1.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(1.0f, 1.0f,  1.0f),   XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(1.0f, 1.0f) },
-        SceneVertex{ XMFLOAT3(-1.0f, 1.0f,  1.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(0.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f, 1.0f, -1.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT3(0,0,0), XMFLOAT2(0.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(1.0f, 1.0f, -1.0f),   XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT3(0,0,0), XMFLOAT2(1.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(1.0f, 1.0f,  1.0f),   XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT3(0,0,0), XMFLOAT2(1.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f, 1.0f,  1.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT3(0,0,0), XMFLOAT2(0.0f, 1.0f) },
 
         // Down
-        SceneVertex{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(1.0f, -1.0f, -1.0f),  XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(1.0f, -1.0f,  1.0f),  XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-        SceneVertex{ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT3(0,0,0), XMFLOAT2(0.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(1.0f, -1.0f, -1.0f),  XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT3(0,0,0), XMFLOAT2(1.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(1.0f, -1.0f,  1.0f),  XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT3(0,0,0), XMFLOAT2(1.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT3(0,0,0), XMFLOAT2(0.0f, 1.0f) },
 
         // Side 1
-        SceneVertex{ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-        SceneVertex{ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT3(0,0,0), XMFLOAT2(0.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT3(0,0,0), XMFLOAT2(1.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT3(0,0,0), XMFLOAT2(1.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT3(0,0,0), XMFLOAT2(0.0f, 1.0f) },
 
         // Side 3
-        SceneVertex{ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT2(0.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT2(1.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT2(1.0f, 1.0f) },
-        SceneVertex{ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT2(0.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT3(0,0,0), XMFLOAT2(0.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT3(0,0,0), XMFLOAT2(1.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT3(0,0,0), XMFLOAT2(1.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT3(0,0,0), XMFLOAT2(0.0f, 1.0f) },
 
         // Side 2
-        SceneVertex{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(1.0f, -1.0f, -1.0f),  XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(1.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(1.0f,  1.0f, -1.0f),  XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(1.0f, 1.0f) },
-        SceneVertex{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(0,0,0), XMFLOAT2(0.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(1.0f, -1.0f, -1.0f),  XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(0,0,0), XMFLOAT2(1.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(1.0f,  1.0f, -1.0f),  XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(0,0,0), XMFLOAT2(1.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(0,0,0), XMFLOAT2(0.0f, 1.0f) },
 
         // Side 4
-        SceneVertex{ XMFLOAT3(-1.0f, -1.0f, 1.0f),  XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT2(0.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(1.0f, -1.0f, 1.0f),   XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT2(1.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(1.0f,  1.0f, 1.0f),   XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT2(1.0f, 1.0f) },
-        SceneVertex{ XMFLOAT3(-1.0f,  1.0f, 1.0f),  XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT2(0.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f, -1.0f, 1.0f),  XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT3(0,0,0), XMFLOAT2(0.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(1.0f, -1.0f, 1.0f),   XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT3(0,0,0), XMFLOAT2(1.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(1.0f,  1.0f, 1.0f),   XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT3(0,0,0), XMFLOAT2(1.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f,  1.0f, 1.0f),  XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT3(0,0,0), XMFLOAT2(0.0f, 1.0f) },
     };
 
     mIndices =
@@ -937,16 +940,16 @@ bool ScenePrimitive::GenerateOctahedronGeometry()
     mVertices =
     {
         // Noth pole
-        SceneVertex{ XMFLOAT3( 0.0f, 1.0f, 0.0f),  XMFLOAT3( 0.0f, 1.0f, 0.0f),  XMFLOAT2(0.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3( 0.0f, 1.0f, 0.0f),  XMFLOAT3( 0.0f, 1.0f, 0.0f),  XMFLOAT3(0,0,0), XMFLOAT2(0.0f, 0.0f) },
 
         // Points on equator
-        SceneVertex{ XMFLOAT3( 1.0f, 0.0f, 0.0f),  XMFLOAT3( 1.0f, 0.0f, 0.0f),  XMFLOAT2(0.00f, 0.5f) },
-        SceneVertex{ XMFLOAT3( 0.0f, 0.0f, 1.0f),  XMFLOAT3( 0.0f, 0.0f, 1.0f),  XMFLOAT2(0.25f, 0.5f) },
-        SceneVertex{ XMFLOAT3(-1.0f, 0.0f, 0.0f),  XMFLOAT3(-1.0f, 0.0f, 0.0f),  XMFLOAT2(0.50f, 0.5f) },
-        SceneVertex{ XMFLOAT3( 0.0f, 0.0f,-1.0f),  XMFLOAT3( 0.0f, 0.0f,-1.0f),  XMFLOAT2(0.75f, 0.5f) },
+        SceneVertex{ XMFLOAT3( 1.0f, 0.0f, 0.0f),  XMFLOAT3( 1.0f, 0.0f, 0.0f),  XMFLOAT3(0,0,0), XMFLOAT2(0.00f, 0.5f) },
+        SceneVertex{ XMFLOAT3( 0.0f, 0.0f, 1.0f),  XMFLOAT3( 0.0f, 0.0f, 1.0f),  XMFLOAT3(0,0,0), XMFLOAT2(0.25f, 0.5f) },
+        SceneVertex{ XMFLOAT3(-1.0f, 0.0f, 0.0f),  XMFLOAT3(-1.0f, 0.0f, 0.0f),  XMFLOAT3(0,0,0), XMFLOAT2(0.50f, 0.5f) },
+        SceneVertex{ XMFLOAT3( 0.0f, 0.0f,-1.0f),  XMFLOAT3( 0.0f, 0.0f,-1.0f),  XMFLOAT3(0,0,0), XMFLOAT2(0.75f, 0.5f) },
 
         // South pole
-        SceneVertex{ XMFLOAT3( 0.0f,-1.0f, 0.0f),  XMFLOAT3( 0.0f,-1.0f, 0.0f),  XMFLOAT2(1.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3( 0.0f,-1.0f, 0.0f),  XMFLOAT3( 0.0f,-1.0f, 0.0f),  XMFLOAT3(0,0,0), XMFLOAT2(1.0f, 1.0f) },
     };
 
     mIndices =
@@ -1012,15 +1015,15 @@ bool ScenePrimitive::GenerateSphereGeometry(const WORD vertSegmCount, const WORD
             const float y = cos(theta);
             const XMFLOAT3 pt(xBase * ringRadius, y, zBase * ringRadius);
             const float v = (line + 1) * vertSegmSizeRel;
-            mVertices.push_back(SceneVertex{ pt, pt,  XMFLOAT2(uLine, v) }); // position==normal
+            mVertices.push_back(SceneVertex{ pt, pt,  XMFLOAT3(0,0,0), XMFLOAT2(uLine, v) }); // position==normal
         }
 
         // Poles
         const XMFLOAT3 northPole(0.0f,  1.0f, 0.0f);
         const XMFLOAT3 southPole(0.0f, -1.0f, 0.0f);
         const float uPole = uLine + stripSizeRel / 2;
-        mVertices.push_back(SceneVertex{ northPole,  northPole,  XMFLOAT2(uPole, 0.0f) }); // position==normal
-        mVertices.push_back(SceneVertex{ southPole,  southPole,  XMFLOAT2(uPole, 1.0f) }); // position==normal
+        mVertices.push_back(SceneVertex{ northPole,  northPole,  XMFLOAT3(0,0,0), XMFLOAT2(uPole, 0.0f) }); // position==normal
+        mVertices.push_back(SceneVertex{ southPole,  southPole,  XMFLOAT3(0,0,0), XMFLOAT2(uPole, 1.0f) }); // position==normal
     }
 
     assert(mVertices.size() == vertexCount);
@@ -1127,6 +1130,7 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
 
         mVertices.push_back(SceneVertex{ XMFLOAT3(pos.x, pos.y, pos.z),
                                          XMFLOAT3(0.0f, 0.0f, 1.0f), // TODO: Leave invalid?
+                                         XMFLOAT3(1.f, 0.5f, 0.0f),  // debug; TODO: Leave invalid?
                                          XMFLOAT2(0.0f, 0.0f) });
     };
 
@@ -1180,6 +1184,8 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
     //    // No normals provided
     //    // TODO: Generate?
     //}
+
+    // TODO: Load Tangent
 
     // Texture coordinates
 

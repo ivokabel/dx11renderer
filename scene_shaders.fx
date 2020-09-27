@@ -59,6 +59,7 @@ struct VS_INPUT
 {
     float4 Pos      : POSITION;
     float3 Normal   : NORMAL;
+    float3 Tangent  : TANGENT;
     float2 Tex      : TEXCOORD0;
 };
 
@@ -67,7 +68,8 @@ struct PS_INPUT
     float4 PosProj  : SV_POSITION;
     float4 PosWorld : TEXCOORD0;
     float3 Normal   : TEXCOORD1;
-    float2 Tex      : TEXCOORD2;
+    float3 Tangent  : TEXCOORD2; // TODO: Semantics?
+    float2 Tex      : TEXCOORD3;
 };
 
 
@@ -81,6 +83,7 @@ PS_INPUT VS(VS_INPUT input)
     output.PosProj = mul(output.PosProj, ProjectionMtrx);
 
     output.Normal = mul(input.Normal, (float3x3)WorldMtrx);
+    output.Tangent = input.Tangent; // debug; TODO: mul(input.Tangent, (float3x3)WorldMtrx);
 
     output.Tex = input.Tex;
 
@@ -90,14 +93,18 @@ PS_INPUT VS(VS_INPUT input)
 
 float4 PsNormalVisualizer(PS_INPUT input) : SV_Target
 {
+    // Normal
     //const float3 normal = normalize(input.Normal); // normal is interpolated - renormalize 
+    //const float3 normalColor = (normal + 1) / 2;
+    //return float4(normalColor.rgb, 1.);
 
-    const float4 normal = NormalTexture.Sample(LinearSampler, input.Tex);// *NormalScale;
-    return float4(normal.rgb, 1.);
+    // Tangent
+    const float3 tangent = input.Tangent;
+    return float4(tangent.rgb, 1.);
 
-    //const float3 normalColor = (normal * 0.5f) + 0.5f;
-    //const float3 positiveNormal = (normal + float3(1.f, 1.f, 1.f)) / 2.;
-    //return float4(positiveNormal.rgb, 1.);
+    // Normal map
+    //const float4 normal = normalize(NormalTexture.Sample(LinearSampler, input.Tex));// *NormalScale;
+    //return float4(normal.rgb, 1.);
 }
 
 

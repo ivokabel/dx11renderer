@@ -25,6 +25,7 @@ struct SceneVertex
 {
     XMFLOAT3 Pos;
     XMFLOAT3 Normal;
+    XMFLOAT3 Tangent;
     XMFLOAT2 Tex;
 };
 
