@@ -36,7 +36,7 @@ private:
 };
 
 typedef D3D11_INPUT_ELEMENT_DESC InputElmDesc;
-const std::array<InputElmDesc, 3> sVertexLayout =
+const std::vector<InputElmDesc> sVertexLayoutDesc =
 {
     InputElmDesc{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0 },
     InputElmDesc{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -116,8 +116,8 @@ bool Scene::Init(IRenderingContext &ctx)
         return false;
 
     // Input layout
-    hr = device->CreateInputLayout(sVertexLayout.data(),
-                                   (UINT)sVertexLayout.size(),
+    hr = device->CreateInputLayout(sVertexLayoutDesc.data(),
+                                   (UINT)sVertexLayoutDesc.size(),
                                    pVsBlob->GetBufferPointer(),
                                    pVsBlob->GetBufferSize(),
                                    &mVertexLayout);
