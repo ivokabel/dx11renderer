@@ -59,7 +59,7 @@ struct VS_INPUT
 {
     float4 Pos      : POSITION;
     float3 Normal   : NORMAL;
-    float3 Tangent  : TANGENT;
+    float4 Tangent  : TANGENT;
     float2 Tex      : TEXCOORD0;
 };
 
@@ -68,7 +68,7 @@ struct PS_INPUT
     float4 PosProj  : SV_POSITION;
     float4 PosWorld : TEXCOORD0;
     float3 Normal   : TEXCOORD1;
-    float3 Tangent  : TEXCOORD2; // TODO: Semantics?
+    float4 Tangent  : TEXCOORD2; // TODO: Semantics?
     float2 Tex      : TEXCOORD3;
 };
 
@@ -82,8 +82,9 @@ PS_INPUT VS(VS_INPUT input)
     output.PosProj = mul(output.PosWorld, ViewMtrx);
     output.PosProj = mul(output.PosProj, ProjectionMtrx);
 
-    output.Normal = mul(input.Normal, (float3x3)WorldMtrx);
-    output.Tangent = input.Tangent; // debug; TODO: mul(input.Tangent, (float3x3)WorldMtrx);
+    output.Normal  = mul(input.Normal, (float3x3)WorldMtrx);
+    output.Tangent = float4(mul(input.Tangent.xyz, (float3x3)WorldMtrx),
+                            input.Tangent.w);
 
     output.Tex = input.Tex;
 
@@ -94,13 +95,15 @@ PS_INPUT VS(VS_INPUT input)
 float4 PsNormalVisualizer(PS_INPUT input) : SV_Target
 {
     // Normal
-    //const float3 normal = normalize(input.Normal); // normal is interpolated - renormalize 
+    //const float3 normal = normalize(input.Normal); // transformed and interpolated - renormalize
     //const float3 normalColor = (normal + 1) / 2;
     //return float4(normalColor.rgb, 1.);
 
     // Tangent
-    const float3 tangent = input.Tangent;
-    return float4(tangent.rgb, 1.);
+    const float3 tangent = normalize(input.Tangent.xyz);
+    const float3 tangentColor = (tangent + 1) / 2;
+    return float4(tangentColor.rgb, 1.);
+    // TODO: input.Tangent.w
 
     // Normal map
     //const float4 normal = normalize(NormalTexture.Sample(LinearSampler, input.Tex));// *NormalScale;
@@ -191,7 +194,7 @@ PbrS_LightContrib PbrS_PointLightContrib(float3 surfPos,
 
 float4 PsPbrSpecularity(PS_INPUT input) : SV_Target
 {
-    const float3 normal  = normalize(input.Normal); // normal is interpolated - renormalize 
+    const float3 normal  = normalize(input.Normal); // transformed and interpolated - renormalize
     const float3 viewDir = normalize((float3)CameraPos - (float3)input.PosWorld);
 
     PbrS_LightContrib lightContribs = { {0, 0, 0, 0}, {0, 0, 0, 0} };
@@ -429,7 +432,7 @@ float4 PsPbrMetalness(PS_INPUT input) : SV_Target
     return PsNormalVisualizer(input);
 
     PbrM_ShadingCtx shadingCtx;
-    shadingCtx.normal  = normalize(input.Normal); // normal is interpolated - renormalize 
+    shadingCtx.normal  = normalize(input.Normal); // transformed and interpolated - renormalize
     shadingCtx.viewDir = normalize((float3)CameraPos - (float3)input.PosWorld);
 
     const PbrM_MatInfo matInfo = PbrM_ComputeMatInfo(input);

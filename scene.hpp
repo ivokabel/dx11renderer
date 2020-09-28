@@ -25,7 +25,7 @@ struct SceneVertex
 {
     XMFLOAT3 Pos;
     XMFLOAT3 Normal;
-    XMFLOAT3 Tangent;
+    XMFLOAT4 Tangent; // w represents handedness of the tangent basis and is either 1 or -1
     XMFLOAT2 Tex;
 };
 
