@@ -92,22 +92,32 @@ PS_INPUT VS(VS_INPUT input)
 }
 
 
-float4 PsNormalVisualizer(PS_INPUT input) : SV_Target
+float3 ComputeNormal(PS_INPUT input)
 {
-    // Normal
-    //const float3 normal = normalize(input.Normal); // transformed and interpolated - renormalize
-    //const float3 normalColor = (normal + 1) / 2;
-    //return float4(normalColor.rgb, 1.);
+    // TODO: Optimize if normalTex is (0, 0, 1)?
+    //return normalize(input.Normal);
 
-    // Tangent
-    const float3 tangent = normalize(input.Tangent.xyz);
-    const float3 tangentColor = (tangent + 1) / 2;
-    return float4(tangentColor.rgb, 1.);
-    // TODO: input.Tangent.w
+    const float3 frameNormal    = normalize(input.Normal); // transformed and interpolated - renormalize
+    const float3 frameTangent   = normalize(input.Tangent.xyz);
+    const float3 frameBitangent = normalize(cross(frameNormal, frameTangent) * input.Tangent.w);
 
-    // Normal map
-    //const float4 normal = normalize(NormalTexture.Sample(LinearSampler, input.Tex));// *NormalScale;
-    //return float4(normal.rgb, 1.);
+    const float3 normalTex      = NormalTexture.Sample(LinearSampler, input.Tex).xyz;
+    const float3 localNormal    = normalize(normalTex * 2 - 1);// TODO: NormalScale
+
+    return
+        localNormal.x * frameTangent +
+        localNormal.y * frameBitangent +
+        localNormal.z * frameNormal;
+
+}
+
+
+float4 PsNormalVisualizer(PS_INPUT input)
+{
+    const float3 normal = ComputeNormal(input);
+
+    const float3 color = (normal + 1) / 2;    
+    return float4(color, 1.);
 }
 
 
@@ -429,10 +439,10 @@ PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
 float4 PsPbrMetalness(PS_INPUT input) : SV_Target
 {
     // debug
-    return PsNormalVisualizer(input);
+    //return PsNormalVisualizer(input);
 
     PbrM_ShadingCtx shadingCtx;
-    shadingCtx.normal  = normalize(input.Normal); // transformed and interpolated - renormalize
+    shadingCtx.normal  = ComputeNormal(input);
     shadingCtx.viewDir = normalize((float3)CameraPos - (float3)input.PosWorld);
 
     const PbrM_MatInfo matInfo = PbrM_ComputeMatInfo(input);
