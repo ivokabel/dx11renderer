@@ -2,12 +2,13 @@ Simple DirectX 11 pet renderer.
 
 ## Things done
 
- - Lights
-   - Point, directional, ambient (constant background)
-   - Defined in physical quantities/units
  - Materials
     - PBR metalness material with layered approximation
     - Simple Blinn-Phong material
+ - Lights
+   - Point, directional, ambient (constant background)
+   - Defined in physical quantities/units
+ - Linear workflow
  - Scenes
     - Static glTF
     - Hard-wired
