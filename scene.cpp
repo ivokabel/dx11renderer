@@ -772,6 +772,7 @@ ScenePrimitive::ScenePrimitive(const ScenePrimitive &src) :
     mVertices(src.mVertices),
     mIndices(src.mIndices),
     mTopology(src.mTopology),
+    mIsTangentPresent(src.mIsTangentPresent),
     mVertexBuffer(src.mVertexBuffer),
     mIndexBuffer(src.mIndexBuffer),
     mMaterialIdx(src.mMaterialIdx)
@@ -784,6 +785,7 @@ ScenePrimitive::ScenePrimitive(const ScenePrimitive &src) :
 ScenePrimitive::ScenePrimitive(ScenePrimitive &&src) :
     mVertices(std::move(src.mVertices)),
     mIndices(std::move(src.mIndices)),
+    mIsTangentPresent(Utils::Exchange(src.mIsTangentPresent, false)),
     mTopology(Utils::Exchange(src.mTopology, D3D_PRIMITIVE_TOPOLOGY_UNDEFINED)),
     mVertexBuffer(Utils::Exchange(src.mVertexBuffer, nullptr)),
     mIndexBuffer(Utils::Exchange(src.mIndexBuffer, nullptr)),
@@ -794,6 +796,7 @@ ScenePrimitive& ScenePrimitive::operator =(const ScenePrimitive &src)
 {
     mVertices = src.mVertices;
     mIndices = src.mIndices;
+    mIsTangentPresent = src.mIsTangentPresent;
     mTopology = src.mTopology;
     mVertexBuffer = src.mVertexBuffer;
     mIndexBuffer = src.mIndexBuffer;
@@ -811,6 +814,7 @@ ScenePrimitive& ScenePrimitive::operator =(ScenePrimitive &&src)
 {
     mVertices = std::move(src.mVertices);
     mIndices = std::move(src.mIndices);
+    mIsTangentPresent = Utils::Exchange(src.mIsTangentPresent, false);
     mTopology = Utils::Exchange(src.mTopology, D3D_PRIMITIVE_TOPOLOGY_UNDEFINED);
     mVertexBuffer = Utils::Exchange(src.mVertexBuffer, nullptr);
     mIndexBuffer = Utils::Exchange(src.mIndexBuffer, nullptr);
@@ -1225,6 +1229,7 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
                                               subItemsLogPrefix.c_str(),
                                               L"Tangent"))
             return false;
+        mIsTangentPresent = true;
     }
     else
     {
@@ -1711,6 +1716,7 @@ void SceneNode::Animate(IRenderingContext &ctx)
 SceneTexture::SceneTexture(ValueType valueType, XMFLOAT4 neutralConstFactor) :
     mValueType(valueType),
     mNeutralConstFactor(neutralConstFactor),
+    mIsLoaded(false),
     mConstFactor(neutralConstFactor),
     srv(nullptr)
 {}
@@ -1718,6 +1724,7 @@ SceneTexture::SceneTexture(ValueType valueType, XMFLOAT4 neutralConstFactor) :
 SceneTexture::SceneTexture(const SceneTexture &src) :
     mValueType(src.mValueType),
     mNeutralConstFactor(src.mNeutralConstFactor),
+    mIsLoaded(src.mIsLoaded),
     mConstFactor(src.mConstFactor),
     srv(src.srv)
 {
@@ -1729,6 +1736,7 @@ SceneTexture& SceneTexture::operator =(const SceneTexture &src)
 {
     mValueType          = src.mValueType;
     mNeutralConstFactor = src.mNeutralConstFactor;
+    mIsLoaded           = src.mIsLoaded;
     mConstFactor        = src.mConstFactor;
     srv                 = src.srv;
 
@@ -1741,6 +1749,7 @@ SceneTexture& SceneTexture::operator =(const SceneTexture &src)
 SceneTexture::SceneTexture(SceneTexture &&src) :
     mValueType(src.mValueType),
     mNeutralConstFactor(Utils::Exchange(src.mNeutralConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f))),
+    mIsLoaded(Utils::Exchange(src.mIsLoaded, false)),
     mConstFactor(Utils::Exchange(src.mConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f))),
     srv(Utils::Exchange(src.srv, nullptr))
 {}
@@ -1749,6 +1758,7 @@ SceneTexture& SceneTexture::operator =(SceneTexture &&src)
 {
     mValueType          = src.mValueType;
     mNeutralConstFactor = Utils::Exchange(src.mNeutralConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f));
+    mIsLoaded           = Utils::Exchange(src.mIsLoaded, false);
     mConstFactor        = Utils::Exchange(src.mConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f));
     srv                 = Utils::Exchange(src.srv, nullptr);
 
@@ -1972,6 +1982,8 @@ bool SceneTexture::LoadTextureFromGltf(const char *paramName,
                        image.height);
             return false;
         }
+
+        mIsLoaded = true;
 
         // TODO: Sampler
     }

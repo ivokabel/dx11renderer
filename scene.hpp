@@ -54,6 +54,8 @@ public:
                       const int primitiveIdx,
                       const std::wstring &logPrefix);
 
+    bool IsTangentPresent() const { return mIsTangentPresent; }
+
     void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout *vertexLayout) const;
 
     void SetMaterialIdx(int idx) { mMaterialIdx = idx; };
@@ -83,6 +85,7 @@ private:
     std::vector<SceneVertex>    mVertices;
     std::vector<uint32_t>       mIndices;
     D3D11_PRIMITIVE_TOPOLOGY    mTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    bool                        mIsTangentPresent = false;
 
     // Device geometry data
     ID3D11Buffer*               mVertexBuffer = nullptr;
@@ -166,10 +169,12 @@ public:
                              const std::wstring &logPrefix);
 
     XMFLOAT4 GetConstFactor() const { return mConstFactor; }
+    bool     IsLoaded() const       { return mIsLoaded; }
 
 private:
     ValueType   mValueType;
     XMFLOAT4    mNeutralConstFactor;
+    bool        mIsLoaded;
     XMFLOAT4    mConstFactor; // TODO: This belongs to material!
     // TODO: sampler, texCoord
 
@@ -331,6 +336,9 @@ private:
     // Loads the scene specified via constructor
     bool Load(IRenderingContext &ctx);
     bool LoadExternal(IRenderingContext &ctx, const std::wstring &filePath);
+
+    bool PostLoadSanityTest();
+    bool NodeTangentSanityTest(const SceneNode &node);
 
     // glTF loader
     bool LoadGLTF(IRenderingContext &ctx,

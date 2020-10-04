@@ -806,18 +806,60 @@ bool Scene::Load(IRenderingContext &ctx)
         return false;
     }
 
+    return PostLoadSanityTest();
+}
+
+
+bool Scene::PostLoadSanityTest()
+{
     if (mPointLights.size() > POINT_LIGHTS_MAX_COUNT)
     {
         Log::Error(L"Point lights count (%d) exceeded maximum limit (%d)!",
                    mPointLights.size(), POINT_LIGHTS_MAX_COUNT);
         return false;
     }
+
     if (mDirectLights.size() > DIRECT_LIGHTS_MAX_COUNT)
     {
         Log::Error(L"Directional lights count (%d) exceeded maximum limit (%d)!",
                    mDirectLights.size(), DIRECT_LIGHTS_MAX_COUNT);
         return false;
     }
+
+    // Geometry using normal map must have tangent specified (for now)
+    for (auto &node : mRootNodes)
+        if (!NodeTangentSanityTest(node))
+            return false;
+
+    return true;
+}
+
+
+bool Scene::NodeTangentSanityTest(const SceneNode &node)
+{
+    // Test node
+    for (auto &primitive : node.mPrimitives)
+    {
+        const SceneMaterial &material = [&]()
+        {
+            const int matIdx = primitive.GetMaterialIdx();
+            if (matIdx >= 0 && matIdx < mMaterials.size())
+                return mMaterials[matIdx];
+            else
+                return mDefaultMaterial;
+        }();
+
+        if (material.GetNormalTexture().IsLoaded() && !primitive.IsTangentPresent())
+        {
+            Log::Error(L"A scene primitive without tangent data uses a material with normal map!");
+            return false;
+        }
+    }
+
+    // Children
+    for (auto &child : node.mChildren)
+        if (!NodeTangentSanityTest(child))
+            return false;
 
     return true;
 }
