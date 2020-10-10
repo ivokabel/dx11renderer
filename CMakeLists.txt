@@ -31,6 +31,8 @@ set(RENDERER_SOURCES
     Libs/tinygltf-2.2.0/stb_image_write.h
     Libs/tinygltf-2.2.0/tiny_gltf.h
     Libs/tinygltf-2.2.0/json.hpp
+    mikktspace_weldmesh.hpp
+    mikktspace_weldmesh.cpp
 
     #debug
     #Libs/tinygltf-2.2.0/loader_example.h
