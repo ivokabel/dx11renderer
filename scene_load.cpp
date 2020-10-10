@@ -134,6 +134,24 @@ bool Scene::Load(IRenderingContext &ctx)
         break;
     }
 
+    case eGltfSampleNormalTangentTest:
+    {
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/NormalTangentTest/glTF/NormalTangentTest.gltf"))
+            return false;
+        AddScaleToRoots(3.6f);
+        AddRotationQuaternionToRoots({ -0.174, 0.000, 0.000,  0.985 }); // -20°x
+        break;
+    }
+
+    case eGltfSampleNormalTangentMirrorTest:
+    {
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/NormalTangentMirrorTest/glTF/NormalTangentMirrorTest.gltf"))
+            return false;
+        AddScaleToRoots(3.6f);
+        AddRotationQuaternionToRoots({ -0.174, 0.000, 0.000,  0.985 }); // -20°x
+        break;
+    }
+
     case eGltfSample2CylinderEngine:
     {
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/2CylinderEngine/2CylinderEngine.gltf"))

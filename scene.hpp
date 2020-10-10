@@ -302,6 +302,8 @@ public:
         eGltfSampleBoxTextured,
         eGltfSampleMetalRoughSpheres,
         eGltfSampleMetalRoughSpheresNoTextures,
+        eGltfSampleNormalTangentTest,
+        eGltfSampleNormalTangentMirrorTest,
         eGltfSample2CylinderEngine,
         eGltfSampleDuck,
         eGltfSampleBoomBox,
