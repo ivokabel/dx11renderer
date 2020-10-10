@@ -138,8 +138,12 @@ bool Scene::Load(IRenderingContext &ctx)
     {
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/NormalTangentTest/glTF/NormalTangentTest.gltf"))
             return false;
+
         AddScaleToRoots(3.6f);
         AddRotationQuaternionToRoots({ -0.174, 0.000, 0.000,  0.985 }); // -20°x
+
+        for (auto &light : mPointLights)
+            light.orbitRadius = 8.0f;
         break;
     }
 
@@ -147,8 +151,12 @@ bool Scene::Load(IRenderingContext &ctx)
     {
         if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/NormalTangentMirrorTest/glTF/NormalTangentMirrorTest.gltf"))
             return false;
+
         AddScaleToRoots(3.6f);
         AddRotationQuaternionToRoots({ -0.174, 0.000, 0.000,  0.985 }); // -20°x
+
+        for (auto &light : mPointLights)
+            light.orbitRadius = 8.0f;
         break;
     }
 
