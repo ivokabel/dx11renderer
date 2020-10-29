@@ -1,5 +1,6 @@
 #include "scene.hpp"
 
+#include "tangent_calculator.hpp"
 #include "scene_utils.hpp"
 #include "gltf_utils.hpp"
 #include "utils.hpp"
@@ -1146,7 +1147,6 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
         return false;
 
     // Normals
-
     auto &normalAccessor = GetPrimitiveAttrAccessor(success, model, attrs, primitiveIdx,
                                                     false, "NORMAL", subItemsLogPrefix.c_str());
     if (success)
@@ -1229,16 +1229,17 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
                                               subItemsLogPrefix.c_str(),
                                               L"Tangent"))
             return false;
+
         mIsTangentPresent = true;
     }
     else
     {
-        // TODO: Generate tangents
         Log::Debug(L"%sTangents are not present!", subItemsLogPrefix.c_str());
+
+        TangentCalculator::Calculate(nullptr); // TODO: Data format
     }
 
     // Texture coordinates
-
     auto &texCoord0Accessor = GetPrimitiveAttrAccessor(success, model, attrs, primitiveIdx,
                                                        false, "TEXCOORD_0", subItemsLogPrefix.c_str());
     if (success)
@@ -1657,14 +1658,12 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
     }
 
     // Mesh
-
     const auto meshIdx = node.mesh;
     if (meshIdx >= (int)model.meshes.size())
     {
         Log::Error(L"%sInvalid mesh index (%d/%d)!", subItemsLogPrefix.c_str(), meshIdx, model.meshes.size());
         return false;
     }
-
     if (meshIdx >= 0)
     {
         const auto &mesh = model.meshes[meshIdx];
