@@ -866,14 +866,7 @@ bool Scene::NodeTangentSanityTest(const SceneNode &node)
     // Test node
     for (auto &primitive : node.mPrimitives)
     {
-        const SceneMaterial &material = [&]()
-        {
-            const int matIdx = primitive.GetMaterialIdx();
-            if (matIdx >= 0 && matIdx < mMaterials.size())
-                return mMaterials[matIdx];
-            else
-                return mDefaultMaterial;
-        }();
+        auto &material = GetMaterial(primitive);
 
         if (material.GetNormalTexture().IsLoaded() && !primitive.IsTangentPresent())
         {

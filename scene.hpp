@@ -357,6 +357,9 @@ private:
                                int nodeIdx,
                                const std::wstring &logPrefix);
 
+    // Materials
+    const SceneMaterial& GetMaterial(const ScenePrimitive &primitive) const;
+
     // Lights
     void SetupDefaultLights();
 

@@ -493,6 +493,17 @@ bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
 }
 
 
+const SceneMaterial& Scene::GetMaterial(const ScenePrimitive &primitive) const
+{
+    const int idx = primitive.GetMaterialIdx();
+
+    if (idx >= 0 && idx < mMaterials.size())
+        return mMaterials[idx];
+    else
+        return mDefaultMaterial;
+}
+
+
 void Scene::Destroy()
 {
     Utils::ReleaseAndMakeNull(mVertexShader);
@@ -704,14 +715,7 @@ void Scene::RenderNode(IRenderingContext &ctx,
     // Draw current node
     for (auto &primitive : node.mPrimitives)
     {
-        const SceneMaterial &material = [&]()
-        {
-            const int matIdx = primitive.GetMaterialIdx();
-            if (matIdx >= 0 && matIdx < mMaterials.size())
-                return mMaterials[matIdx];
-            else
-                return mDefaultMaterial;
-        }();
+        auto &material = GetMaterial(primitive);
 
         switch (material.GetWorkflow())
         {
