@@ -29,7 +29,7 @@ private:
                             const int face,
                             const int vertex);
     static void setTSpaceBasic(const SMikkTSpaceContext *context,
-                               const float tangentu[],
+                               const float tangent[],
                                const float sign,
                                const int face,
                                const int vertex);

@@ -56,7 +56,12 @@ public:
 
     size_t GetVerticesPerFace() const;
     size_t GetFacesCount() const;
+    const size_t GetVertexIndex(const int face, const int vertex) const;
+    const SceneVertex& GetVertex(const int face, const int vertex) const;
     void GetPosition(float outpos[], const int face, const int vertex) const;
+    void GetNormal(float outnormal[], const int face, const int vertex) const;
+    void GetTextCoord(float outuv[], const int face, const int vertex) const;
+    void SetTangent(const float tangent[], const float sign, const int face, const int vertex);
 
     bool IsTangentPresent() const { return mIsTangentPresent; }
 

@@ -34,6 +34,8 @@ int TangentCalculator::getNumFaces(const SMikkTSpaceContext *context)
 int TangentCalculator::getNumVerticesOfFace(const SMikkTSpaceContext *context,
                                             const int face)
 {
+    face; // unused param
+
     return (int)GetPrimitive(context).GetVerticesPerFace();
 }
 
@@ -52,9 +54,7 @@ void TangentCalculator::getNormal(const SMikkTSpaceContext *context,
                                   const int face,
                                   const int vertex)
 {
-    auto &primitive = GetPrimitive(context);
-
-    //...
+    GetPrimitive(context).GetNormal(outnormal, face, vertex);
 }
 
 
@@ -63,19 +63,15 @@ void TangentCalculator::getTexCoord(const SMikkTSpaceContext *context,
                                     const int face,
                                     const int vertex)
 {
-    auto &primitive = GetPrimitive(context);
-
-    //...
+    GetPrimitive(context).GetTextCoord(outuv, face, vertex);
 }
 
 
 void TangentCalculator::setTSpaceBasic(const SMikkTSpaceContext *context,
-                                       const float tangentu[],
+                                       const float tangent[],
                                        const float sign,
                                        const int face,
                                        const int vertex)
 {
-    auto &primitive = GetPrimitive(context);
-
-    //...
+    GetPrimitive(context).SetTangent(tangent, sign, face, vertex);
 }

@@ -1419,11 +1419,12 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
     // TODO: Only for triangles?
     if (!IsTangentPresent())
     {
-        if (TangentCalculator::Calculate(*this))
+        if (!TangentCalculator::Calculate(*this))
         {
             Log::Error(L"%sTangents computation failed!", subItemsLogPrefix.c_str());
             return false;
         }
+        mIsTangentPresent = true;
     }
 
     return true;
@@ -1526,14 +1527,45 @@ void ScenePrimitive::FillFaceStripsCacheIfNeeded() const
 }
 
 
-void ScenePrimitive::GetPosition(float outpos[],
-                                 const int face,
-                                 const int vertex) const
+const size_t ScenePrimitive::GetVertexIndex(const int face, const int vertex) const
 {
+    if (vertex >= GetVerticesPerFace())
+        return 0;
+
+    switch (mTopology)
+    {
+    case D3D11_PRIMITIVE_TOPOLOGY_POINTLIST:
+    case D3D11_PRIMITIVE_TOPOLOGY_LINELIST:
+    case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST:
+    case D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP:
+        return vertex;
+
+    case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP:
+    {
+        const bool isOdd = (face % 2 == 1);
+
+        if (isOdd && (vertex == 1))
+            return 2;
+        else if (isOdd && (vertex == 2))
+            return 1;
+        else
+            return vertex;
+    }
+
+    default:
+        return 0; // Unsupported
+    }
+}
+
+
+const SceneVertex& ScenePrimitive::GetVertex(const int face, const int vertex) const
+{
+    static const SceneVertex invalidVert{};
+
     FillFaceStripsCacheIfNeeded();
 
     if (vertex >= GetVerticesPerFace())
-        return;
+        return invalidVert;
 
     switch (mTopology)
     {
@@ -1543,54 +1575,86 @@ void ScenePrimitive::GetPosition(float outpos[],
     {
         const auto idx = face * GetVerticesPerFace() + vertex;
         if ((idx < 0) || (idx >= mIndices.size()))
-            return;
-
-        const auto &pos = mVertices[mIndices[idx]].Pos;
-        outpos[0] = pos.x;
-        outpos[1] = pos.y;
-        outpos[2] = pos.z;
-
-        return;
+            return invalidVert;
+        return mVertices[mIndices[idx]];
     }
 
     case D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP:
     case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP:
     {
         if (!mAreFaceStripsCached)
-            return;
+            return invalidVert;
         if (face >= mFaceStripsTotalCount)
-            return;
+            return invalidVert;
 
         // Strip
         // (naive impl for now, could be done in log time using cumulative counts and binary search)
         size_t strip = 0;
-        for (size_t skippedFaces = 0; strip < mFaceStrips.size(); strip++)
+        size_t skippedFaces = 0;
+        for (; strip < mFaceStrips.size(); strip++)
         {
             const auto currentFaceCount = mFaceStrips[strip].faceCount;
             if (face < (skippedFaces + currentFaceCount))
                 break; // found
             skippedFaces += currentFaceCount;
         }
+        if (strip >= mFaceStrips.size())
+            return invalidVert;
 
         // Face & vertex
-        if (strip < mFaceStrips.size())
-        {
-            const auto idx = mFaceStrips[strip].startIdx + face + vertex;
-            if ((idx < 0) || (idx >= mIndices.size()))
-                return;
-
-            const auto &pos = mVertices[mIndices[idx]].Pos;
-            outpos[0] = pos.x;
-            outpos[1] = pos.y;
-            outpos[2] = pos.z;
-        }
-
-        return;
+        const auto faceIdx   = face - skippedFaces;
+        const auto vertexIdx = GetVertexIndex(face, vertex);
+        const auto idx = mFaceStrips[strip].startIdx + faceIdx + vertexIdx;
+        if ((idx < 0) || (idx >= mIndices.size()))
+            return invalidVert;
+        return mVertices[mIndices[idx]];
     }
 
     default:
-        return; // Unsupported
+        return invalidVert; // Unsupported
     }
+}
+
+
+void ScenePrimitive::GetPosition(float outpos[],
+                                 const int face,
+                                 const int vertex) const
+{
+    const auto &pos = GetVertex(face, vertex).Pos;
+    outpos[0] = pos.x;
+    outpos[1] = pos.y;
+    outpos[2] = pos.z;
+}
+
+
+void ScenePrimitive::GetNormal(float outnormal[],
+                               const int face,
+                               const int vertex) const
+{
+    const auto &normal = GetVertex(face, vertex).Normal;
+    outnormal[0] = normal.x;
+    outnormal[1] = normal.y;
+    outnormal[2] = normal.z;
+}
+
+
+void ScenePrimitive::GetTextCoord(float outuv[],
+                                  const int face,
+                                  const int vertex) const
+{
+    const auto &tex = GetVertex(face, vertex).Tex;
+    outuv[0] = tex.x;
+    outuv[1] = tex.y;
+}
+
+
+void ScenePrimitive::SetTangent(const float tangent[],
+                                const float sign,
+                                const int face,
+                                const int vertex)
+{
+    // TODO: Get non-const vertex
+    auto &sceneVertex = GetVertex(face, vertex);
 }
 
 
