@@ -56,6 +56,7 @@ public:
 
     size_t GetVerticesPerFace() const;
     size_t GetFacesCount() const;
+    void GetPosition(float outpos[], const int face, const int vertex) const;
 
     bool IsTangentPresent() const { return mIsTangentPresent; }
 

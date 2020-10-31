@@ -1414,7 +1414,10 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
     }
 
     // Compute tangents if needed (after everything else is loaded)
-    if (!IsTangentPresent()) // TODO: if (material needs tangents && are not present); GetMaterial()?
+    // TODO: if (material needs tangents && are not present) ... GetMaterial()
+    // TODO: Requires position, normal, and texcoords
+    // TODO: Only for triangles?
+    if (!IsTangentPresent())
     {
         if (TangentCalculator::Calculate(*this))
         {
@@ -1519,6 +1522,74 @@ void ScenePrimitive::FillFaceStripsCacheIfNeeded() const
     case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST:
     default:
         return;
+    }
+}
+
+
+void ScenePrimitive::GetPosition(float outpos[],
+                                 const int face,
+                                 const int vertex) const
+{
+    FillFaceStripsCacheIfNeeded();
+
+    if (vertex >= GetVerticesPerFace())
+        return;
+
+    switch (mTopology)
+    {
+    case D3D11_PRIMITIVE_TOPOLOGY_POINTLIST:
+    case D3D11_PRIMITIVE_TOPOLOGY_LINELIST:
+    case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST:
+    {
+        const auto idx = face * GetVerticesPerFace() + vertex;
+        if ((idx < 0) || (idx >= mIndices.size()))
+            return;
+
+        const auto &pos = mVertices[mIndices[idx]].Pos;
+        outpos[0] = pos.x;
+        outpos[1] = pos.y;
+        outpos[2] = pos.z;
+
+        return;
+    }
+
+    case D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP:
+    case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP:
+    {
+        if (!mAreFaceStripsCached)
+            return;
+        if (face >= mFaceStripsTotalCount)
+            return;
+
+        // Strip
+        // (naive impl for now, could be done in log time using cumulative counts and binary search)
+        size_t strip = 0;
+        for (size_t skippedFaces = 0; strip < mFaceStrips.size(); strip++)
+        {
+            const auto currentFaceCount = mFaceStrips[strip].faceCount;
+            if (face < (skippedFaces + currentFaceCount))
+                break; // found
+            skippedFaces += currentFaceCount;
+        }
+
+        // Face & vertex
+        if (strip < mFaceStrips.size())
+        {
+            const auto idx = mFaceStrips[strip].startIdx + face + vertex;
+            if ((idx < 0) || (idx >= mIndices.size()))
+                return;
+
+            const auto &pos = mVertices[mIndices[idx]].Pos;
+            outpos[0] = pos.x;
+            outpos[1] = pos.y;
+            outpos[2] = pos.z;
+        }
+
+        return;
+    }
+
+    default:
+        return; // Unsupported
     }
 }
 

@@ -15,22 +15,22 @@ private:
 
     static int  getNumFaces(const SMikkTSpaceContext *context);
     static int  getNumVerticesOfFace(const SMikkTSpaceContext *context,
-                                     const int primnum);
+                                     const int face);
     static void getPosition(const SMikkTSpaceContext *context,
                             float pos[],
-                            const int primnum,
-                            const int vtxnum);
+                            const int face,
+                            const int vertex);
     static void getNormal(const SMikkTSpaceContext *context,
                           float normal[],
-                          const int primnum,
-                          const int vtxnum);
+                          const int face,
+                          const int vertex);
     static void getTexCoord(const SMikkTSpaceContext *context,
                             float uv[],
-                            const int primnum,
-                            const int vtxnum);
+                            const int face,
+                            const int vertex);
     static void setTSpaceBasic(const SMikkTSpaceContext *context,
                                const float tangentu[],
                                const float sign,
-                               const int primnum,
-                               const int vtxnum);
+                               const int face,
+                               const int vertex);
 };

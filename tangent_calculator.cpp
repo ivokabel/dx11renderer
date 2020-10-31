@@ -27,32 +27,30 @@ ScenePrimitive& TangentCalculator::GetPrimitive(const SMikkTSpaceContext *contex
 
 int TangentCalculator::getNumFaces(const SMikkTSpaceContext *context)
 {
-    return GetPrimitive(context).GetFacesCount();
+    return (int)GetPrimitive(context).GetFacesCount();
 }
 
 
 int TangentCalculator::getNumVerticesOfFace(const SMikkTSpaceContext *context,
-                                            const int primnum)
+                                            const int face)
 {
-    return GetPrimitive(context).GetVerticesPerFace();
+    return (int)GetPrimitive(context).GetVerticesPerFace();
 }
 
 
 void TangentCalculator::getPosition(const SMikkTSpaceContext *context,
                                     float outpos[],
-                                    const int primnum,
-                                    const int vtxnum)
+                                    const int face,
+                                    const int vertex)
 {
-    auto &primitive = GetPrimitive(context);
-
-    //...
+    GetPrimitive(context).GetPosition(outpos, face, vertex);
 }
 
 
 void TangentCalculator::getNormal(const SMikkTSpaceContext *context,
                                   float outnormal[],
-                                  const int primnum,
-                                  const int vtxnum)
+                                  const int face,
+                                  const int vertex)
 {
     auto &primitive = GetPrimitive(context);
 
@@ -62,8 +60,8 @@ void TangentCalculator::getNormal(const SMikkTSpaceContext *context,
 
 void TangentCalculator::getTexCoord(const SMikkTSpaceContext *context,
                                     float outuv[],
-                                    const int primnum,
-                                    const int vtxnum)
+                                    const int face,
+                                    const int vertex)
 {
     auto &primitive = GetPrimitive(context);
 
@@ -74,8 +72,8 @@ void TangentCalculator::getTexCoord(const SMikkTSpaceContext *context,
 void TangentCalculator::setTSpaceBasic(const SMikkTSpaceContext *context,
                                        const float tangentu[],
                                        const float sign,
-                                       const int primnum,
-                                       const int vtxnum)
+                                       const int face,
+                                       const int vertex)
 {
     auto &primitive = GetPrimitive(context);
 
