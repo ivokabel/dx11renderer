@@ -1603,7 +1603,7 @@ const SceneVertex& ScenePrimitive::GetVertex(const int face, const int vertex) c
 
         // Face & vertex
         const auto faceIdx   = face - skippedFaces;
-        const auto vertexIdx = GetVertexIndex(face, vertex);
+        const auto vertexIdx = GetVertexIndex(faceIdx, vertex);
         const auto idx = mFaceStrips[strip].startIdx + faceIdx + vertexIdx;
         if ((idx < 0) || (idx >= mIndices.size()))
             return invalidVert;
