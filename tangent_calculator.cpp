@@ -1,6 +1,6 @@
 #include "tangent_calculator.hpp"
 
-void TangentCalculator::Calculate(void * data)
+bool TangentCalculator::Calculate(ScenePrimitive &primitive)
 {
     SMikkTSpaceInterface iface;
     iface.m_getNumFaces = getNumFaces;
@@ -13,42 +13,63 @@ void TangentCalculator::Calculate(void * data)
 
     SMikkTSpaceContext context;
     context.m_pInterface = &iface;
-    context.m_pUserData = data;
+    context.m_pUserData = &primitive;
 
-    genTangSpaceDefault(&context);
+    return genTangSpaceDefault(&context) == 1;
 }
+
+
+ScenePrimitive& TangentCalculator::GetPrimitive(const SMikkTSpaceContext *context)
+{
+    return *static_cast<ScenePrimitive*>(context->m_pUserData);
+}
+
 
 int TangentCalculator::getNumFaces(const SMikkTSpaceContext *context)
 {
-    return 0; // debug
+    return GetPrimitive(context).GetFacesCount();
 }
+
 
 int TangentCalculator::getNumVerticesOfFace(const SMikkTSpaceContext *context,
                                             const int primnum)
 {
-    return 0; // debug
+    return GetPrimitive(context).GetVerticesPerFace();
 }
+
 
 void TangentCalculator::getPosition(const SMikkTSpaceContext *context,
                                     float outpos[],
                                     const int primnum,
                                     const int vtxnum)
 {
+    auto &primitive = GetPrimitive(context);
+
+    //...
 }
+
 
 void TangentCalculator::getNormal(const SMikkTSpaceContext *context,
                                   float outnormal[],
                                   const int primnum,
                                   const int vtxnum)
 {
+    auto &primitive = GetPrimitive(context);
+
+    //...
 }
+
 
 void TangentCalculator::getTexCoord(const SMikkTSpaceContext *context,
                                     float outuv[],
                                     const int primnum,
                                     const int vtxnum)
 {
+    auto &primitive = GetPrimitive(context);
+
+    //...
 }
+
 
 void TangentCalculator::setTSpaceBasic(const SMikkTSpaceContext *context,
                                        const float tangentu[],
@@ -56,4 +77,7 @@ void TangentCalculator::setTSpaceBasic(const SMikkTSpaceContext *context,
                                        const int primnum,
                                        const int vtxnum)
 {
+    auto &primitive = GetPrimitive(context);
+
+    //...
 }

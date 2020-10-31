@@ -13,6 +13,7 @@
 #include <vector>
 
 #define UNUSED_COLOR XMFLOAT4(1.f, 0.f, 1.f, 1.f)
+#define STRIP_BREAK static_cast<uint32_t>(-1)
 
 // debug
 //#include "Libs/tinygltf-2.2.0/loader_example.h"
@@ -791,7 +792,7 @@ ScenePrimitive::ScenePrimitive(ScenePrimitive &&src) :
     mVertices(std::move(src.mVertices)),
     mIndices(std::move(src.mIndices)),
     mIsTangentPresent(Utils::Exchange(src.mIsTangentPresent, false)),
-    mTopology(Utils::Exchange(src.mTopology, D3D_PRIMITIVE_TOPOLOGY_UNDEFINED)),
+    mTopology(Utils::Exchange(src.mTopology, D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED)),
     mVertexBuffer(Utils::Exchange(src.mVertexBuffer, nullptr)),
     mIndexBuffer(Utils::Exchange(src.mIndexBuffer, nullptr)),
     mMaterialIdx(Utils::Exchange(src.mMaterialIdx, -1))
@@ -820,7 +821,7 @@ ScenePrimitive& ScenePrimitive::operator =(ScenePrimitive &&src)
     mVertices = std::move(src.mVertices);
     mIndices = std::move(src.mIndices);
     mIsTangentPresent = Utils::Exchange(src.mIsTangentPresent, false);
-    mTopology = Utils::Exchange(src.mTopology, D3D_PRIMITIVE_TOPOLOGY_UNDEFINED);
+    mTopology = Utils::Exchange(src.mTopology, D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED);
     mVertexBuffer = Utils::Exchange(src.mVertexBuffer, nullptr);
     mIndexBuffer = Utils::Exchange(src.mIndexBuffer, nullptr);
 
@@ -1049,7 +1050,7 @@ bool ScenePrimitive::GenerateSphereGeometry(const WORD vertSegmCount, const WORD
             mIndices.push_back( idxOffset + line);
         }
         mIndices.push_back(idxOffset + vertexCountPerStrip - 1); // south pole
-        mIndices.push_back(static_cast<uint32_t>(-1)); // strip restart
+        mIndices.push_back(STRIP_BREAK);
     }
 
     assert(mIndices.size() == indexCount);
@@ -1088,8 +1089,10 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
                                       const std::wstring &logPrefix)
 {
     bool success = false;
-
     const auto &primitive = mesh.primitives[primitiveIdx];
+    const auto &attrs = primitive.attributes;
+    const auto subItemsLogPrefix = logPrefix + L"   ";
+    const auto dataConsumerLogPrefix = subItemsLogPrefix + L"   ";
 
     Log::Debug(L"%sPrimitive %d/%d: mode %s, attributes [%s], indices %d, material %d",
                logPrefix.c_str(),
@@ -1099,11 +1102,6 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
                GltfUtils::StringIntMapToWstring(primitive.attributes).c_str(),
                primitive.indices,
                primitive.material);
-
-    const auto &attrs = primitive.attributes;
-
-    const std::wstring &subItemsLogPrefix = logPrefix + L"   ";
-    const std::wstring &dataConsumerLogPrefix = subItemsLogPrefix + L"   ";
 
     // Positions
 
@@ -1124,6 +1122,7 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
     if (mVertices.capacity() < posAccessor.count)
     {
         Log::Error(L"%sUnable to allocate %d vertices!", subItemsLogPrefix.c_str(), posAccessor.count);
+        mVertices.clear();
         return false;
     }
 
@@ -1238,9 +1237,7 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
     }
     else
     {
-        Log::Debug(L"%sTangents are not present!", subItemsLogPrefix.c_str());
-
-        TangentCalculator::Calculate(nullptr); // TODO: Data format
+        Log::Debug(L"%sTangents are not present", subItemsLogPrefix.c_str());
     }
 
     // Texture coordinates
@@ -1341,7 +1338,7 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
         //           mIndices.back());
     };
 
-    // TODO: Wrap into a function IterateGltfAccesorData(componentType, ...)? std::forward()?
+    // TODO: Wrap into IterateGltfAccesorData(componentType, ...)? std::forward()?
     switch (indicesComponentType)
     {
     case TINYGLTF_COMPONENT_TYPE_BYTE:
@@ -1396,7 +1393,7 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
 
     // DX primitive topology
     mTopology = GltfUtils::ModeToTopology(primitive.mode);
-    if (mTopology == D3D_PRIMITIVE_TOPOLOGY_UNDEFINED)
+    if (mTopology == D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED)
     {
         Log::Error(L"%sUnsupported primitive topology!", subItemsLogPrefix.c_str());
         return false;
@@ -1416,7 +1413,113 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
         mMaterialIdx = matIdx;
     }
 
+    // Compute tangents if needed (after everything else is loaded)
+    if (!IsTangentPresent()) // TODO: if (material needs tangents && are not present); GetMaterial()?
+    {
+        if (TangentCalculator::Calculate(*this))
+        {
+            Log::Error(L"%sTangents computation failed!", subItemsLogPrefix.c_str());
+            return false;
+        }
+    }
+
     return true;
+}
+
+
+size_t ScenePrimitive::GetVerticesPerFace() const
+{
+    switch (mTopology)
+    {
+    case D3D11_PRIMITIVE_TOPOLOGY_POINTLIST:
+        return 1;
+    case D3D11_PRIMITIVE_TOPOLOGY_LINELIST:
+        return 2;
+    case D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP:
+        return 2;
+    case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST:
+        return 3;
+    case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP:
+        return 3;
+    default:
+        return 0;
+    }
+}
+
+
+size_t ScenePrimitive::GetFacesCount() const
+{
+    FillFaceStripsCacheIfNeeded();
+
+    switch (mTopology)
+    {
+    case D3D11_PRIMITIVE_TOPOLOGY_POINTLIST:
+    case D3D11_PRIMITIVE_TOPOLOGY_LINELIST:
+    case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST:
+        return mIndices.size() / GetVerticesPerFace();
+
+    case D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP:
+    case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP:
+        return mFaceStripsTotalCount;
+
+    default:
+        return 0; // Unsupported
+    }
+}
+
+
+void ScenePrimitive::FillFaceStripsCacheIfNeeded() const
+{
+    if (mAreFaceStripsCached)
+        return;
+
+    switch (mTopology)
+    {
+    case D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP:
+    case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP:
+    {
+        mFaceStrips.clear();
+
+        const auto count = mIndices.size();
+        for (size_t i = 0; i < count; )
+        {
+            // Start
+            while ((i < count) && (mIndices[i] == STRIP_BREAK))
+            {
+                ++i;
+            }
+            const size_t start = i;
+
+            // Length
+            size_t length = 0;
+            while ((i < count) && (mIndices[i] != STRIP_BREAK))
+            {
+                ++length;
+                ++i;
+            }
+
+            // Strip
+            if (length >= GetVerticesPerFace())
+            {
+                const auto faceCount = length - (GetVerticesPerFace() - 1);
+                mFaceStrips.push_back({ start, faceCount });
+            }
+        }
+
+        mFaceStripsTotalCount = 0;
+        for (const auto &strip : mFaceStrips)
+            mFaceStripsTotalCount += strip.faceCount;
+
+        mAreFaceStripsCached = true;
+        return;
+    }
+
+    case D3D11_PRIMITIVE_TOPOLOGY_POINTLIST:
+    case D3D11_PRIMITIVE_TOPOLOGY_LINELIST:
+    case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST:
+    default:
+        return;
+    }
 }
 
 
@@ -1477,7 +1580,7 @@ void ScenePrimitive::DestroyGeomData()
 {
     mVertices.clear();
     mIndices.clear();
-    mTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    mTopology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
 }
 
 

@@ -43,12 +43,12 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eGltfSampleMetalRoughSpheres
         //Scene::eGltfSampleMetalRoughSpheresNoTextures
         //Scene::eGltfSampleNormalTangentTest
-        Scene::eGltfSampleNormalTangentMirrorTest
+        //Scene::eGltfSampleNormalTangentMirrorTest
         //Scene::eGltfSample2CylinderEngine
         //Scene::eGltfSampleDuck
         //Scene::eGltfSampleBoomBox
         //Scene::eGltfSampleBoomBoxWithAxes
-        //Scene::eGltfSampleDamagedHelmet
+        Scene::eGltfSampleDamagedHelmet
         //Scene::eGltfSampleFlightHelmet
 
         //Scene::eWolfBaseMesh
@@ -64,7 +64,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         );
 
     SimpleDX11Renderer renderer(scene);
-    if (!renderer.Init(instance, cmdShow, 1200u, 900u))//1000u, 750u))
+    if (!renderer.Init(instance, cmdShow, 1200u, 900u))
         return -1;
     //renderer.SetTimeout(5.); // For more deterministic measurements
     return renderer.Run();

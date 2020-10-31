@@ -54,6 +54,9 @@ public:
                       const int primitiveIdx,
                       const std::wstring &logPrefix);
 
+    size_t GetVerticesPerFace() const;
+    size_t GetFacesCount() const;
+
     bool IsTangentPresent() const { return mIsTangentPresent; }
 
     void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout *vertexLayout) const;
@@ -74,6 +77,7 @@ private:
                               const int primitiveIdx,
                               const std::wstring &logPrefix);
 
+    void FillFaceStripsCacheIfNeeded() const;
     bool CreateDeviceBuffers(IRenderingContext &ctx);
 
     void DestroyGeomData();
@@ -86,6 +90,16 @@ private:
     std::vector<uint32_t>       mIndices;
     D3D11_PRIMITIVE_TOPOLOGY    mTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
     bool                        mIsTangentPresent = false;
+
+    // Cached geometry data
+    struct FaceStrip
+    {
+        size_t startIdx;
+        size_t faceCount;
+    };
+    mutable bool                    mAreFaceStripsCached = false;
+    mutable std::vector<FaceStrip>  mFaceStrips;
+    mutable size_t                  mFaceStripsTotalCount = 0;
 
     // Device geometry data
     ID3D11Buffer*               mVertexBuffer = nullptr;

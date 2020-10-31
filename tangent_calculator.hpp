@@ -1,5 +1,6 @@
 #pragma once
 
+#include "scene.hpp"
 #include "mikktspace.hpp"
 
 class TangentCalculator
@@ -7,9 +8,11 @@ class TangentCalculator
 public:
     TangentCalculator() = delete; // force abstract
 
-    static void Calculate(void * data/*TODO: Data type*/);
+    static bool Calculate(ScenePrimitive &primitive);
 
 private:
+    static ScenePrimitive& GetPrimitive(const SMikkTSpaceContext *context);
+
     static int  getNumFaces(const SMikkTSpaceContext *context);
     static int  getNumVerticesOfFace(const SMikkTSpaceContext *context,
                                      const int primnum);
