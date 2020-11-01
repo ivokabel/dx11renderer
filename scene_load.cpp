@@ -7,13 +7,13 @@ bool Scene::Load(IRenderingContext &ctx)
 {
     switch (mSceneId)
     {
-    case eGltfSampleTriangleWithoutIndices:
-    {
-        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/TriangleWithoutIndices/TriangleWithoutIndices.gltf"))
-            return false;
-        AddScaleToRoots(3.);
-        break;
-    }
+    //case eGltfSampleTriangleWithoutIndices:
+    //{
+    //    if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/TriangleWithoutIndices/TriangleWithoutIndices.gltf"))
+    //        return false;
+    //    AddScaleToRoots(3.);
+    //    break;
+    //}
 
     case eGltfSampleTriangle:
     {

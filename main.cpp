@@ -39,7 +39,7 @@ int RunSingleScene(HINSTANCE instance, int cmdShow)
         //Scene::eHardwiredSimpleDebugSphere
         //Scene::eHardwiredMaterialConstFactors
         //Scene::eHardwiredPbrMetalnesDebugSphere
-        Scene::eHardwiredEarth
+        //Scene::eHardwiredEarth
         //Scene::eHardwiredThreePlanets
 
         //Scene::eDebugGradientBox
@@ -47,7 +47,7 @@ int RunSingleScene(HINSTANCE instance, int cmdShow)
 
         //Scene::eGltfSampleTriangleWithoutIndices // Non-indexed geometry not yet supported!
         //Scene::eGltfSampleTriangle
-        //Scene::eGltfSampleSimpleMeshes
+        Scene::eGltfSampleSimpleMeshes
         //Scene::eGltfSampleBox
         //Scene::eGltfSampleBoxInterleaved
         //Scene::eGltfSampleBoxTextured
@@ -85,6 +85,12 @@ int RunAllScenes(HINSTANCE instance, int cmdShow, double timeout = 0)
          sceneId < Scene::SceneId::eLast;
          sceneId++)
     {
+        Log::Debug(L"");
+        Log::Debug(L"-------------------------------");
+        Log::Debug(L"RunAllScenes: scene %d", sceneId);
+        Log::Debug(L"-------------------------------");
+        Log::Debug(L"");
+
         auto ret = RunRenderer(instance, cmdShow, (Scene::SceneId)sceneId, timeout);
         if (ret != 0)
             return ret;
@@ -110,6 +116,6 @@ int WINAPI wWinMain(HINSTANCE instance,
     Log::Debug(L"WinMain: %s config, cmd \"%s\", current dir \"%s\"",
                Utils::ConfigName(), cmdLine, buffer);
 
-    return RunSingleScene(instance, cmdShow);
-    //return RunAllScenes(instance, cmdShow, 2.);
+    //return RunSingleScene(instance, cmdShow);
+    return RunAllScenes(instance, cmdShow, 2.);
 }

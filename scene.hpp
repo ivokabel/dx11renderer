@@ -317,7 +317,7 @@ public:
         eDebugGradientBox,
         eDebugMetalRoughSpheresNoTextures,
 
-        eGltfSampleTriangleWithoutIndices, // Non-indexed geometry not yet supported!
+        //eGltfSampleTriangleWithoutIndices, // Non-indexed geometry not yet supported!
         eGltfSampleTriangle,
         eGltfSampleSimpleMeshes,
         eGltfSampleBox,

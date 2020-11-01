@@ -1126,7 +1126,7 @@ bool SimpleDX11Renderer::GetWindowSize(uint32_t &width,
 }
 
 
-float SimpleDX11Renderer::GetCurrentAnimationTime() const
+float SimpleDX11Renderer::GetCurrentAnimationTime()
 {
     static float time = 0.0f; // seconds
 
@@ -1136,12 +1136,10 @@ float SimpleDX11Renderer::GetCurrentAnimationTime() const
     }
     else
     {
-        static DWORD timeStart = 0;
-
         const DWORD timeCur = GetTickCount();
-        if (timeStart == 0)
-            timeStart = timeCur;
-        time = (timeCur - timeStart) / 1000.0f;
+        if (mAnimationStartTime == 0)
+            mAnimationStartTime = timeCur;
+        time = (timeCur - mAnimationStartTime) / 1000.0f;
     }
 
     return mIsAnimationActive ? time : 0.f;
