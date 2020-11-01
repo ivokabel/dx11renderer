@@ -47,13 +47,13 @@ int RunSingleScene(HINSTANCE instance, int cmdShow)
 
         //Scene::eGltfSampleTriangleWithoutIndices // Non-indexed geometry not yet supported!
         //Scene::eGltfSampleTriangle
-        Scene::eGltfSampleSimpleMeshes
+        //Scene::eGltfSampleSimpleMeshes
         //Scene::eGltfSampleBox
         //Scene::eGltfSampleBoxInterleaved
         //Scene::eGltfSampleBoxTextured
         //Scene::eGltfSampleMetalRoughSpheres
         //Scene::eGltfSampleMetalRoughSpheresNoTextures
-        //Scene::eGltfSampleNormalTangentTest
+        Scene::eGltfSampleNormalTangentTest
         //Scene::eGltfSampleNormalTangentMirrorTest
         //Scene::eGltfSample2CylinderEngine
         //Scene::eGltfSampleDuck
@@ -116,6 +116,6 @@ int WINAPI wWinMain(HINSTANCE instance,
     Log::Debug(L"WinMain: %s config, cmd \"%s\", current dir \"%s\"",
                Utils::ConfigName(), cmdLine, buffer);
 
-    //return RunSingleScene(instance, cmdShow);
-    return RunAllScenes(instance, cmdShow, 2.);
+    return RunSingleScene(instance, cmdShow);
+    //return RunAllScenes(instance, cmdShow, 2.);
 }
