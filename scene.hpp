@@ -54,6 +54,10 @@ public:
                       const int primitiveIdx,
                       const std::wstring &logPrefix);
 
+    // Uses mikktspace tangent space calculator by Morten S. Mikkelsen.
+    // Requires position, normal, and texture coordinates to be already loaded.
+    bool CalculateTangentsIfNeeded(const std::wstring &logPrefix = std::wstring());
+
     size_t GetVerticesPerFace() const;
     size_t GetFacesCount() const;
     const size_t GetVertexIndex(const int face, const int vertex) const;
@@ -173,6 +177,7 @@ public:
     bool Create(IRenderingContext &ctx,
                 const wchar_t *path,
                 XMFLOAT4 constFactor);
+    bool CreateNeutral(IRenderingContext &ctx);
 
     bool LoadFloat4FactorFromGltf(const char *factorParamName,
                                   const tinygltf::ParameterMap &params,

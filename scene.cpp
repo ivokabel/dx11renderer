@@ -725,7 +725,7 @@ void Scene::RenderNode(IRenderingContext &ctx,
             immCtx->PSSetShader(mPsPbrMetalness, nullptr, 0);
             immCtx->PSSetShaderResources(0, 1, &material.GetBaseColorTexture().srv);
             immCtx->PSSetShaderResources(1, 1, &material.GetMetallicRoughnessTexture().srv);
-            immCtx->PSSetShaderResources(2, 1, &material.GetNormalTexture().srv);
+            immCtx->PSSetShaderResources(4, 1, &material.GetNormalTexture().srv);
 
             CbScenePrimitive cbScenePrimitive;
             cbScenePrimitive.BaseColorFactor         = material.GetBaseColorTexture().GetConstFactor();
@@ -738,8 +738,9 @@ void Scene::RenderNode(IRenderingContext &ctx,
         case MaterialWorkflow::kPbrSpecularity:
         {
             immCtx->PSSetShader(mPsPbrSpecularity, nullptr, 0);
-            immCtx->PSSetShaderResources(3, 1, &material.GetBaseColorTexture().srv);
-            immCtx->PSSetShaderResources(4, 1, &material.GetSpecularTexture().srv);
+            immCtx->PSSetShaderResources(2, 1, &material.GetBaseColorTexture().srv);
+            immCtx->PSSetShaderResources(3, 1, &material.GetSpecularTexture().srv);
+            immCtx->PSSetShaderResources(4, 1, &material.GetNormalTexture().srv);
 
             CbScenePrimitive cbScenePrimitive;
             cbScenePrimitive.DiffuseColorFactor      = material.GetBaseColorTexture().GetConstFactor();
@@ -941,6 +942,8 @@ bool ScenePrimitive::GenerateCubeGeometry()
 
     mTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
+    CalculateTangentsIfNeeded();
+
     return true;
 }
 
@@ -982,6 +985,8 @@ bool ScenePrimitive::GenerateOctahedronGeometry()
     };
 
     mTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+    CalculateTangentsIfNeeded();
 
     return true;
 }
@@ -1057,6 +1062,8 @@ bool ScenePrimitive::GenerateSphereGeometry(const WORD vertSegmCount, const WORD
 
     mTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
     //mTopology = D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP; // debug
+
+    CalculateTangentsIfNeeded();
 
     Log::Debug(L"ScenePrimitive::GenerateSphereGeometry: "
                L"%d segments, %d strips => %d triangles, %d vertices, %d indices",
@@ -1413,7 +1420,14 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
         mMaterialIdx = matIdx;
     }
 
-    // Compute tangents if needed (after everything else is loaded)
+    CalculateTangentsIfNeeded(subItemsLogPrefix);
+
+    return true;
+}
+
+
+bool ScenePrimitive::CalculateTangentsIfNeeded(const std::wstring &logPrefix)
+{
     // TODO: if (material needs tangents && are not present) ... GetMaterial()
     // TODO: Requires position, normal, and texcoords
     // TODO: Only for triangles?
@@ -1421,7 +1435,7 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
     {
         if (!TangentCalculator::Calculate(*this))
         {
-            Log::Error(L"%sTangents computation failed!", subItemsLogPrefix.c_str());
+            Log::Error(L"%sTangents computation failed!", logPrefix.c_str());
             return false;
         }
         mIsTangentPresent = true;
@@ -1429,7 +1443,6 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
 
     return true;
 }
-
 
 size_t ScenePrimitive::GetVerticesPerFace() const
 {
@@ -2057,12 +2070,19 @@ bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path, XMFLOAT4 
     else
     {
         // Neutral constant texture
-        if (!SceneUtils::CreateConstantTextureSRV(ctx, srv, mNeutralConstFactor))
+        if (!CreateNeutral(ctx))
             return false;
     }
 
     return true;
 }
+
+
+bool SceneTexture::CreateNeutral(IRenderingContext &ctx)
+{
+    return SceneUtils::CreateConstantTextureSRV(ctx, srv, mNeutralConstFactor);
+}
+
 
 
 bool SceneTexture::LoadFloat4FactorFromGltf(const char *paramName,
@@ -2282,6 +2302,9 @@ bool SceneMaterial::CreatePbrSpecularity(IRenderingContext &ctx,
     if (!mSpecularTexture.Create(ctx, specularTexPath, specularConstFactor))
         return false;
 
+    if (!mNormalTexture.CreateNeutral(ctx))
+        return false;
+
     mWorkflow = MaterialWorkflow::kPbrSpecularity;
 
     return true;
@@ -2302,6 +2325,9 @@ bool SceneMaterial::CreatePbrMetalness(IRenderingContext &ctx,
     if (!mMetallicRoughnessTexture.Create(ctx,
                                           metallicRoughnessTexPath,
                                           XMFLOAT4(0.f, roughnessConstFactor, metallicConstFactor, 0.f)))
+        return false;
+
+    if (!mNormalTexture.CreateNeutral(ctx))
         return false;
 
     mWorkflow = MaterialWorkflow::kPbrMetalness;
@@ -2335,7 +2361,7 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
     }
 
     auto &values = material.values;
-    auto &addValues = material.additionalValues;
+    auto &extraValues = material.additionalValues;
 
     if (!mBaseColorTexture.LoadFloat4FactorFromGltf("baseColorFactor", values, logPrefix))
         return false;
@@ -2349,9 +2375,9 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
     if (!mMetallicRoughnessTexture.LoadTextureFromGltf("metallicRoughnessTexture", ctx, model, values, logPrefix))
         return false;
 
-    if (!mNormalTexture.LoadTextureFromGltf("normalTexture", ctx, model, addValues, logPrefix))
+    if (!mNormalTexture.LoadTextureFromGltf("normalTexture", ctx, model, extraValues, logPrefix))
         return false;
-    // TODO: Scale
+    // TODO: Normal scale
 
     mWorkflow = MaterialWorkflow::kPbrMetalness;
 

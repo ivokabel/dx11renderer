@@ -8,11 +8,13 @@ static const float PI = 3.14159265f;
 // Metalness workflow
 Texture2D BaseColorTexture      : register(t0);
 Texture2D MetalRoughnessTexture : register(t1);
-Texture2D NormalTexture         : register(t2);
 
 // Specularity workflow
-Texture2D DiffuseTexture        : register(t3);
-Texture2D SpecularTexture       : register(t4);
+Texture2D DiffuseTexture        : register(t2);
+Texture2D SpecularTexture       : register(t3);
+
+// Both workflows
+Texture2D NormalTexture         : register(t4);
 
 SamplerState LinearSampler : register(s0);
 
@@ -108,16 +110,23 @@ float3 ComputeNormal(PS_INPUT input)
         localNormal.x * frameTangent +
         localNormal.y * frameBitangent +
         localNormal.z * frameNormal;
-
 }
 
 
 float4 PsNormalVisualizer(PS_INPUT input)
 {
-    const float3 normal = ComputeNormal(input);
-
-    const float3 color = (normal + 1) / 2;    
+    const float3 dir = ComputeNormal(input);
+    //const float3 dir = normalize(input.Normal);
+    //const float3 dir = normalize(input.Tangent.xyz);
+    const float3 color = (dir + 1) / 2;    
     return float4(color, 1.);
+
+    //const float3 normalTex = NormalTexture.Sample(LinearSampler, input.Tex).xyz;
+    ////const float3 localNormal = normalize(normalTex * 2 - 1);// TODO: NormalScale
+    //return float4(normalTex, 1.);
+
+    //const float3 tex = DiffuseTexture.Sample(LinearSampler, input.Tex).xyz;
+    //return float4(tex, 1.);
 }
 
 
@@ -204,6 +213,10 @@ PbrS_LightContrib PbrS_PointLightContrib(float3 surfPos,
 
 float4 PsPbrSpecularity(PS_INPUT input) : SV_Target
 {
+    // debug
+    //return PsNormalVisualizer(input);
+
+
     const float3 normal  = normalize(input.Normal); // transformed and interpolated - renormalize
     const float3 viewDir = normalize((float3)CameraPos - (float3)input.PosWorld);
 
@@ -440,6 +453,7 @@ float4 PsPbrMetalness(PS_INPUT input) : SV_Target
 {
     // debug
     //return PsNormalVisualizer(input);
+
 
     PbrM_ShadingCtx shadingCtx;
     shadingCtx.normal  = ComputeNormal(input);
