@@ -58,21 +58,28 @@ bool SimpleDX11Renderer::Init(HINSTANCE instance, int cmdShow,
 
 bool SimpleDX11Renderer::InitWindow(HINSTANCE instance, int cmdShow)
 {
-    // Register class
-    WNDCLASSEX wcex;
-    wcex.cbSize = sizeof(WNDCLASSEX);
-    wcex.style = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc = WndProcStatic;
-    wcex.cbClsExtra = 0;
-    wcex.cbWndExtra = sizeof(SimpleDX11Renderer*); // We store this pointer in the extra window memory
-    wcex.hInstance = instance;
-    wcex.hIcon = nullptr; // TODO: LoadIcon(instance, (LPCTSTR)IDI_XXX);
-    wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wcex.lpszMenuName = nullptr;
-    wcex.lpszClassName = mWndClassName;
-    wcex.hIconSm = nullptr; // TODO: LoadIcon(instance, (LPCTSTR)IDI_XXX);
-    if (!RegisterClassEx(&wcex))
+    // Register class (just once)
+    static bool isClassRegistered = [&]() -> bool
+    {
+        WNDCLASSEX wcex;
+        wcex.cbSize = sizeof(WNDCLASSEX);
+        wcex.style = CS_HREDRAW | CS_VREDRAW;
+        wcex.lpfnWndProc = WndProcStatic;
+        wcex.cbClsExtra = 0;
+        wcex.cbWndExtra = sizeof(SimpleDX11Renderer*); // We store this pointer in the extra window memory
+        wcex.hInstance = instance;
+        wcex.hIcon = nullptr; // TODO: LoadIcon(instance, (LPCTSTR)IDI_XXX);
+        wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
+        wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+        wcex.lpszMenuName = nullptr;
+        wcex.lpszClassName = mWndClassName;
+        wcex.hIconSm = nullptr; // TODO: LoadIcon(instance, (LPCTSTR)IDI_XXX);
+        if (!RegisterClassEx(&wcex))
+            return false;
+
+        return true;
+    }();
+    if (!isClassRegistered)
         return false;
 
     // Create window

@@ -306,7 +306,9 @@ public:
 
     enum SceneId
     {
-        eHardwiredSimpleDebugSphere,
+        eFirst, // Keep first!
+
+        eHardwiredSimpleDebugSphere = eFirst,
         eHardwiredMaterialConstFactors,
         eHardwiredPbrMetalnesDebugSphere,
         eHardwiredEarth,
@@ -342,6 +344,8 @@ public:
         eRoboV1,
         eRockJacket,
         eSalazarSkull,
+
+        eLast = eSalazarSkull, // Keep last!
     };
 
     Scene(const SceneId sceneId);

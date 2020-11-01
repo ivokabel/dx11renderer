@@ -11,24 +11,35 @@
 #include <windows.h>
 #include <array>
 
+
 //--------------------------------------------------------------------------------------
-int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, int cmdShow)
+int RunRenderer(HINSTANCE instance,
+                int cmdShow,
+                Scene::SceneId sceneId,
+                double timeout = 0)
 {
-    UNREFERENCED_PARAMETER(instance);
-    UNREFERENCED_PARAMETER(prevInstance);
-    UNREFERENCED_PARAMETER(cmdLine);
-    UNREFERENCED_PARAMETER(cmdShow);
+    auto scene = std::make_shared<Scene>(sceneId);
 
-    wchar_t buffer[1024] = {};
-    GetCurrentDirectory(1024, buffer);
-    Log::Debug(L"Entering WinMain: %s config, cmd \"%s\", current dir \"%s\"",
-               Utils::ConfigName(), cmdLine, buffer);
+    SimpleDX11Renderer renderer(scene);
 
-    auto scene = std::make_shared<Scene>(
+    if (!renderer.Init(instance, cmdShow, 1200u, 900u))
+        return -1;
+
+    if (timeout > 0.)
+        renderer.SetTimeout(timeout); // For more deterministic measurements
+
+    return renderer.Run();
+}
+
+
+//--------------------------------------------------------------------------------------
+int RunSingleScene(HINSTANCE instance, int cmdShow)
+{
+    Scene::SceneId sceneId =
         //Scene::eHardwiredSimpleDebugSphere
         //Scene::eHardwiredMaterialConstFactors
         //Scene::eHardwiredPbrMetalnesDebugSphere
-        //Scene::eHardwiredEarth
+        Scene::eHardwiredEarth
         //Scene::eHardwiredThreePlanets
 
         //Scene::eDebugGradientBox
@@ -48,7 +59,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eGltfSampleDuck
         //Scene::eGltfSampleBoomBox
         //Scene::eGltfSampleBoomBoxWithAxes
-        Scene::eGltfSampleDamagedHelmet
+        //Scene::eGltfSampleDamagedHelmet
         //Scene::eGltfSampleFlightHelmet
 
         //Scene::eWolfBaseMesh
@@ -61,11 +72,44 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prevInstance, LPWSTR cmdLine, 
         //Scene::eRoboV1
         //Scene::eRockJacket
         //Scene::eSalazarSkull
-        );
+        ;
 
-    SimpleDX11Renderer renderer(scene);
-    if (!renderer.Init(instance, cmdShow, 1200u, 900u))
-        return -1;
-    //renderer.SetTimeout(5.); // For more deterministic measurements
-    return renderer.Run();
+    return RunRenderer(instance, cmdShow, sceneId);
+}
+
+
+//--------------------------------------------------------------------------------------
+int RunAllScenes(HINSTANCE instance, int cmdShow, double timeout = 0)
+{
+    for (int sceneId = Scene::SceneId::eFirst;
+         sceneId < Scene::SceneId::eLast;
+         sceneId++)
+    {
+        auto ret = RunRenderer(instance, cmdShow, (Scene::SceneId)sceneId, timeout);
+        if (ret != 0)
+            return ret;
+    }
+
+    return 0;
+}
+
+
+//--------------------------------------------------------------------------------------
+int WINAPI wWinMain(HINSTANCE instance,
+                    HINSTANCE prevInstance,
+                    LPWSTR cmdLine,
+                    int cmdShow)
+{
+    UNREFERENCED_PARAMETER(instance);
+    UNREFERENCED_PARAMETER(prevInstance);
+    UNREFERENCED_PARAMETER(cmdLine);
+    UNREFERENCED_PARAMETER(cmdShow);
+
+    wchar_t buffer[1024] = {};
+    GetCurrentDirectory(1024, buffer);
+    Log::Debug(L"WinMain: %s config, cmd \"%s\", current dir \"%s\"",
+               Utils::ConfigName(), cmdLine, buffer);
+
+    return RunSingleScene(instance, cmdShow);
+    //return RunAllScenes(instance, cmdShow, 2.);
 }
