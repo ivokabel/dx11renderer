@@ -58,6 +58,7 @@ public:
     size_t GetFacesCount() const;
     const size_t GetVertexIndex(const int face, const int vertex) const;
     const SceneVertex& GetVertex(const int face, const int vertex) const;
+          SceneVertex& GetVertex(const int face, const int vertex);
     void GetPosition(float outpos[], const int face, const int vertex) const;
     void GetNormal(float outnormal[], const int face, const int vertex) const;
     void GetTextCoord(float outuv[], const int face, const int vertex) const;

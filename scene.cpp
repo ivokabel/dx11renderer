@@ -1616,6 +1616,15 @@ const SceneVertex& ScenePrimitive::GetVertex(const int face, const int vertex) c
 }
 
 
+SceneVertex& ScenePrimitive::GetVertex(const int face, const int vertex)
+{
+    return
+        const_cast<SceneVertex &>(
+            static_cast<const ScenePrimitive&>(*this).
+                GetVertex(face, vertex));
+}
+
+
 void ScenePrimitive::GetPosition(float outpos[],
                                  const int face,
                                  const int vertex) const
@@ -1648,13 +1657,16 @@ void ScenePrimitive::GetTextCoord(float outuv[],
 }
 
 
-void ScenePrimitive::SetTangent(const float tangent[],
+void ScenePrimitive::SetTangent(const float intangent[],
                                 const float sign,
                                 const int face,
                                 const int vertex)
 {
-    // TODO: Get non-const vertex
-    auto &sceneVertex = GetVertex(face, vertex);
+    auto &tangent = GetVertex(face, vertex).Tangent;
+    tangent.x = intangent[0];
+    tangent.y = intangent[1];
+    tangent.z = intangent[2];
+    tangent.w = sign;
 }
 
 
