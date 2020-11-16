@@ -1433,6 +1433,8 @@ bool ScenePrimitive::CalculateTangentsIfNeeded(const std::wstring &logPrefix)
     // TODO: Only for triangles?
     if (!IsTangentPresent())
     {
+        Log::Debug(L"%sComputing tangents...", logPrefix.c_str());
+
         if (!TangentCalculator::Calculate(*this))
         {
             Log::Error(L"%sTangents computation failed!", logPrefix.c_str());
