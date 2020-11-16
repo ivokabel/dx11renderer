@@ -113,12 +113,13 @@ float3 ComputeNormal(PS_INPUT input)
 }
 
 
-float4 PsNormalVisualizer(PS_INPUT input)
+float4 PsDebugVisualizer(PS_INPUT input)
 {
-    const float3 dir = ComputeNormal(input);
-    //const float3 dir = normalize(input.Normal);
+    //const float3 dir = ComputeNormal(input);
+    const float3 dir = normalize(input.Normal);
     //const float3 dir = normalize(input.Tangent.xyz);
-    const float3 color = (dir + 1) / 2;    
+    //const float3 dir = normalize(cross(normalize(input.Normal), normalize(input.Tangent.xyz)) * input.Tangent.w); // bitangent
+    const float3 color = (dir + 1) / 2;
     return float4(color, 1.);
 
     //const float3 normalTex = NormalTexture.Sample(LinearSampler, input.Tex).xyz;
@@ -214,7 +215,7 @@ PbrS_LightContrib PbrS_PointLightContrib(float3 surfPos,
 float4 PsPbrSpecularity(PS_INPUT input) : SV_Target
 {
     // debug
-    //return PsNormalVisualizer(input);
+    //return PsDebugVisualizer(input);
 
 
     const float3 normal  = normalize(input.Normal); // transformed and interpolated - renormalize
@@ -452,7 +453,7 @@ PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
 float4 PsPbrMetalness(PS_INPUT input) : SV_Target
 {
     // debug
-    //return PsNormalVisualizer(input);
+    return PsDebugVisualizer(input);
 
 
     PbrM_ShadingCtx shadingCtx;
