@@ -13,6 +13,9 @@ Texture2D MetalRoughnessTexture : register(t1);
 Texture2D DiffuseTexture        : register(t2);
 Texture2D SpecularTexture       : register(t3);
 
+// Both workflows
+Texture2D NormalTexture         : register(t4);
+
 SamplerState LinearSampler : register(s0);
 
 cbuffer cbScene : register(b0)
@@ -47,6 +50,7 @@ cbuffer cbSceneNode : register(b3)
     // Metallness
     float4 BaseColorFactor;
     float4 MetallicRoughnessFactor;
+    // TODO: Normal scale?
 
     // Specularity
     float4 DiffuseColorFactor;
@@ -57,6 +61,7 @@ struct VS_INPUT
 {
     float4 Pos      : POSITION;
     float3 Normal   : NORMAL;
+    float4 Tangent  : TANGENT;
     float2 Tex      : TEXCOORD0;
 };
 
@@ -65,7 +70,8 @@ struct PS_INPUT
     float4 PosProj  : SV_POSITION;
     float4 PosWorld : TEXCOORD0;
     float3 Normal   : TEXCOORD1;
-    float2 Tex      : TEXCOORD2;
+    float4 Tangent  : TEXCOORD2; // TODO: Semantics?
+    float2 Tex      : TEXCOORD3;
 };
 
 
@@ -78,7 +84,9 @@ PS_INPUT VS(VS_INPUT input)
     output.PosProj = mul(output.PosWorld, ViewMtrx);
     output.PosProj = mul(output.PosProj, ProjectionMtrx);
 
-    output.Normal = mul(input.Normal, (float3x3)WorldMtrx);
+    output.Normal  = mul(input.Normal, (float3x3)WorldMtrx);
+    output.Tangent = float4(mul(input.Tangent.xyz, (float3x3)WorldMtrx),
+                            input.Tangent.w);
 
     output.Tex = input.Tex;
 
@@ -86,11 +94,41 @@ PS_INPUT VS(VS_INPUT input)
 }
 
 
-float4 PsNormalVisualizer(PS_INPUT input) : SV_Target
+float3 ComputeNormal(PS_INPUT input)
 {
-    const float3 normal = normalize(input.Normal); // normal is interpolated - renormalize 
-    const float3 positiveNormal = (normal + float3(1.f, 1.f, 1.f)) / 2.;
-    return float4(positiveNormal.x, positiveNormal.y, positiveNormal.z, 1.);
+    // TODO: Optimize?
+    //if normalTex is (0, 0, 1)
+    //   return normalize(input.Normal);
+
+    const float3 frameNormal    = normalize(input.Normal); // transformed and interpolated - renormalize
+    const float3 frameTangent   = normalize(input.Tangent.xyz);
+    const float3 frameBitangent = normalize(cross(frameNormal, frameTangent) * input.Tangent.w);
+
+    const float3 normalTex      = NormalTexture.Sample(LinearSampler, input.Tex).xyz;
+    const float3 localNormal    = normalize(normalTex * 2 - 1);// TODO: NormalScale
+
+    return
+        localNormal.x * frameTangent +
+        localNormal.y * frameBitangent +
+        localNormal.z * frameNormal;
+}
+
+
+float4 PsDebugVisualizer(PS_INPUT input)
+{
+    const float3 dir = ComputeNormal(input);
+    //const float3 dir = normalize(input.Normal);
+    //const float3 dir = normalize(input.Tangent.xyz);
+    //const float3 dir = normalize(cross(normalize(input.Normal), normalize(input.Tangent.xyz)) * input.Tangent.w); // bitangent
+    const float3 color = (dir + 1) / 2;
+    return float4(color, 1.);
+
+    //const float3 normalTex = NormalTexture.Sample(LinearSampler, input.Tex).xyz;
+    ////const float3 localNormal = normalize(normalTex * 2 - 1);// TODO: NormalScale
+    //return float4(normalTex, 1.);
+
+    //const float3 tex = DiffuseTexture.Sample(LinearSampler, input.Tex).xyz;
+    //return float4(tex, 1.);
 }
 
 
@@ -177,7 +215,11 @@ PbrS_LightContrib PbrS_PointLightContrib(float3 surfPos,
 
 float4 PsPbrSpecularity(PS_INPUT input) : SV_Target
 {
-    const float3 normal  = normalize(input.Normal); // normal is interpolated - renormalize 
+    // debug
+    //return PsDebugVisualizer(input);
+
+
+    const float3 normal  = normalize(input.Normal); // transformed and interpolated - renormalize
     const float3 viewDir = normalize((float3)CameraPos - (float3)input.PosWorld);
 
     PbrS_LightContrib lightContribs = { {0, 0, 0, 0}, {0, 0, 0, 0} };
@@ -411,8 +453,12 @@ PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
 
 float4 PsPbrMetalness(PS_INPUT input) : SV_Target
 {
+    // debug
+    //return PsDebugVisualizer(input);
+
+
     PbrM_ShadingCtx shadingCtx;
-    shadingCtx.normal  = normalize(input.Normal); // normal is interpolated - renormalize 
+    shadingCtx.normal  = ComputeNormal(input);
     shadingCtx.viewDir = normalize((float3)CameraPos - (float3)input.PosWorld);
 
     const PbrM_MatInfo matInfo = PbrM_ComputeMatInfo(input);

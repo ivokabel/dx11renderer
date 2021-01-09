@@ -25,6 +25,7 @@ struct SceneVertex
 {
     XMFLOAT3 Pos;
     XMFLOAT3 Normal;
+    XMFLOAT4 Tangent; // w represents handedness of the tangent basis and is either 1 or -1
     XMFLOAT2 Tex;
 };
 
@@ -53,6 +54,22 @@ public:
                       const int primitiveIdx,
                       const std::wstring &logPrefix);
 
+    // Uses mikktspace tangent space calculator by Morten S. Mikkelsen.
+    // Requires position, normal, and texture coordinates to be already loaded.
+    bool CalculateTangentsIfNeeded(const std::wstring &logPrefix = std::wstring());
+
+    size_t GetVerticesPerFace() const;
+    size_t GetFacesCount() const;
+    const size_t GetVertexIndex(const int face, const int vertex) const;
+    const SceneVertex& GetVertex(const int face, const int vertex) const;
+          SceneVertex& GetVertex(const int face, const int vertex);
+    void GetPosition(float outpos[], const int face, const int vertex) const;
+    void GetNormal(float outnormal[], const int face, const int vertex) const;
+    void GetTextCoord(float outuv[], const int face, const int vertex) const;
+    void SetTangent(const float tangent[], const float sign, const int face, const int vertex);
+
+    bool IsTangentPresent() const { return mIsTangentPresent; }
+
     void DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout *vertexLayout) const;
 
     void SetMaterialIdx(int idx) { mMaterialIdx = idx; };
@@ -71,6 +88,7 @@ private:
                               const int primitiveIdx,
                               const std::wstring &logPrefix);
 
+    void FillFaceStripsCacheIfNeeded() const;
     bool CreateDeviceBuffers(IRenderingContext &ctx);
 
     void DestroyGeomData();
@@ -82,6 +100,17 @@ private:
     std::vector<SceneVertex>    mVertices;
     std::vector<uint32_t>       mIndices;
     D3D11_PRIMITIVE_TOPOLOGY    mTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    bool                        mIsTangentPresent = false;
+
+    // Cached geometry data
+    struct FaceStrip
+    {
+        size_t startIdx;
+        size_t faceCount;
+    };
+    mutable bool                    mAreFaceStripsCached = false;
+    mutable std::vector<FaceStrip>  mFaceStrips;
+    mutable size_t                  mFaceStripsTotalCount = 0;
 
     // Device geometry data
     ID3D11Buffer*               mVertexBuffer = nullptr;
@@ -148,6 +177,7 @@ public:
     bool Create(IRenderingContext &ctx,
                 const wchar_t *path,
                 XMFLOAT4 constFactor);
+    bool CreateNeutral(IRenderingContext &ctx);
 
     bool LoadFloat4FactorFromGltf(const char *factorParamName,
                                   const tinygltf::ParameterMap &params,
@@ -165,10 +195,12 @@ public:
                              const std::wstring &logPrefix);
 
     XMFLOAT4 GetConstFactor() const { return mConstFactor; }
+    bool     IsLoaded() const       { return mIsLoaded; }
 
 private:
     ValueType   mValueType;
     XMFLOAT4    mNeutralConstFactor;
+    bool        mIsLoaded;
     XMFLOAT4    mConstFactor; // TODO: This belongs to material!
     // TODO: sampler, texCoord
 
@@ -215,6 +247,7 @@ public:
 
     const SceneTexture & GetBaseColorTexture()         const { return mBaseColorTexture; };
     const SceneTexture & GetMetallicRoughnessTexture() const { return mMetallicRoughnessTexture; };
+    const SceneTexture & GetNormalTexture()            const { return mNormalTexture; };
 
     const SceneTexture & GetSpecularTexture()          const { return mSpecularTexture; };
 
@@ -225,6 +258,7 @@ private:
     // PBR metal/roughness workflow
     SceneTexture        mBaseColorTexture;
     SceneTexture        mMetallicRoughnessTexture;
+    SceneTexture        mNormalTexture;
 
     // PBR specularity workflow
     SceneTexture        mSpecularTexture;
@@ -277,7 +311,9 @@ public:
 
     enum SceneId
     {
-        eHardwiredSimpleDebugSphere,
+        eFirst, // Keep first!
+
+        eHardwiredSimpleDebugSphere = eFirst,
         eHardwiredMaterialConstFactors,
         eHardwiredPbrMetalnesDebugSphere,
         eHardwiredEarth,
@@ -286,7 +322,7 @@ public:
         eDebugGradientBox,
         eDebugMetalRoughSpheresNoTextures,
 
-        eGltfSampleTriangleWithoutIndices, // Non-indexed geometry not yet supported!
+        //eGltfSampleTriangleWithoutIndices, // Non-indexed geometry not yet supported!
         eGltfSampleTriangle,
         eGltfSampleSimpleMeshes,
         eGltfSampleBox,
@@ -294,6 +330,8 @@ public:
         eGltfSampleBoxTextured,
         eGltfSampleMetalRoughSpheres,
         eGltfSampleMetalRoughSpheresNoTextures,
+        eGltfSampleNormalTangentTest,
+        eGltfSampleNormalTangentMirrorTest,
         eGltfSample2CylinderEngine,
         eGltfSampleDuck,
         eGltfSampleBoomBox,
@@ -311,6 +349,8 @@ public:
         eRoboV1,
         eRockJacket,
         eSalazarSkull,
+
+        eLast = eSalazarSkull, // Keep last!
     };
 
     Scene(const SceneId sceneId);
@@ -329,6 +369,9 @@ private:
     bool Load(IRenderingContext &ctx);
     bool LoadExternal(IRenderingContext &ctx, const std::wstring &filePath);
 
+    bool PostLoadSanityTest();
+    bool NodeTangentSanityTest(const SceneNode &node);
+
     // glTF loader
     bool LoadGLTF(IRenderingContext &ctx,
                   const std::wstring &filePath);
@@ -343,6 +386,9 @@ private:
                                const tinygltf::Model &model,
                                int nodeIdx,
                                const std::wstring &logPrefix);
+
+    // Materials
+    const SceneMaterial& GetMaterial(const ScenePrimitive &primitive) const;
 
     // Lights
     void SetupDefaultLights();

@@ -64,7 +64,7 @@ public:
     virtual uint32_t                GetMsaaCount() const;
     virtual uint32_t                GetMsaaQuality() const;
 
-    virtual float                   GetCurrentAnimationTime() const; // In seconds
+    virtual float                   GetCurrentAnimationTime(); // In seconds
     virtual void                    StartFrame(); // Saves time of the current frame
     virtual float                   GetFrameAnimationTime() const override; // In seconds
 
@@ -217,5 +217,6 @@ private: // Options
 
     const bool                  mUseMSAA = true;
     PostProcessingModes         mPostProcessingMode = kNone;// PostProcessingModes(kBloom | kDebug);
-    bool                        mIsAnimationActive = true;
+    DWORD                       mAnimationStartTime = 0;
+    bool                        mIsAnimationActive = false;// true;
 };

@@ -1,5 +1,6 @@
 #include "scene.hpp"
 
+#include "tangent_calculator.hpp"
 #include "scene_utils.hpp"
 #include "gltf_utils.hpp"
 #include "utils.hpp"
@@ -12,6 +13,7 @@
 #include <vector>
 
 #define UNUSED_COLOR XMFLOAT4(1.f, 0.f, 1.f, 1.f)
+#define STRIP_BREAK static_cast<uint32_t>(-1)
 
 // debug
 //#include "Libs/tinygltf-2.2.0/loader_example.h"
@@ -36,11 +38,14 @@ private:
 };
 
 typedef D3D11_INPUT_ELEMENT_DESC InputElmDesc;
-const std::array<InputElmDesc, 3> sVertexLayout =
+#define AUTO_ALIGN      D3D11_APPEND_ALIGNED_ELEMENT
+#define VERTEX_DATA     D3D11_INPUT_PER_VERTEX_DATA
+const std::vector<InputElmDesc> sVertexLayoutDesc =
 {
-    InputElmDesc{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    InputElmDesc{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    InputElmDesc{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    InputElmDesc{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, AUTO_ALIGN, VERTEX_DATA, 0 },
+    InputElmDesc{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT,    0, AUTO_ALIGN, VERTEX_DATA, 0 },
+    InputElmDesc{ "TANGENT",  0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, AUTO_ALIGN, VERTEX_DATA, 0 },
+    InputElmDesc{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,       0, AUTO_ALIGN, VERTEX_DATA, 0 },
 };
 
 struct CbScene
@@ -116,8 +121,8 @@ bool Scene::Init(IRenderingContext &ctx)
         return false;
 
     // Input layout
-    hr = device->CreateInputLayout(sVertexLayout.data(),
-                                   (UINT)sVertexLayout.size(),
+    hr = device->CreateInputLayout(sVertexLayoutDesc.data(),
+                                   (UINT)sVertexLayoutDesc.size(),
                                    pVsBlob->GetBufferPointer(),
                                    pVsBlob->GetBufferSize(),
                                    &mVertexLayout);
@@ -489,6 +494,17 @@ bool Scene::LoadSceneNodeFromGLTF(IRenderingContext &ctx,
 }
 
 
+const SceneMaterial& Scene::GetMaterial(const ScenePrimitive &primitive) const
+{
+    const int idx = primitive.GetMaterialIdx();
+
+    if (idx >= 0 && idx < mMaterials.size())
+        return mMaterials[idx];
+    else
+        return mDefaultMaterial;
+}
+
+
 void Scene::Destroy()
 {
     Utils::ReleaseAndMakeNull(mVertexShader);
@@ -700,14 +716,7 @@ void Scene::RenderNode(IRenderingContext &ctx,
     // Draw current node
     for (auto &primitive : node.mPrimitives)
     {
-        const SceneMaterial &material = [&]()
-        {
-            const int matIdx = primitive.GetMaterialIdx();
-            if (matIdx >= 0 && matIdx < mMaterials.size())
-                return mMaterials[matIdx];
-            else
-                return mDefaultMaterial;
-        }();
+        auto &material = GetMaterial(primitive);
 
         switch (material.GetWorkflow())
         {
@@ -716,6 +725,7 @@ void Scene::RenderNode(IRenderingContext &ctx,
             immCtx->PSSetShader(mPsPbrMetalness, nullptr, 0);
             immCtx->PSSetShaderResources(0, 1, &material.GetBaseColorTexture().srv);
             immCtx->PSSetShaderResources(1, 1, &material.GetMetallicRoughnessTexture().srv);
+            immCtx->PSSetShaderResources(4, 1, &material.GetNormalTexture().srv);
 
             CbScenePrimitive cbScenePrimitive;
             cbScenePrimitive.BaseColorFactor         = material.GetBaseColorTexture().GetConstFactor();
@@ -730,6 +740,7 @@ void Scene::RenderNode(IRenderingContext &ctx,
             immCtx->PSSetShader(mPsPbrSpecularity, nullptr, 0);
             immCtx->PSSetShaderResources(2, 1, &material.GetBaseColorTexture().srv);
             immCtx->PSSetShaderResources(3, 1, &material.GetSpecularTexture().srv);
+            immCtx->PSSetShaderResources(4, 1, &material.GetNormalTexture().srv);
 
             CbScenePrimitive cbScenePrimitive;
             cbScenePrimitive.DiffuseColorFactor      = material.GetBaseColorTexture().GetConstFactor();
@@ -768,6 +779,7 @@ ScenePrimitive::ScenePrimitive(const ScenePrimitive &src) :
     mVertices(src.mVertices),
     mIndices(src.mIndices),
     mTopology(src.mTopology),
+    mIsTangentPresent(src.mIsTangentPresent),
     mVertexBuffer(src.mVertexBuffer),
     mIndexBuffer(src.mIndexBuffer),
     mMaterialIdx(src.mMaterialIdx)
@@ -780,7 +792,8 @@ ScenePrimitive::ScenePrimitive(const ScenePrimitive &src) :
 ScenePrimitive::ScenePrimitive(ScenePrimitive &&src) :
     mVertices(std::move(src.mVertices)),
     mIndices(std::move(src.mIndices)),
-    mTopology(Utils::Exchange(src.mTopology, D3D_PRIMITIVE_TOPOLOGY_UNDEFINED)),
+    mIsTangentPresent(Utils::Exchange(src.mIsTangentPresent, false)),
+    mTopology(Utils::Exchange(src.mTopology, D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED)),
     mVertexBuffer(Utils::Exchange(src.mVertexBuffer, nullptr)),
     mIndexBuffer(Utils::Exchange(src.mIndexBuffer, nullptr)),
     mMaterialIdx(Utils::Exchange(src.mMaterialIdx, -1))
@@ -790,6 +803,7 @@ ScenePrimitive& ScenePrimitive::operator =(const ScenePrimitive &src)
 {
     mVertices = src.mVertices;
     mIndices = src.mIndices;
+    mIsTangentPresent = src.mIsTangentPresent;
     mTopology = src.mTopology;
     mVertexBuffer = src.mVertexBuffer;
     mIndexBuffer = src.mIndexBuffer;
@@ -807,7 +821,8 @@ ScenePrimitive& ScenePrimitive::operator =(ScenePrimitive &&src)
 {
     mVertices = std::move(src.mVertices);
     mIndices = std::move(src.mIndices);
-    mTopology = Utils::Exchange(src.mTopology, D3D_PRIMITIVE_TOPOLOGY_UNDEFINED);
+    mIsTangentPresent = Utils::Exchange(src.mIsTangentPresent, false);
+    mTopology = Utils::Exchange(src.mTopology, D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED);
     mVertexBuffer = Utils::Exchange(src.mVertexBuffer, nullptr);
     mIndexBuffer = Utils::Exchange(src.mIndexBuffer, nullptr);
 
@@ -862,40 +877,40 @@ bool ScenePrimitive::GenerateCubeGeometry()
     mVertices =
     {
         // Up
-        SceneVertex{ XMFLOAT3(-1.0f, 1.0f, -1.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(0.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(1.0f, 1.0f, -1.0f),   XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(1.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(1.0f, 1.0f,  1.0f),   XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(1.0f, 1.0f) },
-        SceneVertex{ XMFLOAT3(-1.0f, 1.0f,  1.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(0.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f, 1.0f, -1.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(0.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(1.0f, 1.0f, -1.0f),   XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(1.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(1.0f, 1.0f,  1.0f),   XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(1.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f, 1.0f,  1.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(0.0f, 1.0f) },
 
         // Down
-        SceneVertex{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(1.0f, -1.0f, -1.0f),  XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(1.0f, -1.0f,  1.0f),  XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-        SceneVertex{ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT4(0,0,0,0), XMFLOAT2(0.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(1.0f, -1.0f, -1.0f),  XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT4(0,0,0,0), XMFLOAT2(1.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(1.0f, -1.0f,  1.0f),  XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT4(0,0,0,0), XMFLOAT2(1.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT4(0,0,0,0), XMFLOAT2(0.0f, 1.0f) },
 
         // Side 1
-        SceneVertex{ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-        SceneVertex{ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT4(0,0,0,0), XMFLOAT2(0.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT4(0,0,0,0), XMFLOAT2(1.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT4(0,0,0,0), XMFLOAT2(1.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT4(0,0,0,0), XMFLOAT2(0.0f, 1.0f) },
 
         // Side 3
-        SceneVertex{ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT2(0.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT2(1.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT2(1.0f, 1.0f) },
-        SceneVertex{ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT2(0.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(0.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(1.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(1.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(0.0f, 1.0f) },
 
         // Side 2
-        SceneVertex{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(1.0f, -1.0f, -1.0f),  XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(1.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(1.0f,  1.0f, -1.0f),  XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(1.0f, 1.0f) },
-        SceneVertex{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT4(0,0,0,0), XMFLOAT2(0.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(1.0f, -1.0f, -1.0f),  XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT4(0,0,0,0), XMFLOAT2(1.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(1.0f,  1.0f, -1.0f),  XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT4(0,0,0,0), XMFLOAT2(1.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT4(0,0,0,0), XMFLOAT2(0.0f, 1.0f) },
 
         // Side 4
-        SceneVertex{ XMFLOAT3(-1.0f, -1.0f, 1.0f),  XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT2(0.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(1.0f, -1.0f, 1.0f),   XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT2(1.0f, 0.0f) },
-        SceneVertex{ XMFLOAT3(1.0f,  1.0f, 1.0f),   XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT2(1.0f, 1.0f) },
-        SceneVertex{ XMFLOAT3(-1.0f,  1.0f, 1.0f),  XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT2(0.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f, -1.0f, 1.0f),  XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(0.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(1.0f, -1.0f, 1.0f),   XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(1.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3(1.0f,  1.0f, 1.0f),   XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(1.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f,  1.0f, 1.0f),  XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(0.0f, 1.0f) },
     };
 
     mIndices =
@@ -927,6 +942,8 @@ bool ScenePrimitive::GenerateCubeGeometry()
 
     mTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
+    CalculateTangentsIfNeeded();
+
     return true;
 }
 
@@ -936,16 +953,16 @@ bool ScenePrimitive::GenerateOctahedronGeometry()
     mVertices =
     {
         // Noth pole
-        SceneVertex{ XMFLOAT3( 0.0f, 1.0f, 0.0f),  XMFLOAT3( 0.0f, 1.0f, 0.0f),  XMFLOAT2(0.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3( 0.0f, 1.0f, 0.0f),  XMFLOAT3( 0.0f, 1.0f, 0.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(0.0f, 0.0f) },
 
         // Points on equator
-        SceneVertex{ XMFLOAT3( 1.0f, 0.0f, 0.0f),  XMFLOAT3( 1.0f, 0.0f, 0.0f),  XMFLOAT2(0.00f, 0.5f) },
-        SceneVertex{ XMFLOAT3( 0.0f, 0.0f, 1.0f),  XMFLOAT3( 0.0f, 0.0f, 1.0f),  XMFLOAT2(0.25f, 0.5f) },
-        SceneVertex{ XMFLOAT3(-1.0f, 0.0f, 0.0f),  XMFLOAT3(-1.0f, 0.0f, 0.0f),  XMFLOAT2(0.50f, 0.5f) },
-        SceneVertex{ XMFLOAT3( 0.0f, 0.0f,-1.0f),  XMFLOAT3( 0.0f, 0.0f,-1.0f),  XMFLOAT2(0.75f, 0.5f) },
+        SceneVertex{ XMFLOAT3( 1.0f, 0.0f, 0.0f),  XMFLOAT3( 1.0f, 0.0f, 0.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(0.00f, 0.5f) },
+        SceneVertex{ XMFLOAT3( 0.0f, 0.0f, 1.0f),  XMFLOAT3( 0.0f, 0.0f, 1.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(0.25f, 0.5f) },
+        SceneVertex{ XMFLOAT3(-1.0f, 0.0f, 0.0f),  XMFLOAT3(-1.0f, 0.0f, 0.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(0.50f, 0.5f) },
+        SceneVertex{ XMFLOAT3( 0.0f, 0.0f,-1.0f),  XMFLOAT3( 0.0f, 0.0f,-1.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(0.75f, 0.5f) },
 
         // South pole
-        SceneVertex{ XMFLOAT3( 0.0f,-1.0f, 0.0f),  XMFLOAT3( 0.0f,-1.0f, 0.0f),  XMFLOAT2(1.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3( 0.0f,-1.0f, 0.0f),  XMFLOAT3( 0.0f,-1.0f, 0.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(1.0f, 1.0f) },
     };
 
     mIndices =
@@ -968,6 +985,8 @@ bool ScenePrimitive::GenerateOctahedronGeometry()
     };
 
     mTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+    CalculateTangentsIfNeeded();
 
     return true;
 }
@@ -1011,15 +1030,15 @@ bool ScenePrimitive::GenerateSphereGeometry(const WORD vertSegmCount, const WORD
             const float y = cos(theta);
             const XMFLOAT3 pt(xBase * ringRadius, y, zBase * ringRadius);
             const float v = (line + 1) * vertSegmSizeRel;
-            mVertices.push_back(SceneVertex{ pt, pt,  XMFLOAT2(uLine, v) }); // position==normal
+            mVertices.push_back(SceneVertex{ pt, pt,  XMFLOAT4(0,0,0,0), XMFLOAT2(uLine, v) }); // position==normal
         }
 
         // Poles
         const XMFLOAT3 northPole(0.0f,  1.0f, 0.0f);
         const XMFLOAT3 southPole(0.0f, -1.0f, 0.0f);
         const float uPole = uLine + stripSizeRel / 2;
-        mVertices.push_back(SceneVertex{ northPole,  northPole,  XMFLOAT2(uPole, 0.0f) }); // position==normal
-        mVertices.push_back(SceneVertex{ southPole,  southPole,  XMFLOAT2(uPole, 1.0f) }); // position==normal
+        mVertices.push_back(SceneVertex{ northPole,  northPole,  XMFLOAT4(0,0,0,0), XMFLOAT2(uPole, 0.0f) }); // position==normal
+        mVertices.push_back(SceneVertex{ southPole,  southPole,  XMFLOAT4(0,0,0,0), XMFLOAT2(uPole, 1.0f) }); // position==normal
     }
 
     assert(mVertices.size() == vertexCount);
@@ -1036,13 +1055,15 @@ bool ScenePrimitive::GenerateSphereGeometry(const WORD vertSegmCount, const WORD
             mIndices.push_back( idxOffset + line);
         }
         mIndices.push_back(idxOffset + vertexCountPerStrip - 1); // south pole
-        mIndices.push_back(static_cast<uint32_t>(-1)); // strip restart
+        mIndices.push_back(STRIP_BREAK);
     }
 
     assert(mIndices.size() == indexCount);
 
     mTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
     //mTopology = D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP; // debug
+
+    CalculateTangentsIfNeeded();
 
     Log::Debug(L"ScenePrimitive::GenerateSphereGeometry: "
                L"%d segments, %d strips => %d triangles, %d vertices, %d indices",
@@ -1075,8 +1096,10 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
                                       const std::wstring &logPrefix)
 {
     bool success = false;
-
     const auto &primitive = mesh.primitives[primitiveIdx];
+    const auto &attrs = primitive.attributes;
+    const auto subItemsLogPrefix = logPrefix + L"   ";
+    const auto dataConsumerLogPrefix = subItemsLogPrefix + L"   ";
 
     Log::Debug(L"%sPrimitive %d/%d: mode %s, attributes [%s], indices %d, material %d",
                logPrefix.c_str(),
@@ -1086,11 +1109,6 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
                GltfUtils::StringIntMapToWstring(primitive.attributes).c_str(),
                primitive.indices,
                primitive.material);
-
-    const auto &attrs = primitive.attributes;
-
-    const std::wstring &subItemsLogPrefix = logPrefix + L"   ";
-    const std::wstring &dataConsumerLogPrefix = subItemsLogPrefix + L"   ";
 
     // Positions
 
@@ -1111,6 +1129,7 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
     if (mVertices.capacity() < posAccessor.count)
     {
         Log::Error(L"%sUnable to allocate %d vertices!", subItemsLogPrefix.c_str(), posAccessor.count);
+        mVertices.clear();
         return false;
     }
 
@@ -1126,6 +1145,7 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
 
         mVertices.push_back(SceneVertex{ XMFLOAT3(pos.x, pos.y, pos.z),
                                          XMFLOAT3(0.0f, 0.0f, 1.0f), // TODO: Leave invalid?
+                                         XMFLOAT4(1.0f, 0.5f, 0.0f, 1.0f),  // debug; TODO: Leave invalid?
                                          XMFLOAT2(0.0f, 0.0f) });
     };
 
@@ -1137,7 +1157,6 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
         return false;
 
     // Normals
-
     auto &normalAccessor = GetPrimitiveAttrAccessor(success, model, attrs, primitiveIdx,
                                                     false, "NORMAL", subItemsLogPrefix.c_str());
     if (success)
@@ -1180,8 +1199,55 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
     //    // TODO: Generate?
     //}
 
-    // Texture coordinates
+    // Tangents
+    auto &tangentAccessor = GetPrimitiveAttrAccessor(success, model, attrs, primitiveIdx,
+                                                     false, "TANGENT", subItemsLogPrefix.c_str());
+    if (success)
+    {
+        if ((tangentAccessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) ||
+            (tangentAccessor.type != TINYGLTF_TYPE_VEC4))
+        {
+            Log::Error(L"%sUnsupported TANGENT data type!", subItemsLogPrefix.c_str());
+            return false;
+        }
 
+        if (tangentAccessor.count != posAccessor.count)
+        {
+            Log::Error(L"%sTangents count (%d) is different from position count (%d)!",
+                       subItemsLogPrefix.c_str(), tangentAccessor.count, posAccessor.count);
+            return false;
+        }
+
+        auto TangentDataConsumer = [this, &dataConsumerLogPrefix](int itemIdx, const unsigned char *ptr)
+        {
+            auto tangent = *reinterpret_cast<const XMFLOAT4*>(ptr);
+
+            //Log::Debug(L"%s%d: tangent [%7.4f, %7.4f, %7.4f] * %.1f",
+            //           dataConsumerLogPrefix.c_str(), itemIdx,
+            //           tangent.x, tangent.y, tangent.z, tangent.w);
+
+            if ((tangent.w != 1.f) && (tangent.w != -1.f))
+                Log::Warning(L"%s%d: tangent w component (handedness) is not equal to 1 or -1 but to %7.4f",
+                           dataConsumerLogPrefix.c_str(), itemIdx, tangent.w);
+
+            mVertices[itemIdx].Tangent = tangent;
+        };
+
+        if (!IterateGltfAccesorData<float, 4>(model,
+                                              tangentAccessor,
+                                              TangentDataConsumer,
+                                              subItemsLogPrefix.c_str(),
+                                              L"Tangent"))
+            return false;
+
+        mIsTangentPresent = true;
+    }
+    else
+    {
+        Log::Debug(L"%sTangents are not present", subItemsLogPrefix.c_str());
+    }
+
+    // Texture coordinates
     auto &texCoord0Accessor = GetPrimitiveAttrAccessor(success, model, attrs, primitiveIdx,
                                                        false, "TEXCOORD_0", subItemsLogPrefix.c_str());
     if (success)
@@ -1279,7 +1345,7 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
         //           mIndices.back());
     };
 
-    // TODO: Wrap into a function IterateGltfAccesorData(componentType, ...)? std::forward()?
+    // TODO: Wrap into IterateGltfAccesorData(componentType, ...)? std::forward()?
     switch (indicesComponentType)
     {
     case TINYGLTF_COMPONENT_TYPE_BYTE:
@@ -1334,7 +1400,7 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
 
     // DX primitive topology
     mTopology = GltfUtils::ModeToTopology(primitive.mode);
-    if (mTopology == D3D_PRIMITIVE_TOPOLOGY_UNDEFINED)
+    if (mTopology == D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED)
     {
         Log::Error(L"%sUnsupported primitive topology!", subItemsLogPrefix.c_str());
         return false;
@@ -1354,7 +1420,268 @@ bool ScenePrimitive::LoadDataFromGLTF(const tinygltf::Model &model,
         mMaterialIdx = matIdx;
     }
 
+    CalculateTangentsIfNeeded(subItemsLogPrefix);
+
     return true;
+}
+
+
+bool ScenePrimitive::CalculateTangentsIfNeeded(const std::wstring &logPrefix)
+{
+    // TODO: if (material needs tangents && are not present) ... GetMaterial()
+    // TODO: Requires position, normal, and texcoords
+    // TODO: Only for triangles?
+    if (!IsTangentPresent())
+    {
+        Log::Debug(L"%sComputing tangents...", logPrefix.c_str());
+
+        if (!TangentCalculator::Calculate(*this))
+        {
+            Log::Error(L"%sTangents computation failed!", logPrefix.c_str());
+            return false;
+        }
+        mIsTangentPresent = true;
+    }
+
+    return true;
+}
+
+size_t ScenePrimitive::GetVerticesPerFace() const
+{
+    switch (mTopology)
+    {
+    case D3D11_PRIMITIVE_TOPOLOGY_POINTLIST:
+        return 1;
+    case D3D11_PRIMITIVE_TOPOLOGY_LINELIST:
+        return 2;
+    case D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP:
+        return 2;
+    case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST:
+        return 3;
+    case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP:
+        return 3;
+    default:
+        return 0;
+    }
+}
+
+
+size_t ScenePrimitive::GetFacesCount() const
+{
+    FillFaceStripsCacheIfNeeded();
+
+    switch (mTopology)
+    {
+    case D3D11_PRIMITIVE_TOPOLOGY_POINTLIST:
+    case D3D11_PRIMITIVE_TOPOLOGY_LINELIST:
+    case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST:
+        return mIndices.size() / GetVerticesPerFace();
+
+    case D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP:
+    case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP:
+        return mFaceStripsTotalCount;
+
+    default:
+        return 0; // Unsupported
+    }
+}
+
+
+void ScenePrimitive::FillFaceStripsCacheIfNeeded() const
+{
+    if (mAreFaceStripsCached)
+        return;
+
+    switch (mTopology)
+    {
+    case D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP:
+    case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP:
+    {
+        mFaceStrips.clear();
+
+        const auto count = mIndices.size();
+        for (size_t i = 0; i < count; )
+        {
+            // Start
+            while ((i < count) && (mIndices[i] == STRIP_BREAK))
+            {
+                ++i;
+            }
+            const size_t start = i;
+
+            // Length
+            size_t length = 0;
+            while ((i < count) && (mIndices[i] != STRIP_BREAK))
+            {
+                ++length;
+                ++i;
+            }
+
+            // Strip
+            if (length >= GetVerticesPerFace())
+            {
+                const auto faceCount = length - (GetVerticesPerFace() - 1);
+                mFaceStrips.push_back({ start, faceCount });
+            }
+        }
+
+        mFaceStripsTotalCount = 0;
+        for (const auto &strip : mFaceStrips)
+            mFaceStripsTotalCount += strip.faceCount;
+
+        mAreFaceStripsCached = true;
+        return;
+    }
+
+    case D3D11_PRIMITIVE_TOPOLOGY_POINTLIST:
+    case D3D11_PRIMITIVE_TOPOLOGY_LINELIST:
+    case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST:
+    default:
+        return;
+    }
+}
+
+
+const size_t ScenePrimitive::GetVertexIndex(const int face, const int vertex) const
+{
+    if (vertex >= GetVerticesPerFace())
+        return 0;
+
+    switch (mTopology)
+    {
+    case D3D11_PRIMITIVE_TOPOLOGY_POINTLIST:
+    case D3D11_PRIMITIVE_TOPOLOGY_LINELIST:
+    case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST:
+    case D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP:
+        return vertex;
+
+    case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP:
+    {
+        const bool isOdd = (face % 2 == 1);
+
+        if (isOdd && (vertex == 1))
+            return 2;
+        else if (isOdd && (vertex == 2))
+            return 1;
+        else
+            return vertex;
+    }
+
+    default:
+        return 0; // Unsupported
+    }
+}
+
+
+const SceneVertex& ScenePrimitive::GetVertex(const int face, const int vertex) const
+{
+    static const SceneVertex invalidVert{};
+
+    FillFaceStripsCacheIfNeeded();
+
+    if (vertex >= GetVerticesPerFace())
+        return invalidVert;
+
+    switch (mTopology)
+    {
+    case D3D11_PRIMITIVE_TOPOLOGY_POINTLIST:
+    case D3D11_PRIMITIVE_TOPOLOGY_LINELIST:
+    case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST:
+    {
+        const auto idx = face * GetVerticesPerFace() + vertex;
+        if ((idx < 0) || (idx >= mIndices.size()))
+            return invalidVert;
+        return mVertices[mIndices[idx]];
+    }
+
+    case D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP:
+    case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP:
+    {
+        if (!mAreFaceStripsCached)
+            return invalidVert;
+        if (face >= mFaceStripsTotalCount)
+            return invalidVert;
+
+        // Strip
+        // (naive impl for now, could be done in log time using cumulative counts and binary search)
+        size_t strip = 0;
+        size_t skippedFaces = 0;
+        for (; strip < mFaceStrips.size(); strip++)
+        {
+            const auto currentFaceCount = mFaceStrips[strip].faceCount;
+            if (face < (skippedFaces + currentFaceCount))
+                break; // found
+            skippedFaces += currentFaceCount;
+        }
+        if (strip >= mFaceStrips.size())
+            return invalidVert;
+
+        // Face & vertex
+        const auto faceIdx   = face - skippedFaces;
+        const auto vertexIdx = GetVertexIndex((int)faceIdx, vertex);
+        const auto idx = mFaceStrips[strip].startIdx + faceIdx + vertexIdx;
+        if ((idx < 0) || (idx >= mIndices.size()))
+            return invalidVert;
+        return mVertices[mIndices[idx]];
+    }
+
+    default:
+        return invalidVert; // Unsupported
+    }
+}
+
+
+SceneVertex& ScenePrimitive::GetVertex(const int face, const int vertex)
+{
+    return
+        const_cast<SceneVertex &>(
+            static_cast<const ScenePrimitive&>(*this).
+                GetVertex(face, vertex));
+}
+
+
+void ScenePrimitive::GetPosition(float outpos[],
+                                 const int face,
+                                 const int vertex) const
+{
+    const auto &pos = GetVertex(face, vertex).Pos;
+    outpos[0] = pos.x;
+    outpos[1] = pos.y;
+    outpos[2] = pos.z;
+}
+
+
+void ScenePrimitive::GetNormal(float outnormal[],
+                               const int face,
+                               const int vertex) const
+{
+    const auto &normal = GetVertex(face, vertex).Normal;
+    outnormal[0] = normal.x;
+    outnormal[1] = normal.y;
+    outnormal[2] = normal.z;
+}
+
+
+void ScenePrimitive::GetTextCoord(float outuv[],
+                                  const int face,
+                                  const int vertex) const
+{
+    const auto &tex = GetVertex(face, vertex).Tex;
+    outuv[0] = tex.x;
+    outuv[1] = tex.y;
+}
+
+
+void ScenePrimitive::SetTangent(const float intangent[],
+                                const float sign,
+                                const int face,
+                                const int vertex)
+{
+    auto &tangent = GetVertex(face, vertex).Tangent;
+    tangent.x = intangent[0];
+    tangent.y = intangent[1];
+    tangent.z = intangent[2];
+    tangent.w = sign;
 }
 
 
@@ -1415,7 +1742,7 @@ void ScenePrimitive::DestroyGeomData()
 {
     mVertices.clear();
     mIndices.clear();
-    mTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    mTopology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
 }
 
 
@@ -1600,14 +1927,12 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
     }
 
     // Mesh
-
     const auto meshIdx = node.mesh;
     if (meshIdx >= (int)model.meshes.size())
     {
         Log::Error(L"%sInvalid mesh index (%d/%d)!", subItemsLogPrefix.c_str(), meshIdx, model.meshes.size());
         return false;
     }
-
     if (meshIdx >= 0)
     {
         const auto &mesh = model.meshes[meshIdx];
@@ -1659,6 +1984,7 @@ void SceneNode::Animate(IRenderingContext &ctx)
 SceneTexture::SceneTexture(ValueType valueType, XMFLOAT4 neutralConstFactor) :
     mValueType(valueType),
     mNeutralConstFactor(neutralConstFactor),
+    mIsLoaded(false),
     mConstFactor(neutralConstFactor),
     srv(nullptr)
 {}
@@ -1666,6 +1992,7 @@ SceneTexture::SceneTexture(ValueType valueType, XMFLOAT4 neutralConstFactor) :
 SceneTexture::SceneTexture(const SceneTexture &src) :
     mValueType(src.mValueType),
     mNeutralConstFactor(src.mNeutralConstFactor),
+    mIsLoaded(src.mIsLoaded),
     mConstFactor(src.mConstFactor),
     srv(src.srv)
 {
@@ -1677,6 +2004,7 @@ SceneTexture& SceneTexture::operator =(const SceneTexture &src)
 {
     mValueType          = src.mValueType;
     mNeutralConstFactor = src.mNeutralConstFactor;
+    mIsLoaded           = src.mIsLoaded;
     mConstFactor        = src.mConstFactor;
     srv                 = src.srv;
 
@@ -1689,6 +2017,7 @@ SceneTexture& SceneTexture::operator =(const SceneTexture &src)
 SceneTexture::SceneTexture(SceneTexture &&src) :
     mValueType(src.mValueType),
     mNeutralConstFactor(Utils::Exchange(src.mNeutralConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f))),
+    mIsLoaded(Utils::Exchange(src.mIsLoaded, false)),
     mConstFactor(Utils::Exchange(src.mConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f))),
     srv(Utils::Exchange(src.srv, nullptr))
 {}
@@ -1697,6 +2026,7 @@ SceneTexture& SceneTexture::operator =(SceneTexture &&src)
 {
     mValueType          = src.mValueType;
     mNeutralConstFactor = Utils::Exchange(src.mNeutralConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f));
+    mIsLoaded           = Utils::Exchange(src.mIsLoaded, false);
     mConstFactor        = Utils::Exchange(src.mConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f));
     srv                 = Utils::Exchange(src.srv, nullptr);
 
@@ -1742,12 +2072,19 @@ bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path, XMFLOAT4 
     else
     {
         // Neutral constant texture
-        if (!SceneUtils::CreateConstantTextureSRV(ctx, srv, mNeutralConstFactor))
+        if (!CreateNeutral(ctx))
             return false;
     }
 
     return true;
 }
+
+
+bool SceneTexture::CreateNeutral(IRenderingContext &ctx)
+{
+    return SceneUtils::CreateConstantTextureSRV(ctx, srv, mNeutralConstFactor);
+}
+
 
 
 bool SceneTexture::LoadFloat4FactorFromGltf(const char *paramName,
@@ -1921,11 +2258,18 @@ bool SceneTexture::LoadTextureFromGltf(const char *paramName,
             return false;
         }
 
+        mIsLoaded = true;
+
         // TODO: Sampler
     }
     else
     {
         // Neutral constant texture
+
+        Log::Debug(L"%s%s: Not found - loading neutral constant texture",
+                   logPrefix.c_str(),
+                   Utils::StringToWstring(paramName).c_str());
+
         if (!SceneUtils::CreateConstantTextureSRV(ctx, srv, mNeutralConstFactor))
         {
             Log::Error(L"%sFailed to create neutral constant texture for \"%s\"!",
@@ -1943,7 +2287,8 @@ SceneMaterial::SceneMaterial() :
     mWorkflow(MaterialWorkflow::kNone),
     mBaseColorTexture(SceneTexture::eSrgb, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
     mMetallicRoughnessTexture(SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
-    mSpecularTexture(SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f))
+    mSpecularTexture(SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
+    mNormalTexture(SceneTexture::eLinear, XMFLOAT4(0.5f, 0.5f, 1.f, 1.f))
 {}
 
 
@@ -1957,6 +2302,9 @@ bool SceneMaterial::CreatePbrSpecularity(IRenderingContext &ctx,
         return false;
 
     if (!mSpecularTexture.Create(ctx, specularTexPath, specularConstFactor))
+        return false;
+
+    if (!mNormalTexture.CreateNeutral(ctx))
         return false;
 
     mWorkflow = MaterialWorkflow::kPbrSpecularity;
@@ -1981,6 +2329,9 @@ bool SceneMaterial::CreatePbrMetalness(IRenderingContext &ctx,
                                           XMFLOAT4(0.f, roughnessConstFactor, metallicConstFactor, 0.f)))
         return false;
 
+    if (!mNormalTexture.CreateNeutral(ctx))
+        return false;
+
     mWorkflow = MaterialWorkflow::kPbrMetalness;
 
     return true;
@@ -1993,6 +2344,7 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
 {
     if (Log::sLoggingLevel >= Log::eDebug)
     {
+        Log::Debug(L"%s[ Available params ]:", logPrefix.c_str());
         for (const auto &value : material.values)
         {
             Log::Debug(L"%s%s: %s",
@@ -2007,10 +2359,11 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
                        Utils::StringToWstring(value.first).c_str(),
                        GltfUtils::ParameterValueToWstring(value.second).c_str());
         }
-        Log::Debug(L"%s---", logPrefix.c_str());
+        Log::Debug(L"%s[ Loaded params ]", logPrefix.c_str());
     }
 
     auto &values = material.values;
+    auto &extraValues = material.additionalValues;
 
     if (!mBaseColorTexture.LoadFloat4FactorFromGltf("baseColorFactor", values, logPrefix))
         return false;
@@ -2023,6 +2376,10 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
         return false;
     if (!mMetallicRoughnessTexture.LoadTextureFromGltf("metallicRoughnessTexture", ctx, model, values, logPrefix))
         return false;
+
+    if (!mNormalTexture.LoadTextureFromGltf("normalTexture", ctx, model, extraValues, logPrefix))
+        return false;
+    // TODO: Normal scale
 
     mWorkflow = MaterialWorkflow::kPbrMetalness;
 

@@ -7,13 +7,13 @@ bool Scene::Load(IRenderingContext &ctx)
 {
     switch (mSceneId)
     {
-    case eGltfSampleTriangleWithoutIndices:
-    {
-        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/TriangleWithoutIndices/TriangleWithoutIndices.gltf"))
-            return false;
-        AddScaleToRoots(3.);
-        break;
-    }
+    //case eGltfSampleTriangleWithoutIndices:
+    //{
+    //    if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/TriangleWithoutIndices/TriangleWithoutIndices.gltf"))
+    //        return false;
+    //    AddScaleToRoots(3.);
+    //    break;
+    //}
 
     case eGltfSampleTriangle:
     {
@@ -131,6 +131,32 @@ bool Scene::Load(IRenderingContext &ctx)
         mViewData.eye = XMVectorSet(0.0f, 0.0f, 10.f, 1.0f);
         mViewData.at  = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 
+        break;
+    }
+
+    case eGltfSampleNormalTangentTest:
+    {
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/NormalTangentTest/glTF/NormalTangentTest.gltf"))
+            return false;
+
+        AddScaleToRoots(3.6f);
+        AddRotationQuaternionToRoots({ -0.174, 0.000, 0.000,  0.985 }); // -20°x
+
+        for (auto &light : mPointLights)
+            light.orbitRadius = 8.0f;
+        break;
+    }
+
+    case eGltfSampleNormalTangentMirrorTest:
+    {
+        if (!LoadExternal(ctx, L"../Scenes/glTF-Sample-Models/NormalTangentMirrorTest/glTF/NormalTangentMirrorTest.gltf"))
+            return false;
+
+        AddScaleToRoots(3.6f);
+        AddRotationQuaternionToRoots({ -0.174, 0.000, 0.000,  0.985 }); // -20°x
+
+        for (auto &light : mPointLights)
+            light.orbitRadius = 8.0f;
         break;
     }
 
@@ -806,18 +832,53 @@ bool Scene::Load(IRenderingContext &ctx)
         return false;
     }
 
+    return PostLoadSanityTest();
+}
+
+
+bool Scene::PostLoadSanityTest()
+{
     if (mPointLights.size() > POINT_LIGHTS_MAX_COUNT)
     {
         Log::Error(L"Point lights count (%d) exceeded maximum limit (%d)!",
                    mPointLights.size(), POINT_LIGHTS_MAX_COUNT);
         return false;
     }
+
     if (mDirectLights.size() > DIRECT_LIGHTS_MAX_COUNT)
     {
         Log::Error(L"Directional lights count (%d) exceeded maximum limit (%d)!",
                    mDirectLights.size(), DIRECT_LIGHTS_MAX_COUNT);
         return false;
     }
+
+    // Geometry using normal map must have tangent specified (for now)
+    for (auto &node : mRootNodes)
+        if (!NodeTangentSanityTest(node))
+            return false;
+
+    return true;
+}
+
+
+bool Scene::NodeTangentSanityTest(const SceneNode &node)
+{
+    // Test node
+    for (auto &primitive : node.mPrimitives)
+    {
+        auto &material = GetMaterial(primitive);
+
+        if (material.GetNormalTexture().IsLoaded() && !primitive.IsTangentPresent())
+        {
+            Log::Error(L"A scene primitive without tangent data uses a material with normal map!");
+            return false;
+        }
+    }
+
+    // Children
+    for (auto &child : node.mChildren)
+        if (!NodeTangentSanityTest(child))
+            return false;
 
     return true;
 }

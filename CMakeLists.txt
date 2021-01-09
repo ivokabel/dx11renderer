@@ -31,6 +31,10 @@ set(RENDERER_SOURCES
     Libs/tinygltf-2.2.0/stb_image_write.h
     Libs/tinygltf-2.2.0/tiny_gltf.h
     Libs/tinygltf-2.2.0/json.hpp
+    mikktspace.cpp
+    mikktspace.hpp
+    tangent_calculator.cpp
+    tangent_calculator.hpp
 
     #debug
     #Libs/tinygltf-2.2.0/loader_example.h
