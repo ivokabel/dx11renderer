@@ -96,8 +96,9 @@ PS_INPUT VS(VS_INPUT input)
 
 float3 ComputeNormal(PS_INPUT input)
 {
-    // TODO: Optimize if normalTex is (0, 0, 1)?
-    //return normalize(input.Normal);
+    // TODO: Optimize?
+    //if normalTex is (0, 0, 1)
+    //   return normalize(input.Normal);
 
     const float3 frameNormal    = normalize(input.Normal); // transformed and interpolated - renormalize
     const float3 frameTangent   = normalize(input.Tangent.xyz);
@@ -115,8 +116,8 @@ float3 ComputeNormal(PS_INPUT input)
 
 float4 PsDebugVisualizer(PS_INPUT input)
 {
-    //const float3 dir = ComputeNormal(input);
-    const float3 dir = normalize(input.Normal);
+    const float3 dir = ComputeNormal(input);
+    //const float3 dir = normalize(input.Normal);
     //const float3 dir = normalize(input.Tangent.xyz);
     //const float3 dir = normalize(cross(normalize(input.Normal), normalize(input.Tangent.xyz)) * input.Tangent.w); // bitangent
     const float3 color = (dir + 1) / 2;
@@ -453,7 +454,7 @@ PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
 float4 PsPbrMetalness(PS_INPUT input) : SV_Target
 {
     // debug
-    return PsDebugVisualizer(input);
+    //return PsDebugVisualizer(input);
 
 
     PbrM_ShadingCtx shadingCtx;
