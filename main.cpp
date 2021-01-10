@@ -53,8 +53,8 @@ int RunSingleScene(HINSTANCE instance, int cmdShow)
         //Scene::eGltfSampleBoxTextured
         //Scene::eGltfSampleMetalRoughSpheres
         //Scene::eGltfSampleMetalRoughSpheresNoTextures
-        Scene::eGltfSampleNormalTangentTest
-        //Scene::eGltfSampleNormalTangentMirrorTest
+        //Scene::eGltfSampleNormalTangentTest
+        Scene::eGltfSampleNormalTangentMirrorTest
         //Scene::eGltfSample2CylinderEngine
         //Scene::eGltfSampleDuck
         //Scene::eGltfSampleBoomBox
@@ -82,7 +82,7 @@ int RunSingleScene(HINSTANCE instance, int cmdShow)
 int RunAllScenes(HINSTANCE instance, int cmdShow, double timeout = 0)
 {
     for (int sceneId = Scene::SceneId::eFirst;
-         sceneId < Scene::SceneId::eLast;
+         sceneId <= Scene::SceneId::eLast;
          sceneId++)
     {
         Log::Debug(L"");
