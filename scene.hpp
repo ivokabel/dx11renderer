@@ -16,7 +16,7 @@
 #include <xnamath.h>
 #pragma warning(pop)
 
-#include "Libs/tinygltf-2.2.0/tiny_gltf.h" // just the interfaces (no implementation)
+#include "Libs/tinygltf-2.5.0/tiny_gltf.h" // just the interfaces (no implementation)
 
 #include <string>
 

@@ -4,7 +4,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STBI_MSC_SECURE_CRT
-#include "Libs/tinygltf-2.2.0/tiny_gltf.h"
+#include "Libs/tinygltf-2.5.0/tiny_gltf.h"
 
 #include "log.hpp"
 #include "utils.hpp"
@@ -15,14 +15,6 @@ bool GltfUtils::LoadModel(tinygltf::Model &model, const std::wstring &filePath)
 
     // Convert to plain string for tinygltf
     string filePathA = Utils::WstringToString(filePath);
-
-    // debug: tiny glTF test
-    //{
-    //    std::stringstream ss;
-    //    cout_redirect cr(ss.rdbuf());
-    //    TinyGltfTest(filePathA.c_str());
-    //    Log::Debug(L"Gltf::LoadModel: TinyGltfTest output:\n\n%s", Utils::StringToWstring(ss.str()).c_str());
-    //}
 
     tinygltf::TinyGLTF tinyGltf;
     string errA, warnA;
