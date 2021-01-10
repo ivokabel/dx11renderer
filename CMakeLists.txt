@@ -27,18 +27,17 @@ set(RENDERER_SOURCES
     log.cpp
     utils.hpp
     utils.cpp
-    Libs/tinygltf-2.2.0/stb_image.h
-    Libs/tinygltf-2.2.0/stb_image_write.h
-    Libs/tinygltf-2.2.0/tiny_gltf.h
-    Libs/tinygltf-2.2.0/json.hpp
+    Libs/tinygltf-2.5.0/stb_image.h
+    Libs/tinygltf-2.5.0/stb_image_write.h
+    Libs/tinygltf-2.5.0/tiny_gltf.h
+    Libs/tinygltf-2.5.0/json.hpp
     mikktspace.cpp
     mikktspace.hpp
     tangent_calculator.cpp
     tangent_calculator.hpp
 
-    #debug
-    #Libs/tinygltf-2.2.0/loader_example.h
-    #Libs/tinygltf-2.2.0/loader_example.cc
+    #debug - doesn't link properly - only to see the file in the solution for studying purposes
+    #Libs/tinygltf-2.5.0/loader_example.cc
     )
 
 set(CMAKE_CXX_STANDARD 11)

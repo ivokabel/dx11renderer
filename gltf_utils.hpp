@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Libs/tinygltf-2.2.0/tiny_gltf.h" // just the interfaces (no implementation)
+#include "Libs/tinygltf-2.5.0/tiny_gltf.h" // just the interfaces (no implementation)
 
 // We are using an older version of DirectX headers which causes 
 // "warning C4005: '...' : macro redefinition"

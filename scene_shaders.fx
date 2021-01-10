@@ -45,7 +45,7 @@ cbuffer cbSceneNode : register(b2)
     float4 MeshColor;
 };
 
-cbuffer cbSceneNode : register(b3)
+cbuffer cbScenePrimitive : register(b3)
 {
     // Metallness
     float4 BaseColorFactor;

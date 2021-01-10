@@ -6,7 +6,7 @@
 #include "utils.hpp"
 #include "log.hpp"
 
-#include "Libs/tinygltf-2.2.0/tiny_gltf.h" // just the interfaces (no implementation)
+#include "Libs/tinygltf-2.5.0/tiny_gltf.h" // just the interfaces (no implementation)
 
 #include <cassert>
 #include <array>
@@ -14,9 +14,6 @@
 
 #define UNUSED_COLOR XMFLOAT4(1.f, 0.f, 1.f, 1.f)
 #define STRIP_BREAK static_cast<uint32_t>(-1)
-
-// debug
-//#include "Libs/tinygltf-2.2.0/loader_example.h"
 
 // debug: redirecting cout to string
 // TODO: Move to Utils
@@ -2342,28 +2339,29 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
                                  const tinygltf::Material &material,
                                  const std::wstring &logPrefix)
 {
+    // TODO: Deprecated, use direct members (e.g. pbrMetallicRoughness, normalTexture)
+    auto &values = material.values;
+    auto &extraValues = material.additionalValues;
+
     if (Log::sLoggingLevel >= Log::eDebug)
     {
-        Log::Debug(L"%s[ Available params ]:", logPrefix.c_str());
-        for (const auto &value : material.values)
+        Log::Debug(L"%s[ DEPRECATED: Available params ]:", logPrefix.c_str());
+        for (const auto &value : values)
         {
             Log::Debug(L"%s%s: %s",
                        logPrefix.c_str(),
                        Utils::StringToWstring(value.first).c_str(),
                        GltfUtils::ParameterValueToWstring(value.second).c_str());
         }
-        for (const auto &value : material.additionalValues)
+        for (const auto &value : extraValues)
         {
             Log::Debug(L"%s%s*: %s",
                        logPrefix.c_str(),
                        Utils::StringToWstring(value.first).c_str(),
                        GltfUtils::ParameterValueToWstring(value.second).c_str());
         }
-        Log::Debug(L"%s[ Loaded params ]", logPrefix.c_str());
+        Log::Debug(L"%s[ DEPRECATED: Loaded params ]", logPrefix.c_str());
     }
-
-    auto &values = material.values;
-    auto &extraValues = material.additionalValues;
 
     if (!mBaseColorTexture.LoadFloat4FactorFromGltf("baseColorFactor", values, logPrefix))
         return false;
