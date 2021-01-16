@@ -176,6 +176,20 @@ std::wstring GltfUtils::ComponentTypeToWstring(int ty)
 //}
 
 
+std::wstring GltfUtils::ColorToWstring(const XMFLOAT4 &color)
+{
+    std::wstringstream ss;
+    ss << L"[ ";
+    ss << color.x << L", ";
+    ss << color.y << L", ";
+    ss << color.z << L", ";
+    ss << color.w;
+    ss << L" ]";
+
+    return ss.str();
+}
+
+
 std::wstring GltfUtils::FloatArrayToWstring(const std::vector<double> &arr)
 {
     if (arr.size() == 0)

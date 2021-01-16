@@ -166,7 +166,7 @@ public:
         eSrgb,
     };
 
-    SceneTexture(ValueType valueType, XMFLOAT4 neutralConstFactor);
+    SceneTexture(const std::wstring &name, ValueType valueType, XMFLOAT4 neutralConstFactor);
 
     SceneTexture(const SceneTexture &src);
     SceneTexture& operator =(const SceneTexture &src);
@@ -185,9 +185,10 @@ public:
     bool     IsLoaded() const       { return mIsLoaded; }
 
 private:
-    ValueType   mValueType;
-    XMFLOAT4    mNeutralConstFactor;
-    bool        mIsLoaded;
+    std::wstring    mName;
+    ValueType       mValueType;
+    XMFLOAT4        mNeutralConstFactor;
+    bool            mIsLoaded;
     // TODO: sampler, texCoord
 
 public:

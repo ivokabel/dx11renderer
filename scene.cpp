@@ -2001,7 +2001,10 @@ void SceneNode::Animate(IRenderingContext &ctx)
 }
 
 
-SceneTexture::SceneTexture(ValueType valueType, XMFLOAT4 neutralConstFactor) :
+SceneTexture::SceneTexture(const std::wstring &name,
+                           ValueType valueType,
+                           XMFLOAT4 neutralConstFactor) :
+    mName(name),
     mValueType(valueType),
     mNeutralConstFactor(neutralConstFactor),
     mIsLoaded(false),
@@ -2009,6 +2012,7 @@ SceneTexture::SceneTexture(ValueType valueType, XMFLOAT4 neutralConstFactor) :
 {}
 
 SceneTexture::SceneTexture(const SceneTexture &src) :
+    mName(src.mName),
     mValueType(src.mValueType),
     mNeutralConstFactor(src.mNeutralConstFactor),
     mIsLoaded(src.mIsLoaded),
@@ -2020,6 +2024,7 @@ SceneTexture::SceneTexture(const SceneTexture &src) :
 
 SceneTexture& SceneTexture::operator =(const SceneTexture &src)
 {
+    mName               = src.mName;
     mValueType          = src.mValueType;
     mNeutralConstFactor = src.mNeutralConstFactor;
     mIsLoaded           = src.mIsLoaded;
@@ -2032,6 +2037,7 @@ SceneTexture& SceneTexture::operator =(const SceneTexture &src)
 }
 
 SceneTexture::SceneTexture(SceneTexture &&src) :
+    mName(src.mName),
     mValueType(src.mValueType),
     mNeutralConstFactor(Utils::Exchange(src.mNeutralConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f))),
     mIsLoaded(Utils::Exchange(src.mIsLoaded, false)),
@@ -2040,6 +2046,7 @@ SceneTexture::SceneTexture(SceneTexture &&src) :
 
 SceneTexture& SceneTexture::operator =(SceneTexture &&src)
 {
+    mName               = src.mName;
     mValueType          = src.mValueType;
     mNeutralConstFactor = Utils::Exchange(src.mNeutralConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f));
     mIsLoaded           = Utils::Exchange(src.mIsLoaded, false);
@@ -2109,13 +2116,12 @@ bool SceneTexture::LoadTextureFromGltf(const int textureIndex,
 
     if (textureIndex >= (int)textures.size())
     {
-        Log::Error(L"%sInvalid texture index (%d/%d)"
-                   //L" in \"%s\" parameter"
+        Log::Error(L"%sInvalid texture index (%d/%d) in \"%s\""
                    L"!",
                    logPrefix.c_str(),
                    textureIndex,
-                   textures.size()
-                   //Utils::StringToWstring(paramName).c_str()
+                   textures.size(),
+                   mName.c_str()
         );
         return false;
     }
@@ -2124,21 +2130,16 @@ bool SceneTexture::LoadTextureFromGltf(const int textureIndex,
     {
         // No texture - load neutral constant one
 
-        Log::Debug(L"%s"
-                   //L"%s: "
-                   L"Texture not specified - loading neutral constant texture",
-                   logPrefix.c_str()
-                   //Utils::StringToWstring(paramName).c_str()
+        Log::Debug(L"%s%s: Not specified - creating neutral constant texture",
+                   logPrefix.c_str(),
+                   mName.c_str()
         );
 
         if (!SceneUtils::CreateConstantTextureSRV(ctx, srv, mNeutralConstFactor))
         {
-            Log::Error(L"%sFailed to create neutral constant texture"
-                       //L" for \"%s\""
-                       L"!",
-                       logPrefix.c_str()
-                       //Utils::StringToWstring(paramName).c_str()
-            );
+            Log::Error(L"%sFailed to create neutral constant texture for \"%s\"!",
+                       logPrefix.c_str(),
+                       mName.c_str());
             return false;
         }
 
@@ -2160,11 +2161,9 @@ bool SceneTexture::LoadTextureFromGltf(const int textureIndex,
 
     const auto &image = images[texSource];
 
-    Log::Debug(L"%s"
-               //L" %s: "
-               L"\"%s\"/\"%s\", %dx%d, %dx%db %s, data %dB",
+    Log::Debug(L"%s%s: \"%s\"/\"%s\", %dx%d, %dx%db %s, data size %dB",
                logPrefix.c_str(),
-               //Utils::StringToWstring(paramName).c_str(),
+               mName.c_str(),
                Utils::StringToWstring(image.name).c_str(),
                Utils::StringToWstring(image.uri).c_str(),
                image.width,
@@ -2183,7 +2182,7 @@ bool SceneTexture::LoadTextureFromGltf(const int textureIndex,
         image.pixel_type != TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE ||
         image.image.size() != expectedSrcDataSize)
     {
-        Log::Error(L"%sInvalid image \"%s\": \"%s\", %dx%d, %dx%db %s, data %dB",
+        Log::Error(L"%sInvalid image \"%s\": \"%s\", %dx%d, %dx%db %s, data size %dB",
                    logPrefix.c_str(),
                    Utils::StringToWstring(image.name).c_str(),
                    Utils::StringToWstring(image.uri).c_str(),
@@ -2231,13 +2230,13 @@ bool SceneTexture::LoadTextureFromGltf(const int textureIndex,
 
 SceneMaterial::SceneMaterial() :
     mWorkflow(MaterialWorkflow::kNone),
-    mBaseColorTexture(SceneTexture::eSrgb, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
+    mBaseColorTexture(L"BaseColorTexture", SceneTexture::eSrgb, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
     mBaseColorConstFactor(XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
-    mMetallicRoughnessTexture(SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
+    mMetallicRoughnessTexture(L"MetallicRoughnessTexture", SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
     mMetallicRoughnessConstFactor(XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
-    mSpecularTexture(SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
+    mSpecularTexture(L"SpecularTexture", SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
     mSpecularConstFactor(XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
-    mNormalTexture(SceneTexture::eLinear, XMFLOAT4(0.5f, 0.5f, 1.f, 1.f))
+    mNormalTexture(L"NormalTexture", SceneTexture::eLinear, XMFLOAT4(0.5f, 0.5f, 1.f, 1.f))
 {}
 
 
@@ -2297,12 +2296,22 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
 
     if (!mBaseColorTexture.LoadTextureFromGltf(pbrMR.baseColorTexture.index, ctx, model, logPrefix))
         return false;
+
     GltfUtils::FloatArrayToColor(mBaseColorConstFactor, pbrMR.baseColorFactor);
+    Log::Debug(L"%s%s: %s",
+               logPrefix.c_str(),
+               L"BaseColorConstFactor",
+               GltfUtils::ColorToWstring(mBaseColorConstFactor).c_str());
 
     if (!mMetallicRoughnessTexture.LoadTextureFromGltf(pbrMR.metallicRoughnessTexture.index, ctx, model, logPrefix))
         return false;
+
     GltfUtils::FloatToColorComponent<2>(mMetallicRoughnessConstFactor, pbrMR.metallicFactor);
     GltfUtils::FloatToColorComponent<1>(mMetallicRoughnessConstFactor, pbrMR.roughnessFactor);
+    Log::Debug(L"%s%s: %s",
+               logPrefix.c_str(),
+               L"MetallicRoughnessConstFactor",
+               GltfUtils::ColorToWstring(mBaseColorConstFactor).c_str());
 
     if (!mNormalTexture.LoadTextureFromGltf(material.normalTexture.index, ctx, model, logPrefix))
         return false;

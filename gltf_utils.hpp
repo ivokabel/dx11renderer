@@ -35,6 +35,8 @@ namespace GltfUtils
 
     //std::wstring TargetToWstring(int target);
 
+    std::wstring ColorToWstring(const XMFLOAT4 &color);
+
     std::wstring FloatArrayToWstring(const std::vector<double> &arr);
 
     std::wstring StringDoubleMapToWstring(const std::map<std::string, double> &mp);
