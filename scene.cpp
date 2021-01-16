@@ -748,8 +748,8 @@ void Scene::RenderNode(IRenderingContext &ctx,
             immCtx->PSSetShaderResources(4, 1, &material.GetNormalTexture().srv);
 
             CbScenePrimitive cbScenePrimitive;
-            cbScenePrimitive.BaseColorFactor         = material.GetBaseColorTexture().GetConstFactor();
-            cbScenePrimitive.MetallicRoughnessFactor = material.GetMetallicRoughnessTexture().GetConstFactor();
+            cbScenePrimitive.BaseColorFactor         = material.GetBaseColorConstFactor();
+            cbScenePrimitive.MetallicRoughnessFactor = material.GetMetallicRoughnessConstFactor();
             cbScenePrimitive.DiffuseColorFactor      = UNUSED_COLOR;
             cbScenePrimitive.SpecularFactor          = UNUSED_COLOR;
             immCtx->UpdateSubresource(mCbScenePrimitive, 0, nullptr, &cbScenePrimitive, 0, 0);
@@ -763,8 +763,8 @@ void Scene::RenderNode(IRenderingContext &ctx,
             immCtx->PSSetShaderResources(4, 1, &material.GetNormalTexture().srv);
 
             CbScenePrimitive cbScenePrimitive;
-            cbScenePrimitive.DiffuseColorFactor      = material.GetBaseColorTexture().GetConstFactor();
-            cbScenePrimitive.SpecularFactor          = material.GetSpecularTexture().GetConstFactor();
+            cbScenePrimitive.DiffuseColorFactor      = material.GetBaseColorConstFactor();
+            cbScenePrimitive.SpecularFactor          = material.GetSpecularConstFactor();
             cbScenePrimitive.BaseColorFactor         = UNUSED_COLOR;
             cbScenePrimitive.MetallicRoughnessFactor = UNUSED_COLOR;
             immCtx->UpdateSubresource(mCbScenePrimitive, 0, nullptr, &cbScenePrimitive, 0, 0);
@@ -2005,7 +2005,6 @@ SceneTexture::SceneTexture(ValueType valueType, XMFLOAT4 neutralConstFactor) :
     mValueType(valueType),
     mNeutralConstFactor(neutralConstFactor),
     mIsLoaded(false),
-    mConstFactor(neutralConstFactor),
     srv(nullptr)
 {}
 
@@ -2013,7 +2012,6 @@ SceneTexture::SceneTexture(const SceneTexture &src) :
     mValueType(src.mValueType),
     mNeutralConstFactor(src.mNeutralConstFactor),
     mIsLoaded(src.mIsLoaded),
-    mConstFactor(src.mConstFactor),
     srv(src.srv)
 {
     // We are creating new reference of device resource
@@ -2025,7 +2023,6 @@ SceneTexture& SceneTexture::operator =(const SceneTexture &src)
     mValueType          = src.mValueType;
     mNeutralConstFactor = src.mNeutralConstFactor;
     mIsLoaded           = src.mIsLoaded;
-    mConstFactor        = src.mConstFactor;
     srv                 = src.srv;
 
     // We are creating new reference of device resource
@@ -2038,7 +2035,6 @@ SceneTexture::SceneTexture(SceneTexture &&src) :
     mValueType(src.mValueType),
     mNeutralConstFactor(Utils::Exchange(src.mNeutralConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f))),
     mIsLoaded(Utils::Exchange(src.mIsLoaded, false)),
-    mConstFactor(Utils::Exchange(src.mConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f))),
     srv(Utils::Exchange(src.srv, nullptr))
 {}
 
@@ -2047,7 +2043,6 @@ SceneTexture& SceneTexture::operator =(SceneTexture &&src)
     mValueType          = src.mValueType;
     mNeutralConstFactor = Utils::Exchange(src.mNeutralConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f));
     mIsLoaded           = Utils::Exchange(src.mIsLoaded, false);
-    mConstFactor        = Utils::Exchange(src.mConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f));
     srv                 = Utils::Exchange(src.srv, nullptr);
 
     return *this;
@@ -2059,15 +2054,13 @@ SceneTexture::~SceneTexture()
 }
 
 
-bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path, XMFLOAT4 constFactor)
+bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path)
 {
     auto device = ctx.GetDevice();
     if (!device)
         return false;
 
     HRESULT hr = S_OK;
-
-    mConstFactor = constFactor;
 
     if (path)
     {
@@ -2103,80 +2096,6 @@ bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path, XMFLOAT4 
 bool SceneTexture::CreateNeutral(IRenderingContext &ctx)
 {
     return SceneUtils::CreateConstantTextureSRV(ctx, srv, mNeutralConstFactor);
-}
-
-
-
-bool SceneTexture::LoadFloat4FactorFromGltf_DEPRECATED(const char *paramName,
-                                            const tinygltf::ParameterMap &params,
-                                            const std::wstring &logPrefix)
-{
-    auto paramIt = params.find(paramName);
-    if (paramIt != params.end())
-    {
-        auto &param = paramIt->second;
-        if (param.number_array.size() != 4)
-        {
-            Log::Error(L"%sIncorrect \"%s\" material parameter (size %d instead of 4)!",
-                       logPrefix.c_str(),
-                       Utils::StringToWstring(paramName).c_str(),
-                       param.number_array.size());
-            return false;
-        }
-
-        mConstFactor = XMFLOAT4((float)param.number_array[0],
-                                (float)param.number_array[1],
-                                (float)param.number_array[2],
-                                (float)param.number_array[3]);
-
-        Log::Debug(L"%s%s: %s",
-                   logPrefix.c_str(),
-                   Utils::StringToWstring(paramName).c_str(),
-                   GltfUtils::ParameterValueToWstring(param).c_str());
-    }
-
-    return true;
-}
-
-
-bool SceneTexture::LoadFloatFactorFromGltf_DEPRECATED(const char *paramName,
-                                           uint32_t component,
-                                           const tinygltf::ParameterMap &params,
-                                           const std::wstring &logPrefix)
-{
-    auto paramIt = params.find(paramName);
-    if (paramIt != params.end())
-    {
-        auto &param = paramIt->second;
-        if (!param.has_number_value)
-        {
-            Log::Error(L"%sIncorrect \"%s\" material parameter type (must be float)!",
-                       logPrefix.c_str(),
-                       Utils::StringToWstring(paramName).c_str());
-            return false;
-        }
-
-        switch (component)
-        {
-        case 0: mConstFactor.x = (float)param.number_value; break;
-        case 1: mConstFactor.y = (float)param.number_value; break;
-        case 2: mConstFactor.z = (float)param.number_value; break;
-        case 3: mConstFactor.w = (float)param.number_value; break;
-        default:
-            Log::Error(L"%sIncorrect component index for \"%s\" material parameter (%d >= 4)!",
-                       logPrefix.c_str(),
-                       Utils::StringToWstring(paramName).c_str(),
-                       component);
-            return false;
-        }
-
-        Log::Debug(L"%s%s: %s",
-                   logPrefix.c_str(),
-                   Utils::StringToWstring(paramName).c_str(),
-                   GltfUtils::ParameterValueToWstring(param).c_str());
-    }
-
-    return true;
 }
 
 
@@ -2313,8 +2232,11 @@ bool SceneTexture::LoadTextureFromGltf(const int textureIndex,
 SceneMaterial::SceneMaterial() :
     mWorkflow(MaterialWorkflow::kNone),
     mBaseColorTexture(SceneTexture::eSrgb, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
+    mBaseColorConstFactor(XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
     mMetallicRoughnessTexture(SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
+    mMetallicRoughnessConstFactor(XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
     mSpecularTexture(SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
+    mSpecularConstFactor(XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
     mNormalTexture(SceneTexture::eLinear, XMFLOAT4(0.5f, 0.5f, 1.f, 1.f))
 {}
 
@@ -2325,14 +2247,17 @@ bool SceneMaterial::CreatePbrSpecularity(IRenderingContext &ctx,
                                          const wchar_t * specularTexPath,
                                          XMFLOAT4 specularConstFactor)
 {
-    if (!mBaseColorTexture.Create(ctx, diffuseTexPath, diffuseConstFactor))
+    if (!mBaseColorTexture.Create(ctx, diffuseTexPath))
         return false;
+    mBaseColorConstFactor = diffuseConstFactor;
 
-    if (!mSpecularTexture.Create(ctx, specularTexPath, specularConstFactor))
+    if (!mSpecularTexture.Create(ctx, specularTexPath))
         return false;
+    mSpecularConstFactor = specularConstFactor;
 
     if (!mNormalTexture.CreateNeutral(ctx))
         return false;
+    // TODO: normalTextureScale
 
     mWorkflow = MaterialWorkflow::kPbrSpecularity;
 
@@ -2346,18 +2271,17 @@ bool SceneMaterial::CreatePbrMetalness(IRenderingContext &ctx,
                                        float metallicConstFactor,
                                        float roughnessConstFactor)
 {
-    if (!mBaseColorTexture.Create(ctx,
-                                  baseColorTexPath,
-                                  baseColorConstFactor))
+    if (!mBaseColorTexture.Create(ctx, baseColorTexPath))
         return false;
+    mBaseColorConstFactor = baseColorConstFactor;
 
-    if (!mMetallicRoughnessTexture.Create(ctx,
-                                          metallicRoughnessTexPath,
-                                          XMFLOAT4(0.f, roughnessConstFactor, metallicConstFactor, 0.f)))
+    if (!mMetallicRoughnessTexture.Create(ctx, metallicRoughnessTexPath))
         return false;
+    mMetallicRoughnessConstFactor = XMFLOAT4(0.f, roughnessConstFactor, metallicConstFactor, 0.f);
 
     if (!mNormalTexture.CreateNeutral(ctx))
         return false;
+    // TODO: normalTextureScale
 
     mWorkflow = MaterialWorkflow::kPbrMetalness;
 
@@ -2371,44 +2295,18 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
 {
     auto &pbrMR = material.pbrMetallicRoughness;
 
-    // TODO: Deprecated, use direct members (e.g. pbrMetallicRoughness, normalTexture)
-    auto &values = material.values;
-    //auto &extraValues = material.additionalValues;
-
-    if (Log::sLoggingLevel >= Log::eDebug)
-    {
-        Log::Debug(L"%s[ DEPRECATED: Available params ]:", logPrefix.c_str());
-        for (const auto &value : values)
-        {
-            Log::Debug(L"%s%s: %s",
-                       logPrefix.c_str(),
-                       Utils::StringToWstring(value.first).c_str(),
-                       GltfUtils::ParameterValueToWstring(value.second).c_str());
-        }
-        //for (const auto &value : extraValues)
-        //{
-        //    Log::Debug(L"%s%s*: %s",
-        //               logPrefix.c_str(),
-        //               Utils::StringToWstring(value.first).c_str(),
-        //               GltfUtils::ParameterValueToWstring(value.second).c_str());
-        //}
-        Log::Debug(L"%s[ DEPRECATED: Loaded params ]", logPrefix.c_str());
-    }
-
-    if (!mBaseColorTexture.LoadFloat4FactorFromGltf_DEPRECATED("baseColorFactor", values, logPrefix))
-        return false;
     if (!mBaseColorTexture.LoadTextureFromGltf(pbrMR.baseColorTexture.index, ctx, model, logPrefix))
         return false;
+    GltfUtils::FloatArrayToColor(mBaseColorConstFactor, pbrMR.baseColorFactor);
 
-    if (!mMetallicRoughnessTexture.LoadFloatFactorFromGltf_DEPRECATED("metallicFactor", 2, values, logPrefix))
-        return false;
-    if (!mMetallicRoughnessTexture.LoadFloatFactorFromGltf_DEPRECATED("roughnessFactor", 1, values, logPrefix))
-        return false;
     if (!mMetallicRoughnessTexture.LoadTextureFromGltf(pbrMR.metallicRoughnessTexture.index, ctx, model, logPrefix))
         return false;
+    GltfUtils::FloatToColorComponent<2>(mMetallicRoughnessConstFactor, pbrMR.metallicFactor);
+    GltfUtils::FloatToColorComponent<1>(mMetallicRoughnessConstFactor, pbrMR.roughnessFactor);
 
     if (!mNormalTexture.LoadTextureFromGltf(material.normalTexture.index, ctx, model, logPrefix))
         return false;
+    // TODO: normalTextureScale
 
     mWorkflow = MaterialWorkflow::kPbrMetalness;
 

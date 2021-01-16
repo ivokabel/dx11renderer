@@ -166,7 +166,7 @@ public:
         eSrgb,
     };
 
-    SceneTexture(ValueType valueType, XMFLOAT4 defaultConstFactor);
+    SceneTexture(ValueType valueType, XMFLOAT4 neutralConstFactor);
 
     SceneTexture(const SceneTexture &src);
     SceneTexture& operator =(const SceneTexture &src);
@@ -174,32 +174,20 @@ public:
     SceneTexture& operator =(SceneTexture &&src);
     ~SceneTexture();
 
-    bool Create(IRenderingContext &ctx,
-                const wchar_t *path,
-                XMFLOAT4 constFactor);
+    bool Create(IRenderingContext &ctx, const wchar_t *path);
     bool CreateNeutral(IRenderingContext &ctx);
-
-    bool LoadFloat4FactorFromGltf_DEPRECATED(const char *factorParamName,
-                                  const tinygltf::ParameterMap &params,
-                                  const std::wstring &logPrefix);
-    bool LoadFloatFactorFromGltf_DEPRECATED(const char *factorParamName,
-                                 uint32_t component,
-                                 const tinygltf::ParameterMap &params,
-                                 const std::wstring &logPrefix);
 
     bool LoadTextureFromGltf(const int textureIndex,
                              IRenderingContext &ctx,
                              const tinygltf::Model &model,
                              const std::wstring &logPrefix);
 
-    XMFLOAT4 GetConstFactor() const { return mConstFactor; }
     bool     IsLoaded() const       { return mIsLoaded; }
 
 private:
     ValueType   mValueType;
     XMFLOAT4    mNeutralConstFactor;
     bool        mIsLoaded;
-    XMFLOAT4    mConstFactor; // TODO: This belongs to material!
     // TODO: sampler, texCoord
 
 public:
@@ -243,11 +231,14 @@ public:
 
     MaterialWorkflow GetWorkflow() const { return mWorkflow; }
 
-    const SceneTexture & GetBaseColorTexture()         const { return mBaseColorTexture; };
-    const SceneTexture & GetMetallicRoughnessTexture() const { return mMetallicRoughnessTexture; };
-    const SceneTexture & GetNormalTexture()            const { return mNormalTexture; };
+    const SceneTexture & GetBaseColorTexture()              const { return mBaseColorTexture; };
+    XMFLOAT4             GetBaseColorConstFactor()          const { return mBaseColorConstFactor; }
+    const SceneTexture & GetMetallicRoughnessTexture()      const { return mMetallicRoughnessTexture; };
+    XMFLOAT4             GetMetallicRoughnessConstFactor()  const { return mMetallicRoughnessConstFactor; }
+    const SceneTexture & GetNormalTexture()                 const { return mNormalTexture; };
 
-    const SceneTexture & GetSpecularTexture()          const { return mSpecularTexture; };
+    const SceneTexture & GetSpecularTexture()               const { return mSpecularTexture; };
+    XMFLOAT4             GetSpecularConstFactor()           const { return mSpecularConstFactor; }
 
 private:
 
@@ -255,11 +246,14 @@ private:
 
     // PBR metal/roughness workflow
     SceneTexture        mBaseColorTexture;
+    XMFLOAT4            mBaseColorConstFactor;
     SceneTexture        mMetallicRoughnessTexture;
+    XMFLOAT4            mMetallicRoughnessConstFactor;
     SceneTexture        mNormalTexture;
 
     // PBR specularity workflow
     SceneTexture        mSpecularTexture;
+    XMFLOAT4            mSpecularConstFactor;
     //TODO...
 };
 
