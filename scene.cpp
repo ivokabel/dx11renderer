@@ -2310,20 +2310,6 @@ bool SceneTexture::LoadTextureFromGltf(const int textureIndex,
 }
 
 
-bool SceneTexture::LoadTextureFromGltf_DEPRECATED(const char *paramName,
-                                       IRenderingContext &ctx,
-                                       const tinygltf::Model &model,
-                                       const tinygltf::ParameterMap &params,
-                                       const std::wstring &logPrefix)
-{
-    auto paramIt = params.find(paramName);
-    if (paramIt != params.end())
-        return LoadTextureFromGltf(paramIt->second.TextureIndex(), ctx, model, logPrefix);
-    else
-        return LoadTextureFromGltf(-1, ctx, model, logPrefix); // Neutral constant texture
-}
-
-
 SceneMaterial::SceneMaterial() :
     mWorkflow(MaterialWorkflow::kNone),
     mBaseColorTexture(SceneTexture::eSrgb, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
@@ -2383,9 +2369,11 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
                                  const tinygltf::Material &material,
                                  const std::wstring &logPrefix)
 {
+    auto &pbrMR = material.pbrMetallicRoughness;
+
     // TODO: Deprecated, use direct members (e.g. pbrMetallicRoughness, normalTexture)
     auto &values = material.values;
-    auto &extraValues = material.additionalValues;
+    //auto &extraValues = material.additionalValues;
 
     if (Log::sLoggingLevel >= Log::eDebug)
     {
@@ -2397,29 +2385,29 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
                        Utils::StringToWstring(value.first).c_str(),
                        GltfUtils::ParameterValueToWstring(value.second).c_str());
         }
-        for (const auto &value : extraValues)
-        {
-            Log::Debug(L"%s%s*: %s",
-                       logPrefix.c_str(),
-                       Utils::StringToWstring(value.first).c_str(),
-                       GltfUtils::ParameterValueToWstring(value.second).c_str());
-        }
+        //for (const auto &value : extraValues)
+        //{
+        //    Log::Debug(L"%s%s*: %s",
+        //               logPrefix.c_str(),
+        //               Utils::StringToWstring(value.first).c_str(),
+        //               GltfUtils::ParameterValueToWstring(value.second).c_str());
+        //}
         Log::Debug(L"%s[ DEPRECATED: Loaded params ]", logPrefix.c_str());
     }
 
     if (!mBaseColorTexture.LoadFloat4FactorFromGltf_DEPRECATED("baseColorFactor", values, logPrefix))
         return false;
-    if (!mBaseColorTexture.LoadTextureFromGltf_DEPRECATED("baseColorTexture", ctx, model, values, logPrefix))
+    if (!mBaseColorTexture.LoadTextureFromGltf(pbrMR.baseColorTexture.index, ctx, model, logPrefix))
         return false;
 
     if (!mMetallicRoughnessTexture.LoadFloatFactorFromGltf_DEPRECATED("metallicFactor", 2, values, logPrefix))
         return false;
     if (!mMetallicRoughnessTexture.LoadFloatFactorFromGltf_DEPRECATED("roughnessFactor", 1, values, logPrefix))
         return false;
-    if (!mMetallicRoughnessTexture.LoadTextureFromGltf_DEPRECATED("metallicRoughnessTexture", ctx, model, values, logPrefix))
+    if (!mMetallicRoughnessTexture.LoadTextureFromGltf(pbrMR.metallicRoughnessTexture.index, ctx, model, logPrefix))
         return false;
 
-    if (!mNormalTexture.LoadTextureFromGltf_DEPRECATED("normalTexture", ctx, model, extraValues, logPrefix))
+    if (!mNormalTexture.LoadTextureFromGltf(material.normalTexture.index, ctx, model, logPrefix))
         return false;
 
     mWorkflow = MaterialWorkflow::kPbrMetalness;
