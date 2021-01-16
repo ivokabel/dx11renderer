@@ -119,13 +119,7 @@ bool Scene::Load(IRenderingContext &ctx)
         mAmbientLight.luminance = SceneUtils::SrgbColorToFloat(amb, amb, amb);
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-        PointLight pointLight;
-        pointLight.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
-        pointLight.orbitRadius = 20.f;
-        pointLight.orbitInclinationMin = 0;
-        pointLight.orbitInclinationMax = 0;
-        mPointLights.clear();
-        mPointLights.resize(pointLightCount, pointLight);
+        SetupPointLights(pointLightCount, 20.f, ints, 0, 0);
 
         // Camera pos
         mViewData.eye = XMVectorSet(0.0f, 0.0f, 10.f, 1.0f);
@@ -155,8 +149,7 @@ bool Scene::Load(IRenderingContext &ctx)
         AddScaleToRoots(3.6f);
         AddRotationQuaternionToRoots({ -0.174, 0.000, 0.000,  0.985 }); // -20°x
 
-        for (auto &light : mPointLights)
-            light.orbitRadius = 8.0f;
+        SetupPointLights(8, 8.0f, 6.5f, 0, 0);
         break;
     }
 
@@ -220,15 +213,7 @@ bool Scene::Load(IRenderingContext &ctx)
         const float lum = 2.0f;
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-        const float ints = 12.0f;
-        mPointLights.resize(5);
-        for (auto &light : mPointLights)
-        {
-            light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
-            light.orbitRadius = 6.5f;
-            light.orbitInclinationMin = 0;
-            light.orbitInclinationMax = 0;
-        }
+        SetupPointLights(5, 6.5f, 12.0f, 0, 0);
 
         break;
     }
@@ -247,15 +232,7 @@ bool Scene::Load(IRenderingContext &ctx)
         const float lum = 4.0f;
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-        const float ints = 9.0f;
-        mPointLights.resize(5);
-        for (auto &light : mPointLights)
-        {
-            light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
-            //light.orbitRadius = 6.5f;
-            light.orbitInclinationMin = 0;
-            light.orbitInclinationMax = 0;
-        }
+        SetupPointLights(5, 6.5f, 9.0f, 0, 0);
         break;
     }
 
@@ -364,15 +341,7 @@ bool Scene::Load(IRenderingContext &ctx)
         //mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         //mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
 
-        const float ints = 14.0f;
-        mPointLights.resize(5);
-        for (auto &light : mPointLights)
-        {
-            light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
-            light.orbitRadius = 4.63f;
-            light.orbitInclinationMin = 0;
-            light.orbitInclinationMax = 0;
-        }
+        SetupPointLights(5, 4.63f, 14.0f, 0, 0);
 
         break;
     }
@@ -394,14 +363,7 @@ bool Scene::Load(IRenderingContext &ctx)
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
 
-        const float ints = 14.0f;
-        mPointLights.resize(3);
-        for (auto &light : mPointLights)
-        {
-            light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
-            light.orbitInclinationMin = 0;
-            light.orbitInclinationMax = 0;
-        }
+        SetupPointLights(3, 5.5f, 14.0f, 0, 0);
 
         break;
     }
@@ -614,11 +576,7 @@ bool Scene::Load(IRenderingContext &ctx)
         mDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance  = XMFLOAT4(lum, lum, lum, 1.0f);
 
-        const float ints = 3.5f;
-        mPointLights.resize(3);
-        mPointLights[0].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
-        mPointLights[1].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
-        mPointLights[2].intensity   = XMFLOAT4(ints, ints, ints, 1.0f);
+        SetupPointLights(3, 5.5f, 3.5f);
 
         break;
     }
@@ -693,15 +651,7 @@ bool Scene::Load(IRenderingContext &ctx)
         mDirectLights.resize(1);
         mDirectLights[0].dir       = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-        const float ints = 4.0f;
-        mPointLights.resize(3);
-        for (auto &light : mPointLights)
-        {
-            light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
-            light.orbitRadius = 5.3f;
-            light.orbitInclinationMin = -XM_PI / 8;
-            light.orbitInclinationMax =  XM_PI / 8;
-        }
+        SetupPointLights(3, 5.3f, 4.0f, -XM_PI / 8, XM_PI / 8);
 
         break;
     }
@@ -795,11 +745,7 @@ bool Scene::Load(IRenderingContext &ctx)
         mDirectLights.resize(1);
         mDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance  = XMFLOAT4(lum, lum, lum, 1.0f);
-        const float ints = 4.0f;
-        PointLight pointLight;
-        pointLight.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
-        pointLight.orbitRadius = 6.5f;
-        mPointLights.resize(3, pointLight);
+        SetupPointLights(3, 6.5f, 4.0f);
 
         break;
     }
