@@ -651,10 +651,33 @@ void Scene::SetupDefaultLights()
     mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
     mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
 
-    const float ints = 6.5f;
-    mPointLights.resize(3);
+    SetupPointLights(3);
+}
+
+
+bool Scene::SetupPointLights(size_t count,
+                             float orbitRadius,
+                             float intensity,
+                             float orbitInclMin,
+                             float orbitInclMax)
+{
+    if (count > POINT_LIGHTS_MAX_COUNT)
+    {
+        Log::Error(L"SetupPointLights: requested number of point lights (%d) exceeds the limit (%d)", count, POINT_LIGHTS_MAX_COUNT);
+        return false;
+    }
+
+    mPointLights.resize(count);
+
     for (auto &light : mPointLights)
-        light.intensity = XMFLOAT4(ints, ints, ints, 1.0f);
+    {
+        light.intensity = XMFLOAT4(intensity, intensity, intensity, 1.0f);
+        light.orbitRadius = orbitRadius;
+        light.orbitInclinationMin = orbitInclMin;
+        light.orbitInclinationMax = orbitInclMax;
+    }
+
+    return true;
 }
 
 

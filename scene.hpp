@@ -392,6 +392,11 @@ private:
 
     // Lights
     void SetupDefaultLights();
+    bool SetupPointLights(size_t count,
+                          float orbitRadius = 5.5f,
+                          float intensity = 6.5f,
+                          float orbitInclMin = -XM_PIDIV4,
+                          float orbitInclMax = XM_PIDIV4);
 
     // Transformations
     void AddScaleToRoots(double scale);
