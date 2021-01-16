@@ -179,10 +179,10 @@ public:
                 XMFLOAT4 constFactor);
     bool CreateNeutral(IRenderingContext &ctx);
 
-    bool LoadFloat4FactorFromGltf(const char *factorParamName,
+    bool LoadFloat4FactorFromGltf_DEPRECATED(const char *factorParamName,
                                   const tinygltf::ParameterMap &params,
                                   const std::wstring &logPrefix);
-    bool LoadFloatFactorFromGltf(const char *factorParamName,
+    bool LoadFloatFactorFromGltf_DEPRECATED(const char *factorParamName,
                                  uint32_t component,
                                  const tinygltf::ParameterMap &params,
                                  const std::wstring &logPrefix);
@@ -191,7 +191,7 @@ public:
                              IRenderingContext &ctx,
                              const tinygltf::Model &model,
                              const std::wstring &logPrefix);
-    bool LoadTextureFromGltf(const char *textureParamName,
+    bool LoadTextureFromGltf_DEPRECATED(const char *textureParamName,
                              IRenderingContext &ctx,
                              const tinygltf::Model &model,
                              const tinygltf::ParameterMap &params,
