@@ -218,5 +218,5 @@ private: // Options
     const bool                  mUseMSAA = true;
     PostProcessingModes         mPostProcessingMode = kNone;// PostProcessingModes(kBloom | kDebug);
     DWORD                       mAnimationStartTime = 0;
-    bool                        mIsAnimationActive = false;// true;
+    bool                        mIsAnimationActive = false;// true;//
 };

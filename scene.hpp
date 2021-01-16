@@ -191,11 +191,6 @@ public:
                              IRenderingContext &ctx,
                              const tinygltf::Model &model,
                              const std::wstring &logPrefix);
-    bool LoadTextureFromGltf_DEPRECATED(const char *textureParamName,
-                             IRenderingContext &ctx,
-                             const tinygltf::Model &model,
-                             const tinygltf::ParameterMap &params,
-                             const std::wstring &logPrefix);
 
     XMFLOAT4 GetConstFactor() const { return mConstFactor; }
     bool     IsLoaded() const       { return mIsLoaded; }
