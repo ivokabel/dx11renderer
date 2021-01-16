@@ -2180,48 +2180,92 @@ bool SceneTexture::LoadFloatFactorFromGltf(const char *paramName,
 }
 
 
-bool SceneTexture::LoadTextureFromGltf(const char *paramName,
+bool SceneTexture::LoadTextureFromGltf(const int textureIndex,
                                        IRenderingContext &ctx,
                                        const tinygltf::Model &model,
-                                       const tinygltf::ParameterMap &params,
                                        const std::wstring &logPrefix)
 {
-    auto paramIt = params.find(paramName);
-    if (paramIt != params.end())
+    const auto &textures = model.textures;
+    const auto &images = model.images;
+
+    if (textureIndex >= (int)textures.size())
     {
-        const auto &param = paramIt->second;
-        const auto &textures = model.textures;
-        const auto &images = model.images;
-
-        const auto textureIndex = param.TextureIndex();
-        if ((textureIndex < 0) || (textureIndex >= textures.size()))
-        {
-            Log::Error(L"%sInvalid texture index (%d/%d) in \"%s\" parameter!",
-                       logPrefix.c_str(),
-                       textureIndex,
-                       textures.size(),
-                       Utils::StringToWstring(paramName).c_str());
-            return false;
-        }
-
-        const auto &texture = textures[textureIndex];
-
-        const auto texSource = texture.source;
-        if ((texSource < 0) || (texSource >= images.size()))
-        {
-            Log::Error(L"%sInvalid source image index (%d/%d) in texture %d!",
-                       logPrefix.c_str(),
-                       texSource,
-                       images.size(),
-                       textureIndex);
-            return false;
-        }
-
-        const auto &image = images[texSource];
-
-        Log::Debug(L"%s%s: \"%s\"/\"%s\", %dx%d, %dx%db %s, data %dB",
+        Log::Error(L"%sInvalid texture index (%d/%d)"
+                   //L" in \"%s\" parameter"
+                   L"!",
                    logPrefix.c_str(),
-                   Utils::StringToWstring(paramName).c_str(),
+                   textureIndex,
+                   textures.size()
+                   //Utils::StringToWstring(paramName).c_str()
+        );
+        return false;
+    }
+
+    if (textureIndex < 0)
+    {
+        // No texture - load neutral constant one
+
+        Log::Debug(L"%s"
+                   //L"%s: "
+                   L"Texture not specified - loading neutral constant texture",
+                   logPrefix.c_str()
+                   //Utils::StringToWstring(paramName).c_str()
+        );
+
+        if (!SceneUtils::CreateConstantTextureSRV(ctx, srv, mNeutralConstFactor))
+        {
+            Log::Error(L"%sFailed to create neutral constant texture"
+                       //L" for \"%s\""
+                       L"!",
+                       logPrefix.c_str()
+                       //Utils::StringToWstring(paramName).c_str()
+            );
+            return false;
+        }
+
+        return true;
+    }
+
+    const auto &texture = textures[textureIndex];
+
+    const auto texSource = texture.source;
+    if ((texSource < 0) || (texSource >= images.size()))
+    {
+        Log::Error(L"%sInvalid source image index (%d/%d) in texture %d!",
+                   logPrefix.c_str(),
+                   texSource,
+                   images.size(),
+                   textureIndex);
+        return false;
+    }
+
+    const auto &image = images[texSource];
+
+    Log::Debug(L"%s"
+               //L" %s: "
+               L"\"%s\"/\"%s\", %dx%d, %dx%db %s, data %dB",
+               logPrefix.c_str(),
+               //Utils::StringToWstring(paramName).c_str(),
+               Utils::StringToWstring(image.name).c_str(),
+               Utils::StringToWstring(image.uri).c_str(),
+               image.width,
+               image.height,
+               image.component,
+               image.bits,
+               GltfUtils::ComponentTypeToWstring(image.pixel_type).c_str(),
+               image.image.size());
+
+    const auto srcPixelSize = image.component * image.bits / 8;
+    const auto expectedSrcDataSize = image.width * image.height * srcPixelSize;
+    if (image.width <= 0 ||
+        image.height <= 0 ||
+        image.component != 4 ||
+        image.bits != 8 ||
+        image.pixel_type != TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE ||
+        image.image.size() != expectedSrcDataSize)
+    {
+        Log::Error(L"%sInvalid image \"%s\": \"%s\", %dx%d, %dx%db %s, data %dB",
+                   logPrefix.c_str(),
                    Utils::StringToWstring(image.name).c_str(),
                    Utils::StringToWstring(image.uri).c_str(),
                    image.width,
@@ -2230,76 +2274,53 @@ bool SceneTexture::LoadTextureFromGltf(const char *paramName,
                    image.bits,
                    GltfUtils::ComponentTypeToWstring(image.pixel_type).c_str(),
                    image.image.size());
+        return false;
+    }
 
-        const auto srcPixelSize = image.component * image.bits / 8;
-        const auto expectedSrcDataSize = image.width * image.height * srcPixelSize;
-        if (image.width <= 0 ||
-            image.height <= 0 ||
-            image.component != 4 ||
-            image.bits != 8 ||
-            image.pixel_type != TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE ||
-            image.image.size() != expectedSrcDataSize)
-        {
-            Log::Error(L"%sInvalid image \"%s\": \"%s\", %dx%d, %dx%db %s, data %dB",
-                       logPrefix.c_str(),
-                       Utils::StringToWstring(image.name).c_str(),
-                       Utils::StringToWstring(image.uri).c_str(),
-                       image.width,
-                       image.height,
-                       image.component,
-                       image.bits,
-                       GltfUtils::ComponentTypeToWstring(image.pixel_type).c_str(),
-                       image.image.size());
-            return false;
-        }
-
-        DXGI_FORMAT dataFormat;
+    DXGI_FORMAT dataFormat;
 #ifdef CONVERT_SRGB_INPUT_TO_LINEAR
-        if (mValueType == SceneTexture::eSrgb)
-            dataFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-        else
-#endif
-            dataFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-
-        if (!SceneUtils::CreateTextureSrvFromData(ctx,
-                                                  srv,
-                                                  image.width,
-                                                  image.height,
-                                                  dataFormat,
-                                                  image.image.data(),
-                                                  image.width * 4 * sizeof(uint8_t)))
-        {
-            Log::Error(L"%sFailed to create texture & SRV for image \"%s\": \"%s\", %dx%d",
-                       logPrefix.c_str(),
-                       Utils::StringToWstring(image.name).c_str(),
-                       Utils::StringToWstring(image.uri).c_str(),
-                       image.width,
-                       image.height);
-            return false;
-        }
-
-        mIsLoaded = true;
-
-        // TODO: Sampler
-    }
+    if (mValueType == SceneTexture::eSrgb)
+        dataFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
     else
+#endif
+        dataFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+    if (!SceneUtils::CreateTextureSrvFromData(ctx,
+                                              srv,
+                                              image.width,
+                                              image.height,
+                                              dataFormat,
+                                              image.image.data(),
+                                              image.width * 4 * sizeof(uint8_t)))
     {
-        // Neutral constant texture
-
-        Log::Debug(L"%s%s: Not found - loading neutral constant texture",
+        Log::Error(L"%sFailed to create texture & SRV for image \"%s\": \"%s\", %dx%d",
                    logPrefix.c_str(),
-                   Utils::StringToWstring(paramName).c_str());
-
-        if (!SceneUtils::CreateConstantTextureSRV(ctx, srv, mNeutralConstFactor))
-        {
-            Log::Error(L"%sFailed to create neutral constant texture for \"%s\"!",
-                       logPrefix.c_str(),
-                       Utils::StringToWstring(paramName).c_str());
-            return false;
-        }
+                   Utils::StringToWstring(image.name).c_str(),
+                   Utils::StringToWstring(image.uri).c_str(),
+                   image.width,
+                   image.height);
+        return false;
     }
+
+    mIsLoaded = true;
+
+    // TODO: Sampler
 
     return true;
+}
+
+
+bool SceneTexture::LoadTextureFromGltf(const char *paramName,
+                                       IRenderingContext &ctx,
+                                       const tinygltf::Model &model,
+                                       const tinygltf::ParameterMap &params,
+                                       const std::wstring &logPrefix)
+{
+    auto paramIt = params.find(paramName);
+    if (paramIt != params.end())
+        return LoadTextureFromGltf(paramIt->second.TextureIndex(), ctx, model, logPrefix);
+    else
+        return LoadTextureFromGltf(-1, ctx, model, logPrefix); // Neutral constant texture
 }
 
 
