@@ -322,8 +322,9 @@ public:
         eDebugGradientBox,
         eDebugMetalRoughSpheresNoTextures,
 
+        eFirstSampleGltf, // Keep here!
         //eGltfSampleTriangleWithoutIndices, // Non-indexed geometry not yet supported!
-        eGltfSampleTriangle,
+        eGltfSampleTriangle = eFirstSampleGltf,
         eGltfSampleSimpleMeshes,
         eGltfSampleBox,
         eGltfSampleBoxInterleaved,
@@ -338,6 +339,7 @@ public:
         eGltfSampleBoomBoxWithAxes,
         eGltfSampleDamagedHelmet,
         eGltfSampleFlightHelmet,
+        eLastSampleGltf = eGltfSampleFlightHelmet, // Keep here!
 
         eLowPolyDrifter,
         eWolfBaseMesh,
