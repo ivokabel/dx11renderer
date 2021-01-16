@@ -79,15 +79,17 @@ int RunSingleScene(HINSTANCE instance, int cmdShow)
 
 
 //--------------------------------------------------------------------------------------
-int RunAllScenes(HINSTANCE instance, int cmdShow, double timeout = 0)
+int RunManyScenes(Scene::SceneId firstScene,
+                  Scene::SceneId lastScene,
+                  HINSTANCE instance,
+                  int cmdShow,
+                  double timeout = 0)
 {
-    for (int sceneId = Scene::SceneId::eFirst;
-         sceneId <= Scene::SceneId::eLast;
-         sceneId++)
+    for (int sceneId = firstScene; sceneId <= lastScene; sceneId++)
     {
         Log::Debug(L"");
         Log::Debug(L"-------------------------------");
-        Log::Debug(L"RunAllScenes: scene %d", sceneId);
+        Log::Debug(L"RunManyScenes: scene %d", sceneId);
         Log::Debug(L"-------------------------------");
         Log::Debug(L"");
 
@@ -117,5 +119,6 @@ int WINAPI wWinMain(HINSTANCE instance,
                Utils::ConfigName(), cmdLine, buffer);
 
     return RunSingleScene(instance, cmdShow);
-    //return RunAllScenes(instance, cmdShow, 2.);
+    //return RunManyScenes(Scene::eFirstSampleGltf, Scene::eLastSampleGltf, instance, cmdShow, 2.);
+    //return RunManyScenes(Scene::eFirst, Scene::eLast, instance, cmdShow, 2.);
 }
