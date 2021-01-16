@@ -187,7 +187,10 @@ public:
                                  const tinygltf::ParameterMap &params,
                                  const std::wstring &logPrefix);
 
-    // Multiplies the values with const factor and creates the texture
+    bool LoadTextureFromGltf(const int textureIndex,
+                             IRenderingContext &ctx,
+                             const tinygltf::Model &model,
+                             const std::wstring &logPrefix);
     bool LoadTextureFromGltf(const char *textureParamName,
                              IRenderingContext &ctx,
                              const tinygltf::Model &model,
