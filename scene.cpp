@@ -2107,7 +2107,7 @@ bool SceneTexture::CreateNeutral(IRenderingContext &ctx)
 
 
 
-bool SceneTexture::LoadFloat4FactorFromGltf(const char *paramName,
+bool SceneTexture::LoadFloat4FactorFromGltf_DEPRECATED(const char *paramName,
                                             const tinygltf::ParameterMap &params,
                                             const std::wstring &logPrefix)
 {
@@ -2139,7 +2139,7 @@ bool SceneTexture::LoadFloat4FactorFromGltf(const char *paramName,
 }
 
 
-bool SceneTexture::LoadFloatFactorFromGltf(const char *paramName,
+bool SceneTexture::LoadFloatFactorFromGltf_DEPRECATED(const char *paramName,
                                            uint32_t component,
                                            const tinygltf::ParameterMap &params,
                                            const std::wstring &logPrefix)
@@ -2310,7 +2310,7 @@ bool SceneTexture::LoadTextureFromGltf(const int textureIndex,
 }
 
 
-bool SceneTexture::LoadTextureFromGltf(const char *paramName,
+bool SceneTexture::LoadTextureFromGltf_DEPRECATED(const char *paramName,
                                        IRenderingContext &ctx,
                                        const tinygltf::Model &model,
                                        const tinygltf::ParameterMap &params,
@@ -2407,21 +2407,20 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
         Log::Debug(L"%s[ DEPRECATED: Loaded params ]", logPrefix.c_str());
     }
 
-    if (!mBaseColorTexture.LoadFloat4FactorFromGltf("baseColorFactor", values, logPrefix))
+    if (!mBaseColorTexture.LoadFloat4FactorFromGltf_DEPRECATED("baseColorFactor", values, logPrefix))
         return false;
-    if (!mBaseColorTexture.LoadTextureFromGltf("baseColorTexture", ctx, model, values, logPrefix))
-        return false;
-
-    if (!mMetallicRoughnessTexture.LoadFloatFactorFromGltf("metallicFactor", 2, values, logPrefix))
-        return false;
-    if (!mMetallicRoughnessTexture.LoadFloatFactorFromGltf("roughnessFactor", 1, values, logPrefix))
-        return false;
-    if (!mMetallicRoughnessTexture.LoadTextureFromGltf("metallicRoughnessTexture", ctx, model, values, logPrefix))
+    if (!mBaseColorTexture.LoadTextureFromGltf_DEPRECATED("baseColorTexture", ctx, model, values, logPrefix))
         return false;
 
-    if (!mNormalTexture.LoadTextureFromGltf("normalTexture", ctx, model, extraValues, logPrefix))
+    if (!mMetallicRoughnessTexture.LoadFloatFactorFromGltf_DEPRECATED("metallicFactor", 2, values, logPrefix))
         return false;
-    // TODO: Normal scale
+    if (!mMetallicRoughnessTexture.LoadFloatFactorFromGltf_DEPRECATED("roughnessFactor", 1, values, logPrefix))
+        return false;
+    if (!mMetallicRoughnessTexture.LoadTextureFromGltf_DEPRECATED("metallicRoughnessTexture", ctx, model, values, logPrefix))
+        return false;
+
+    if (!mNormalTexture.LoadTextureFromGltf_DEPRECATED("normalTexture", ctx, model, extraValues, logPrefix))
+        return false;
 
     mWorkflow = MaterialWorkflow::kPbrMetalness;
 
