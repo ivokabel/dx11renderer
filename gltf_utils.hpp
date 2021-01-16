@@ -10,6 +10,11 @@
 #include <d3dx11.h>
 #pragma warning(pop)
 
+#pragma warning(push)
+#pragma warning(disable: 4838)
+#include <xnamath.h>
+#pragma warning(pop)
+
 #include <string>
 
 namespace GltfUtils
@@ -35,4 +40,20 @@ namespace GltfUtils
     std::wstring StringDoubleMapToWstring(const std::map<std::string, double> &mp);
 
     std::wstring ParameterValueToWstring(const tinygltf::Parameter &param);
+
+    bool FloatArrayToColor(XMFLOAT4 &color, const std::vector<double> &vector);
+
+    template <int component>
+    void FloatToColorComponent(XMFLOAT4 &color, double value)
+    {
+        static_assert(component < 4, "Incorrect color component index!");
+
+        switch (component)
+        {
+        case 0: color.x = (float)value; break;
+        case 1: color.y = (float)value; break;
+        case 2: color.z = (float)value; break;
+        case 3: color.w = (float)value; break;
+        }
+    }
 }
