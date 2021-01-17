@@ -82,6 +82,10 @@ struct CbScenePrimitive
     // Specularity
     XMFLOAT4 DiffuseColorFactor;
     XMFLOAT4 SpecularFactor;
+
+    // Both workflows
+    float NormalTexScale;
+    float dummy_padding[3];  // padding to 16 bytes multiple
 };
 
 Scene::Scene(const SceneId sceneId) :
@@ -529,6 +533,10 @@ void Scene::AnimateFrame(IRenderingContext &ctx)
     if (!ctx.IsValid())
         return;
 
+    // debug: Materials
+    //for (auto &material : mMaterials)
+    //    material.Animate(ctx);
+
     // Scene geometry
     for (auto &node : mRootNodes)
         node.Animate(ctx);
@@ -752,6 +760,7 @@ void Scene::RenderNode(IRenderingContext &ctx,
             cbScenePrimitive.MetallicRoughnessFactor = material.GetMetallicRoughnessConstFactor();
             cbScenePrimitive.DiffuseColorFactor      = UNUSED_COLOR;
             cbScenePrimitive.SpecularFactor          = UNUSED_COLOR;
+            cbScenePrimitive.NormalTexScale          = material.GetNormalTexture().GetScale();
             immCtx->UpdateSubresource(mCbScenePrimitive, 0, nullptr, &cbScenePrimitive, 0, 0);
             break;
         }
@@ -767,6 +776,7 @@ void Scene::RenderNode(IRenderingContext &ctx,
             cbScenePrimitive.SpecularFactor          = material.GetSpecularConstFactor();
             cbScenePrimitive.BaseColorFactor         = UNUSED_COLOR;
             cbScenePrimitive.MetallicRoughnessFactor = UNUSED_COLOR;
+            cbScenePrimitive.NormalTexScale          = material.GetNormalTexture().GetScale();
             immCtx->UpdateSubresource(mCbScenePrimitive, 0, nullptr, &cbScenePrimitive, 0, 0);
             break;
         }
@@ -2121,7 +2131,7 @@ bool SceneTexture::LoadTextureFromGltf(const int textureIndex,
                    logPrefix.c_str(),
                    textureIndex,
                    textures.size(),
-                   mName.c_str()
+                   GetName().c_str()
         );
         return false;
     }
@@ -2132,14 +2142,14 @@ bool SceneTexture::LoadTextureFromGltf(const int textureIndex,
 
         Log::Debug(L"%s%s: Not specified - creating neutral constant texture",
                    logPrefix.c_str(),
-                   mName.c_str()
+                   GetName().c_str()
         );
 
         if (!SceneUtils::CreateConstantTextureSRV(ctx, srv, mNeutralConstFactor))
         {
             Log::Error(L"%sFailed to create neutral constant texture for \"%s\"!",
                        logPrefix.c_str(),
-                       mName.c_str());
+                       GetName().c_str());
             return false;
         }
 
@@ -2163,7 +2173,7 @@ bool SceneTexture::LoadTextureFromGltf(const int textureIndex,
 
     Log::Debug(L"%s%s: \"%s\"/\"%s\", %dx%d, %dx%db %s, data size %dB",
                logPrefix.c_str(),
-               mName.c_str(),
+               GetName().c_str(),
                Utils::StringToWstring(image.name).c_str(),
                Utils::StringToWstring(image.uri).c_str(),
                image.width,
@@ -2228,14 +2238,44 @@ bool SceneTexture::LoadTextureFromGltf(const int textureIndex,
 }
 
 
+bool SceneNormalTexture::CreateNeutral(IRenderingContext &ctx)
+{
+    mScale = 1.f;
+    return SceneTexture::CreateNeutral(ctx);
+}
+
+
+bool SceneNormalTexture::LoadTextureFromGltf(const int textureIndex,
+                                             const double scale,
+                                             IRenderingContext &ctx,
+                                             const tinygltf::Model &model,
+                                             const std::wstring &logPrefix)
+{
+    if (!SceneTexture::LoadTextureFromGltf(textureIndex, ctx, model, logPrefix))
+        return false;
+
+    mScale = (float)scale;
+
+    Log::Debug(L"%s%s: scale %f",
+               logPrefix.c_str(),
+               GetName().c_str(),
+               mScale);
+
+    return true;
+
+}
+
+
 SceneMaterial::SceneMaterial() :
     mWorkflow(MaterialWorkflow::kNone),
     mBaseColorTexture(L"BaseColorTexture", SceneTexture::eSrgb, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
     mBaseColorConstFactor(XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
     mMetallicRoughnessTexture(L"MetallicRoughnessTexture", SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
     mMetallicRoughnessConstFactor(XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
+
     mSpecularTexture(L"SpecularTexture", SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
     mSpecularConstFactor(XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
+
     mNormalTexture(L"NormalTexture", SceneTexture::eLinear, XMFLOAT4(0.5f, 0.5f, 1.f, 1.f))
 {}
 
@@ -2256,7 +2296,6 @@ bool SceneMaterial::CreatePbrSpecularity(IRenderingContext &ctx,
 
     if (!mNormalTexture.CreateNeutral(ctx))
         return false;
-    // TODO: normalTextureScale
 
     mWorkflow = MaterialWorkflow::kPbrSpecularity;
 
@@ -2280,7 +2319,6 @@ bool SceneMaterial::CreatePbrMetalness(IRenderingContext &ctx,
 
     if (!mNormalTexture.CreateNeutral(ctx))
         return false;
-    // TODO: normalTextureScale
 
     mWorkflow = MaterialWorkflow::kPbrMetalness;
 
@@ -2298,6 +2336,7 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
         return false;
 
     GltfUtils::FloatArrayToColor(mBaseColorConstFactor, pbrMR.baseColorFactor);
+
     Log::Debug(L"%s%s: %s",
                logPrefix.c_str(),
                L"BaseColorConstFactor",
@@ -2308,16 +2347,27 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
 
     GltfUtils::FloatToColorComponent<2>(mMetallicRoughnessConstFactor, pbrMR.metallicFactor);
     GltfUtils::FloatToColorComponent<1>(mMetallicRoughnessConstFactor, pbrMR.roughnessFactor);
+
     Log::Debug(L"%s%s: %s",
                logPrefix.c_str(),
                L"MetallicRoughnessConstFactor",
                GltfUtils::ColorToWstring(mBaseColorConstFactor).c_str());
 
-    if (!mNormalTexture.LoadTextureFromGltf(material.normalTexture.index, ctx, model, logPrefix))
+    if (!mNormalTexture.LoadTextureFromGltf(material.normalTexture.index,
+                                            material.normalTexture.scale,
+                                            ctx, model, logPrefix))
         return false;
-    // TODO: normalTextureScale
 
     mWorkflow = MaterialWorkflow::kPbrMetalness;
 
     return true;
-};
+}
+
+
+void SceneMaterial::Animate(IRenderingContext &ctx)
+{
+    const float totalAnimPos = ctx.GetFrameAnimationTime() / 3.f/*seconds*/;
+
+    // debug
+    mNormalTexture.SetScale(cos(totalAnimPos * XM_2PI) * 0.5f + 0.5f);
+}

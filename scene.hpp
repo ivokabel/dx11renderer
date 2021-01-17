@@ -176,13 +176,13 @@ public:
 
     bool Create(IRenderingContext &ctx, const wchar_t *path);
     bool CreateNeutral(IRenderingContext &ctx);
-
     bool LoadTextureFromGltf(const int textureIndex,
                              IRenderingContext &ctx,
                              const tinygltf::Model &model,
                              const std::wstring &logPrefix);
 
-    bool     IsLoaded() const       { return mIsLoaded; }
+    std::wstring    GetName()   const { return mName; }
+    bool            IsLoaded()  const { return mIsLoaded; }
 
 private:
     std::wstring    mName;
@@ -193,6 +193,28 @@ private:
 
 public:
     ID3D11ShaderResourceView* srv;
+};
+
+
+class SceneNormalTexture : public SceneTexture
+{
+public:
+    SceneNormalTexture(const std::wstring &name, ValueType valueType, XMFLOAT4 neutralConstFactor) :
+        SceneTexture(name, valueType, neutralConstFactor) {}
+    ~SceneNormalTexture() {}
+
+    bool CreateNeutral(IRenderingContext &ctx);
+    bool LoadTextureFromGltf(const int textureIndex,
+                             const double scale,
+                             IRenderingContext &ctx,
+                             const tinygltf::Model &model,
+                             const std::wstring &logPrefix);
+
+    void    SetScale(float scale)   { mScale = scale; }
+    float   GetScale() const        { return mScale; }
+
+private:
+    float mScale = 1.f;
 };
 
 
@@ -232,14 +254,17 @@ public:
 
     MaterialWorkflow GetWorkflow() const { return mWorkflow; }
 
-    const SceneTexture & GetBaseColorTexture()              const { return mBaseColorTexture; };
-    XMFLOAT4             GetBaseColorConstFactor()          const { return mBaseColorConstFactor; }
-    const SceneTexture & GetMetallicRoughnessTexture()      const { return mMetallicRoughnessTexture; };
-    XMFLOAT4             GetMetallicRoughnessConstFactor()  const { return mMetallicRoughnessConstFactor; }
-    const SceneTexture & GetNormalTexture()                 const { return mNormalTexture; };
+    const SceneTexture &        GetBaseColorTexture()              const { return mBaseColorTexture; };
+    XMFLOAT4                    GetBaseColorConstFactor()          const { return mBaseColorConstFactor; }
+    const SceneTexture &        GetMetallicRoughnessTexture()      const { return mMetallicRoughnessTexture; };
+    XMFLOAT4                    GetMetallicRoughnessConstFactor()  const { return mMetallicRoughnessConstFactor; }
 
-    const SceneTexture & GetSpecularTexture()               const { return mSpecularTexture; };
-    XMFLOAT4             GetSpecularConstFactor()           const { return mSpecularConstFactor; }
+    const SceneTexture &        GetSpecularTexture()               const { return mSpecularTexture; };
+    XMFLOAT4                    GetSpecularConstFactor()           const { return mSpecularConstFactor; }
+
+    const SceneNormalTexture &  GetNormalTexture()                 const { return mNormalTexture; };
+
+    void Animate(IRenderingContext &ctx);
 
 private:
 
@@ -250,12 +275,13 @@ private:
     XMFLOAT4            mBaseColorConstFactor;
     SceneTexture        mMetallicRoughnessTexture;
     XMFLOAT4            mMetallicRoughnessConstFactor;
-    SceneTexture        mNormalTexture;
 
     // PBR specularity workflow
     SceneTexture        mSpecularTexture;
     XMFLOAT4            mSpecularConstFactor;
     //TODO...
+
+    SceneNormalTexture  mNormalTexture;
 };
 
 
