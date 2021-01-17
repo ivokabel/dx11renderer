@@ -57,4 +57,6 @@ namespace Utils
         return L"release";
 #endif // DEBUG
     }
+
+    float ModX(float x, float y);
 }

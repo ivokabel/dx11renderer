@@ -50,11 +50,13 @@ cbuffer cbScenePrimitive : register(b3)
     // Metallness
     float4 BaseColorFactor;
     float4 MetallicRoughnessFactor;
-    // TODO: Normal scale?
 
     // Specularity
     float4 DiffuseColorFactor;
     float4 SpecularFactor;
+
+    // Both workflows
+    float NormalTexScale;
 };
 
 struct VS_INPUT
@@ -105,7 +107,7 @@ float3 ComputeNormal(PS_INPUT input)
     const float3 frameBitangent = normalize(cross(frameNormal, frameTangent) * input.Tangent.w);
 
     const float3 normalTex      = NormalTexture.Sample(LinearSampler, input.Tex).xyz;
-    const float3 localNormal    = normalize(normalTex * 2 - 1);// TODO: NormalScale
+    const float3 localNormal    = normalize((normalTex * 2 - 1) * float3(NormalTexScale, NormalTexScale, 1.0));
 
     return
         localNormal.x * frameTangent +
@@ -124,7 +126,7 @@ float4 PsDebugVisualizer(PS_INPUT input)
     return float4(color, 1.);
 
     //const float3 normalTex = NormalTexture.Sample(LinearSampler, input.Tex).xyz;
-    ////const float3 localNormal = normalize(normalTex * 2 - 1);// TODO: NormalScale
+    ////const float3 localNormal = normalize((normalTex * 2 - 1) * float3(NormalTexScale, NormalTexScale, 1.0));
     //return float4(normalTex, 1.);
 
     //const float3 tex = DiffuseTexture.Sample(LinearSampler, input.Tex).xyz;
