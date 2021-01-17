@@ -16,11 +16,12 @@
 int RunRenderer(HINSTANCE instance,
                 int cmdShow,
                 Scene::SceneId sceneId,
+                bool startWithAnimationActive,
                 double timeout = 0)
 {
     auto scene = std::make_shared<Scene>(sceneId);
 
-    SimpleDX11Renderer renderer(scene);
+    SimpleDX11Renderer renderer(scene, startWithAnimationActive);
 
     if (!renderer.Init(instance, cmdShow, 1200u, 900u))
         return -1;
@@ -33,7 +34,7 @@ int RunRenderer(HINSTANCE instance,
 
 
 //--------------------------------------------------------------------------------------
-int RunSingleScene(HINSTANCE instance, int cmdShow)
+int RunSingleScene(HINSTANCE instance, int cmdShow, bool startWithAnimationActive)
 {
     Scene::SceneId sceneId =
         //Scene::eHardwiredSimpleDebugSphere
@@ -74,7 +75,7 @@ int RunSingleScene(HINSTANCE instance, int cmdShow)
         //Scene::eSalazarSkull
         ;
 
-    return RunRenderer(instance, cmdShow, sceneId);
+    return RunRenderer(instance, cmdShow, sceneId, startWithAnimationActive);
 }
 
 
@@ -83,6 +84,7 @@ int RunManyScenes(Scene::SceneId firstScene,
                   Scene::SceneId lastScene,
                   HINSTANCE instance,
                   int cmdShow,
+                  bool startWithAnimationActive,
                   double timeout = 0)
 {
     for (int sceneId = firstScene; sceneId <= lastScene; sceneId++)
@@ -93,7 +95,7 @@ int RunManyScenes(Scene::SceneId firstScene,
         Log::Debug(L"-------------------------------");
         Log::Debug(L"");
 
-        auto ret = RunRenderer(instance, cmdShow, (Scene::SceneId)sceneId, timeout);
+        auto ret = RunRenderer(instance, cmdShow, (Scene::SceneId)sceneId, startWithAnimationActive, timeout);
         if (ret != 0)
             return ret;
     }
@@ -118,7 +120,7 @@ int WINAPI wWinMain(HINSTANCE instance,
     Log::Debug(L"WinMain: %s config, cmd \"%s\", current dir \"%s\"",
                Utils::ConfigName(), cmdLine, buffer);
 
-    return RunSingleScene(instance, cmdShow);
-    //return RunManyScenes(Scene::eFirstSampleGltf, Scene::eLastSampleGltf, instance, cmdShow, 2.);
-    //return RunManyScenes(Scene::eFirst, Scene::eLast, instance, cmdShow, 2.);
+    return RunSingleScene(instance, cmdShow, false);
+    //return RunManyScenes(Scene::eFirstSampleGltf, Scene::eLastSampleGltf, instance, cmdShow, false, 3.);
+    //return RunManyScenes(Scene::eFirst, Scene::eLast, instance, cmdShow, true, 2.);
 }

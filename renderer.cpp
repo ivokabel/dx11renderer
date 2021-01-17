@@ -11,8 +11,10 @@
 #include <cmath>
 
 
-SimpleDX11Renderer::SimpleDX11Renderer(std::shared_ptr<IScene> scene) :
-    mScene(scene)
+SimpleDX11Renderer::SimpleDX11Renderer(std::shared_ptr<IScene> scene,
+                                       bool startWithAnimationActive) :
+    mScene(scene),
+    mIsAnimationActive(startWithAnimationActive)
 {
     Log::Debug(L"Constructing renderer");
 }
