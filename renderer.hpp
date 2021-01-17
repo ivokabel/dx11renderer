@@ -34,7 +34,7 @@ class SimpleDX11Renderer : public IRenderingContext
 {
 public:
 
-    SimpleDX11Renderer(std::shared_ptr<IScene> scene);
+    SimpleDX11Renderer(std::shared_ptr<IScene> scene, bool startWithAnimationActive);
     virtual ~SimpleDX11Renderer();
 
     SimpleDX11Renderer & operator=(const SimpleDX11Renderer &ctx) = delete;
