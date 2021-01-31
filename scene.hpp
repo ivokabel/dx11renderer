@@ -263,6 +263,7 @@ public:
     XMFLOAT4                    GetSpecularConstFactor()           const { return mSpecularConstFactor; }
 
     const SceneNormalTexture &  GetNormalTexture()                 const { return mNormalTexture; };
+    // TODO: mOcclusionTexture
 
     void Animate(IRenderingContext &ctx);
 
@@ -282,6 +283,7 @@ private:
     //TODO...
 
     SceneNormalTexture  mNormalTexture;
+    //SceneOcclusionTexture  mOcclusionTexture;
 };
 
 
