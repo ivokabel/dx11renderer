@@ -284,6 +284,8 @@ public:
 
     const SceneNormalTexture &  GetNormalTexture()                  const { return mNormalTexture; };
     const SceneOcclusionTexture & GetOcclusionTexture()             const { return mOcclusionTexture; };
+    const SceneTexture &        GetEmissionTexture()                const { return mEmissionTexture; };
+    XMFLOAT4                    GetEmissionConstFactor()            const { return mEmissionConstFactor; }
 
     void Animate(IRenderingContext &ctx);
 
@@ -305,6 +307,8 @@ private:
     // Both workflows
     SceneNormalTexture      mNormalTexture;
     SceneOcclusionTexture   mOcclusionTexture;
+    SceneTexture            mEmissionTexture;
+    XMFLOAT4                mEmissionConstFactor;
 };
 
 

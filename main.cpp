@@ -60,8 +60,8 @@ int RunSingleScene(HINSTANCE instance, int cmdShow, bool startWithAnimationActiv
         //Scene::eGltfSampleDuck
         //Scene::eGltfSampleBoomBox
         //Scene::eGltfSampleBoomBoxWithAxes
-        //Scene::eGltfSampleDamagedHelmet
-        Scene::eGltfSampleFlightHelmet
+        Scene::eGltfSampleDamagedHelmet
+        //Scene::eGltfSampleFlightHelmet
 
         //Scene::eWolfBaseMesh
         //Scene::eNintendoGameBoyClassic
