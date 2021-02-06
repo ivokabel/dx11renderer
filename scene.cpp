@@ -760,13 +760,13 @@ void Scene::RenderNode(IRenderingContext &ctx,
             immCtx->PSSetShaderResources(6, 1, &material.GetEmissionTexture().srv);
 
             CbScenePrimitive cbScenePrimitive;
-            cbScenePrimitive.BaseColorFactor            = material.GetBaseColorConstFactor();
-            cbScenePrimitive.MetallicRoughnessFactor    = material.GetMetallicRoughnessConstFactor();
+            cbScenePrimitive.BaseColorFactor            = material.GetBaseColorFactor();
+            cbScenePrimitive.MetallicRoughnessFactor    = material.GetMetallicRoughnessFactor();
             cbScenePrimitive.DiffuseColorFactor         = UNUSED_COLOR;
             cbScenePrimitive.SpecularFactor             = UNUSED_COLOR;
             cbScenePrimitive.NormalTexScale             = material.GetNormalTexture().GetScale();
             cbScenePrimitive.OcclusionTexStrength       = material.GetOcclusionTexture().GetStrength();
-            cbScenePrimitive.EmissionFactor             = material.GetEmissionConstFactor();
+            cbScenePrimitive.EmissionFactor             = material.GetEmissionFactor();
             immCtx->UpdateSubresource(mCbScenePrimitive, 0, nullptr, &cbScenePrimitive, 0, 0);
             break;
         }
@@ -780,13 +780,13 @@ void Scene::RenderNode(IRenderingContext &ctx,
             immCtx->PSSetShaderResources(6, 1, &material.GetEmissionTexture().srv);
 
             CbScenePrimitive cbScenePrimitive;
-            cbScenePrimitive.DiffuseColorFactor         = material.GetBaseColorConstFactor();
-            cbScenePrimitive.SpecularFactor             = material.GetSpecularConstFactor();
+            cbScenePrimitive.DiffuseColorFactor         = material.GetBaseColorFactor();
+            cbScenePrimitive.SpecularFactor             = material.GetSpecularFactor();
             cbScenePrimitive.BaseColorFactor            = UNUSED_COLOR;
             cbScenePrimitive.MetallicRoughnessFactor    = UNUSED_COLOR;
             cbScenePrimitive.NormalTexScale             = material.GetNormalTexture().GetScale();
             cbScenePrimitive.OcclusionTexStrength       = material.GetOcclusionTexture().GetStrength();
-            cbScenePrimitive.EmissionFactor             = material.GetEmissionConstFactor();
+            cbScenePrimitive.EmissionFactor             = material.GetEmissionFactor();
             immCtx->UpdateSubresource(mCbScenePrimitive, 0, nullptr, &cbScenePrimitive, 0, 0);
             break;
         }
@@ -2023,10 +2023,10 @@ void SceneNode::Animate(IRenderingContext &ctx)
 
 SceneTexture::SceneTexture(const std::wstring &name,
                            ValueType valueType,
-                           XMFLOAT4 neutralConstFactor) :
+                           XMFLOAT4 neutralValue) :
     mName(name),
     mValueType(valueType),
-    mNeutralConstFactor(neutralConstFactor),
+    mNeutralValue(neutralValue),
     mIsLoaded(false),
     srv(nullptr)
 {}
@@ -2034,7 +2034,7 @@ SceneTexture::SceneTexture(const std::wstring &name,
 SceneTexture::SceneTexture(const SceneTexture &src) :
     mName(src.mName),
     mValueType(src.mValueType),
-    mNeutralConstFactor(src.mNeutralConstFactor),
+    mNeutralValue(src.mNeutralValue),
     mIsLoaded(src.mIsLoaded),
     srv(src.srv)
 {
@@ -2044,11 +2044,11 @@ SceneTexture::SceneTexture(const SceneTexture &src) :
 
 SceneTexture& SceneTexture::operator =(const SceneTexture &src)
 {
-    mName               = src.mName;
-    mValueType          = src.mValueType;
-    mNeutralConstFactor = src.mNeutralConstFactor;
-    mIsLoaded           = src.mIsLoaded;
-    srv                 = src.srv;
+    mName           = src.mName;
+    mValueType      = src.mValueType;
+    mNeutralValue   = src.mNeutralValue;
+    mIsLoaded       = src.mIsLoaded;
+    srv             = src.srv;
 
     // We are creating new reference of device resource
     Utils::SafeAddRef(srv);
@@ -2059,18 +2059,18 @@ SceneTexture& SceneTexture::operator =(const SceneTexture &src)
 SceneTexture::SceneTexture(SceneTexture &&src) :
     mName(src.mName),
     mValueType(src.mValueType),
-    mNeutralConstFactor(Utils::Exchange(src.mNeutralConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f))),
+    mNeutralValue(Utils::Exchange(src.mNeutralValue, XMFLOAT4(0.f, 0.f, 0.f, 0.f))),
     mIsLoaded(Utils::Exchange(src.mIsLoaded, false)),
     srv(Utils::Exchange(src.srv, nullptr))
 {}
 
 SceneTexture& SceneTexture::operator =(SceneTexture &&src)
 {
-    mName               = src.mName;
-    mValueType          = src.mValueType;
-    mNeutralConstFactor = Utils::Exchange(src.mNeutralConstFactor, XMFLOAT4(0.f, 0.f, 0.f, 0.f));
-    mIsLoaded           = Utils::Exchange(src.mIsLoaded, false);
-    srv                 = Utils::Exchange(src.srv, nullptr);
+    mName           = src.mName;
+    mValueType      = src.mValueType;
+    mNeutralValue   = Utils::Exchange(src.mNeutralValue, XMFLOAT4(0.f, 0.f, 0.f, 0.f));
+    mIsLoaded       = Utils::Exchange(src.mIsLoaded, false);
+    srv             = Utils::Exchange(src.srv, nullptr);
 
     return *this;
 }
@@ -2122,7 +2122,7 @@ bool SceneTexture::Create(IRenderingContext &ctx, const wchar_t *path)
 
 bool SceneTexture::CreateNeutral(IRenderingContext &ctx)
 {
-    return SceneUtils::CreateConstantTextureSRV(ctx, srv, mNeutralConstFactor);
+    return SceneUtils::CreateConstantTextureSRV(ctx, srv, mNeutralValue);
 }
 
 
@@ -2155,7 +2155,7 @@ bool SceneTexture::LoadTextureFromGltf(const int textureIndex,
                    GetName().c_str()
         );
 
-        if (!SceneUtils::CreateConstantTextureSRV(ctx, srv, mNeutralConstFactor))
+        if (!SceneUtils::CreateConstantTextureSRV(ctx, srv, mNeutralValue))
         {
             Log::Error(L"%sFailed to create neutral constant texture for \"%s\"!",
                        logPrefix.c_str(),
@@ -2305,33 +2305,33 @@ bool SceneOcclusionTexture::LoadTextureFromGltf(const tinygltf::OcclusionTexture
 SceneMaterial::SceneMaterial() :
     mWorkflow(MaterialWorkflow::kNone),
     mBaseColorTexture(L"BaseColorTexture", SceneTexture::eSrgb, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
-    mBaseColorConstFactor(XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
+    mBaseColorFactor(XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
     mMetallicRoughnessTexture(L"MetallicRoughnessTexture", SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
-    mMetallicRoughnessConstFactor(XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
+    mMetallicRoughnessFactor(XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
 
     mSpecularTexture(L"SpecularTexture", SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
-    mSpecularConstFactor(XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
+    mSpecularFactor(XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
 
     mNormalTexture(L"NormalTexture"),
     mOcclusionTexture(L"OcclusionTexture"),
     mEmissionTexture(L"EmissionTexture", SceneTexture::eSrgb, XMFLOAT4(0.f, 0.f, 0.f, 1.f)),
-    mEmissionConstFactor(XMFLOAT4(0.f, 0.f, 0.f, 1.f))
+    mEmissionFactor(XMFLOAT4(0.f, 0.f, 0.f, 1.f))
 {}
 
 
 bool SceneMaterial::CreatePbrSpecularity(IRenderingContext &ctx,
                                          const wchar_t * diffuseTexPath,
-                                         XMFLOAT4 diffuseConstFactor,
+                                         XMFLOAT4 diffuseFactor,
                                          const wchar_t * specularTexPath,
-                                         XMFLOAT4 specularConstFactor)
+                                         XMFLOAT4 specularFactor)
 {
     if (!mBaseColorTexture.Create(ctx, diffuseTexPath))
         return false;
-    mBaseColorConstFactor = diffuseConstFactor;
+    mBaseColorFactor = diffuseFactor;
 
     if (!mSpecularTexture.Create(ctx, specularTexPath))
         return false;
-    mSpecularConstFactor = specularConstFactor;
+    mSpecularFactor = specularFactor;
 
     if (!mNormalTexture.CreateNeutral(ctx))
         return false;
@@ -2341,7 +2341,7 @@ bool SceneMaterial::CreatePbrSpecularity(IRenderingContext &ctx,
 
     if (!mEmissionTexture.CreateNeutral(ctx))
         return false;
-    mEmissionConstFactor = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
+    mEmissionFactor = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
 
     mWorkflow = MaterialWorkflow::kPbrSpecularity;
 
@@ -2350,18 +2350,18 @@ bool SceneMaterial::CreatePbrSpecularity(IRenderingContext &ctx,
 
 bool SceneMaterial::CreatePbrMetalness(IRenderingContext &ctx,
                                        const wchar_t * baseColorTexPath,
-                                       XMFLOAT4 baseColorConstFactor,
+                                       XMFLOAT4 baseColorFactor,
                                        const wchar_t * metallicRoughnessTexPath,
-                                       float metallicConstFactor,
-                                       float roughnessConstFactor)
+                                       float metallicFactor,
+                                       float roughnessFactor)
 {
     if (!mBaseColorTexture.Create(ctx, baseColorTexPath))
         return false;
-    mBaseColorConstFactor = baseColorConstFactor;
+    mBaseColorFactor = baseColorFactor;
 
     if (!mMetallicRoughnessTexture.Create(ctx, metallicRoughnessTexPath))
         return false;
-    mMetallicRoughnessConstFactor = XMFLOAT4(0.f, roughnessConstFactor, metallicConstFactor, 0.f);
+    mMetallicRoughnessFactor = XMFLOAT4(0.f, roughnessFactor, metallicFactor, 0.f);
 
     if (!mNormalTexture.CreateNeutral(ctx))
         return false;
@@ -2371,7 +2371,7 @@ bool SceneMaterial::CreatePbrMetalness(IRenderingContext &ctx,
 
     if (!mEmissionTexture.CreateNeutral(ctx))
         return false;
-    mEmissionConstFactor = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
+    mEmissionFactor = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
 
     mWorkflow = MaterialWorkflow::kPbrMetalness;
 
@@ -2388,23 +2388,23 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
     if (!mBaseColorTexture.LoadTextureFromGltf(pbrMR.baseColorTexture.index, ctx, model, logPrefix))
         return false;
 
-    GltfUtils::FloatArrayToColor(mBaseColorConstFactor, pbrMR.baseColorFactor);
+    GltfUtils::FloatArrayToColor(mBaseColorFactor, pbrMR.baseColorFactor);
 
     Log::Debug(L"%s%s: %s",
                logPrefix.c_str(),
-               L"BaseColorConstFactor",
-               GltfUtils::ColorToWstring(mBaseColorConstFactor).c_str());
+               L"BaseColorFactor",
+               GltfUtils::ColorToWstring(mBaseColorFactor).c_str());
 
     if (!mMetallicRoughnessTexture.LoadTextureFromGltf(pbrMR.metallicRoughnessTexture.index, ctx, model, logPrefix))
         return false;
 
-    GltfUtils::FloatToColorComponent<2>(mMetallicRoughnessConstFactor, pbrMR.metallicFactor);
-    GltfUtils::FloatToColorComponent<1>(mMetallicRoughnessConstFactor, pbrMR.roughnessFactor);
+    GltfUtils::FloatToColorComponent<2>(mMetallicRoughnessFactor, pbrMR.metallicFactor);
+    GltfUtils::FloatToColorComponent<1>(mMetallicRoughnessFactor, pbrMR.roughnessFactor);
 
     Log::Debug(L"%s%s: %s",
                logPrefix.c_str(),
-               L"MetallicRoughnessConstFactor",
-               GltfUtils::ColorToWstring(mBaseColorConstFactor).c_str());
+               L"MetallicRoughnessFactor",
+               GltfUtils::ColorToWstring(mBaseColorFactor).c_str());
 
     if (!mNormalTexture.LoadTextureFromGltf(material.normalTexture, model, ctx, logPrefix))
         return false;
@@ -2415,12 +2415,12 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
     if (!mEmissionTexture.LoadTextureFromGltf(material.emissiveTexture.index, ctx, model, logPrefix))
         return false;
 
-    GltfUtils::FloatArrayToColor(mEmissionConstFactor, material.emissiveFactor);
+    GltfUtils::FloatArrayToColor(mEmissionFactor, material.emissiveFactor);
 
     Log::Debug(L"%s%s: %s",
                logPrefix.c_str(),
-               L"EmissionConstFactor",
-               GltfUtils::ColorToWstring(mEmissionConstFactor).c_str());
+               L"EmissionFactor",
+               GltfUtils::ColorToWstring(mEmissionFactor).c_str());
 
     mWorkflow = MaterialWorkflow::kPbrMetalness;
 
@@ -2436,5 +2436,5 @@ void SceneMaterial::Animate(IRenderingContext &ctx)
     //auto val = cos(totalAnimPos * XM_2PI) * 0.5f + 0.5f;
     ////mNormalTexture.SetScale(val);
     ////mOcclusionTexture.SetStrength(val >= .2f ? 1.f : 0.f);
-    //mEmissionConstFactor = XMFLOAT4(val, val, val, 1.f);
+    //mEmissionFactor = XMFLOAT4(val, val, val, 1.f);
 }

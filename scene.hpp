@@ -166,7 +166,7 @@ public:
         eSrgb,
     };
 
-    SceneTexture(const std::wstring &name, ValueType valueType, XMFLOAT4 neutralConstFactor);
+    SceneTexture(const std::wstring &name, ValueType valueType, XMFLOAT4 neutralValue);
 
     SceneTexture(const SceneTexture &src);
     SceneTexture& operator =(const SceneTexture &src);
@@ -187,7 +187,7 @@ public:
 private:
     std::wstring    mName;
     ValueType       mValueType;
-    XMFLOAT4        mNeutralConstFactor;
+    XMFLOAT4        mNeutralValue;
     bool            mIsLoaded;
     // TODO: sampler, texCoord
 
@@ -256,16 +256,16 @@ public:
 
     bool CreatePbrSpecularity(IRenderingContext &ctx,
                               const wchar_t * diffuseTexPath,
-                              XMFLOAT4 diffuseConstFactor,
+                              XMFLOAT4 diffuseFactor,
                               const wchar_t * specularTexPath,
-                              XMFLOAT4 specularConstFactor);
+                              XMFLOAT4 specularFactor);
 
     bool CreatePbrMetalness(IRenderingContext &ctx,
                             const wchar_t * baseColorTexPath,
-                            XMFLOAT4 baseColorConstFactor,
+                            XMFLOAT4 baseColorFactor,
                             const wchar_t * metallicRoughnessTexPath,
-                            float metallicConstFactor,
-                            float roughnessConstFactor);
+                            float metallicFactor,
+                            float roughnessFactor);
 
     bool LoadFromGltf(IRenderingContext &ctx,
                       const tinygltf::Model &model,
@@ -274,18 +274,18 @@ public:
 
     MaterialWorkflow GetWorkflow() const { return mWorkflow; }
 
-    const SceneTexture &        GetBaseColorTexture()               const { return mBaseColorTexture; };
-    XMFLOAT4                    GetBaseColorConstFactor()           const { return mBaseColorConstFactor; }
-    const SceneTexture &        GetMetallicRoughnessTexture()       const { return mMetallicRoughnessTexture; };
-    XMFLOAT4                    GetMetallicRoughnessConstFactor()   const { return mMetallicRoughnessConstFactor; }
+    const SceneTexture &            GetBaseColorTexture()           const { return mBaseColorTexture; };
+    XMFLOAT4                        GetBaseColorFactor()            const { return mBaseColorFactor; }
+    const SceneTexture &            GetMetallicRoughnessTexture()   const { return mMetallicRoughnessTexture; };
+    XMFLOAT4                        GetMetallicRoughnessFactor()    const { return mMetallicRoughnessFactor; }
 
-    const SceneTexture &        GetSpecularTexture()                const { return mSpecularTexture; };
-    XMFLOAT4                    GetSpecularConstFactor()            const { return mSpecularConstFactor; }
+    const SceneTexture &            GetSpecularTexture()            const { return mSpecularTexture; };
+    XMFLOAT4                        GetSpecularFactor()             const { return mSpecularFactor; }
 
-    const SceneNormalTexture &  GetNormalTexture()                  const { return mNormalTexture; };
-    const SceneOcclusionTexture & GetOcclusionTexture()             const { return mOcclusionTexture; };
-    const SceneTexture &        GetEmissionTexture()                const { return mEmissionTexture; };
-    XMFLOAT4                    GetEmissionConstFactor()            const { return mEmissionConstFactor; }
+    const SceneNormalTexture &      GetNormalTexture()              const { return mNormalTexture; };
+    const SceneOcclusionTexture &   GetOcclusionTexture()           const { return mOcclusionTexture; };
+    const SceneTexture &            GetEmissionTexture()            const { return mEmissionTexture; };
+    XMFLOAT4                        GetEmissionFactor()             const { return mEmissionFactor; }
 
     void Animate(IRenderingContext &ctx);
 
@@ -295,20 +295,20 @@ private:
 
     // Metal/roughness workflow
     SceneTexture        mBaseColorTexture;
-    XMFLOAT4            mBaseColorConstFactor;
+    XMFLOAT4            mBaseColorFactor;
     SceneTexture        mMetallicRoughnessTexture;
-    XMFLOAT4            mMetallicRoughnessConstFactor;
+    XMFLOAT4            mMetallicRoughnessFactor;
 
     // Specularity workflow
     SceneTexture        mSpecularTexture;
-    XMFLOAT4            mSpecularConstFactor;
+    XMFLOAT4            mSpecularFactor;
     //TODO...
 
     // Both workflows
     SceneNormalTexture      mNormalTexture;
     SceneOcclusionTexture   mOcclusionTexture;
     SceneTexture            mEmissionTexture;
-    XMFLOAT4                mEmissionConstFactor;
+    XMFLOAT4                mEmissionFactor;
 };
 
 
@@ -360,7 +360,7 @@ public:
         eFirst, // Keep first!
 
         eHardwiredSimpleDebugSphere = eFirst,
-        eHardwiredMaterialConstFactors,
+        eHardwiredMaterialFactors,
         eHardwiredPbrMetalnesDebugSphere,
         eHardwiredEarth,
         eHardwiredThreePlanets,

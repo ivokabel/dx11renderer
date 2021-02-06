@@ -476,9 +476,9 @@ bool Scene::Load(IRenderingContext &ctx)
             return false;
 
         auto &material0 = mMaterials[0];
-        const XMFLOAT4 baseColorConstFactor(0.8f, 0.8f, 0.8f, 1.f);
-        const float    metallicConstFactor  = 1.0f;
-        const float    roughnessConstFactor =
+        const XMFLOAT4 baseColorFactor(0.8f, 0.8f, 0.8f, 1.f);
+        const float    metallicFactor  = 1.0f;
+        const float    roughnessFactor =
                             //0.000f;
                             //0.001f;
                             //0.010f;
@@ -489,10 +489,10 @@ bool Scene::Load(IRenderingContext &ctx)
                             //1.000f;
         if (!material0.CreatePbrMetalness(ctx,
                                           nullptr,
-                                          baseColorConstFactor,
+                                          baseColorFactor,
                                           nullptr,
-                                          metallicConstFactor,
-                                          roughnessConstFactor))
+                                          metallicFactor,
+                                          roughnessFactor))
             return false;
 
         mRootNodes.clear();
@@ -656,7 +656,7 @@ bool Scene::Load(IRenderingContext &ctx)
         break;
     }
 
-    case eHardwiredMaterialConstFactors:
+    case eHardwiredMaterialFactors:
     {
         mMaterials.clear();
         mMaterials.resize(3, SceneMaterial());
@@ -670,21 +670,21 @@ bool Scene::Load(IRenderingContext &ctx)
 
         const wchar_t *baseColorTex   = L"../Textures/Debugging/VerticalSineWaves8.png";
         const wchar_t *baseColorNoTex = nullptr;
-        const XMFLOAT4 baseColorConstFactor   = XMFLOAT4(1.0f, 0.7f, 0.1f, 1.0f);
-        const XMFLOAT4 baseColorNoConstFactor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+        const XMFLOAT4 baseColorFactor   = XMFLOAT4(1.0f, 0.7f, 0.1f, 1.0f);
+        const XMFLOAT4 baseColorNoFactor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
         const wchar_t *metallicRoughnessTex = nullptr;
-        const float metallicConstFactor = 0.f;
-        const float roughnessConstFactor = 0.4f;
+        const float metallicFactor = 0.f;
+        const float roughnessFactor = 0.4f;
 
         // Sphere 0
 
         auto &material0 = mMaterials[0];
         if (!material0.CreatePbrMetalness(ctx,
                                           baseColorTex,
-                                          baseColorConstFactor,
+                                          baseColorFactor,
                                           metallicRoughnessTex,
-                                          metallicConstFactor,
-                                          roughnessConstFactor))
+                                          metallicFactor,
+                                          roughnessFactor))
             return false;
 
         auto &node0 = mRootNodes[0];
@@ -702,10 +702,10 @@ bool Scene::Load(IRenderingContext &ctx)
         auto &material1 = mMaterials[1];
         if (!material1.CreatePbrMetalness(ctx,
                                           baseColorTex,
-                                          baseColorNoConstFactor,
+                                          baseColorNoFactor,
                                           metallicRoughnessTex,
-                                          metallicConstFactor,
-                                          roughnessConstFactor))
+                                          metallicFactor,
+                                          roughnessFactor))
             return false;
 
         auto &node1 = mRootNodes[1];
@@ -723,10 +723,10 @@ bool Scene::Load(IRenderingContext &ctx)
         auto &material2 = mMaterials[2];
         if (!material2.CreatePbrMetalness(ctx,
                                           baseColorNoTex,
-                                          baseColorConstFactor,
+                                          baseColorFactor,
                                           metallicRoughnessTex,
-                                          metallicConstFactor,
-                                          roughnessConstFactor))
+                                          metallicFactor,
+                                          roughnessFactor))
             return false;
 
         auto &node2 = mRootNodes[2];
