@@ -84,10 +84,10 @@ struct CbScenePrimitive
     XMFLOAT4 SpecularFactor;
 
     // Both workflows
-    float NormalTexScale;
-    float OcclusionTexStrength;
-
-    float dummy_padding[2];  // padding to 16 bytes multiple
+    float    NormalTexScale;
+    float    OcclusionTexStrength;
+    float    padding[2];  // padding to 16 bytes
+    XMFLOAT4 EmissionFactor;
 };
 
 Scene::Scene(const SceneId sceneId) :
@@ -757,14 +757,16 @@ void Scene::RenderNode(IRenderingContext &ctx,
             immCtx->PSSetShaderResources(1, 1, &material.GetMetallicRoughnessTexture().srv);
             immCtx->PSSetShaderResources(4, 1, &material.GetNormalTexture().srv);
             immCtx->PSSetShaderResources(5, 1, &material.GetOcclusionTexture().srv);
+            immCtx->PSSetShaderResources(6, 1, &material.GetEmissionTexture().srv);
 
             CbScenePrimitive cbScenePrimitive;
-            cbScenePrimitive.BaseColorFactor         = material.GetBaseColorConstFactor();
-            cbScenePrimitive.MetallicRoughnessFactor = material.GetMetallicRoughnessConstFactor();
-            cbScenePrimitive.DiffuseColorFactor      = UNUSED_COLOR;
-            cbScenePrimitive.SpecularFactor          = UNUSED_COLOR;
-            cbScenePrimitive.NormalTexScale          = material.GetNormalTexture().GetScale();
-            cbScenePrimitive.OcclusionTexStrength    = material.GetOcclusionTexture().GetStrength();
+            cbScenePrimitive.BaseColorFactor            = material.GetBaseColorConstFactor();
+            cbScenePrimitive.MetallicRoughnessFactor    = material.GetMetallicRoughnessConstFactor();
+            cbScenePrimitive.DiffuseColorFactor         = UNUSED_COLOR;
+            cbScenePrimitive.SpecularFactor             = UNUSED_COLOR;
+            cbScenePrimitive.NormalTexScale             = material.GetNormalTexture().GetScale();
+            cbScenePrimitive.OcclusionTexStrength       = material.GetOcclusionTexture().GetStrength();
+            cbScenePrimitive.EmissionFactor             = material.GetEmissionConstFactor();
             immCtx->UpdateSubresource(mCbScenePrimitive, 0, nullptr, &cbScenePrimitive, 0, 0);
             break;
         }
@@ -775,14 +777,16 @@ void Scene::RenderNode(IRenderingContext &ctx,
             immCtx->PSSetShaderResources(3, 1, &material.GetSpecularTexture().srv);
             immCtx->PSSetShaderResources(4, 1, &material.GetNormalTexture().srv);
             immCtx->PSSetShaderResources(5, 1, &material.GetOcclusionTexture().srv);
+            immCtx->PSSetShaderResources(6, 1, &material.GetEmissionTexture().srv);
 
             CbScenePrimitive cbScenePrimitive;
-            cbScenePrimitive.DiffuseColorFactor      = material.GetBaseColorConstFactor();
-            cbScenePrimitive.SpecularFactor          = material.GetSpecularConstFactor();
-            cbScenePrimitive.BaseColorFactor         = UNUSED_COLOR;
-            cbScenePrimitive.MetallicRoughnessFactor = UNUSED_COLOR;
-            cbScenePrimitive.NormalTexScale          = material.GetNormalTexture().GetScale();
-            cbScenePrimitive.OcclusionTexStrength    = material.GetOcclusionTexture().GetStrength();
+            cbScenePrimitive.DiffuseColorFactor         = material.GetBaseColorConstFactor();
+            cbScenePrimitive.SpecularFactor             = material.GetSpecularConstFactor();
+            cbScenePrimitive.BaseColorFactor            = UNUSED_COLOR;
+            cbScenePrimitive.MetallicRoughnessFactor    = UNUSED_COLOR;
+            cbScenePrimitive.NormalTexScale             = material.GetNormalTexture().GetScale();
+            cbScenePrimitive.OcclusionTexStrength       = material.GetOcclusionTexture().GetStrength();
+            cbScenePrimitive.EmissionFactor             = material.GetEmissionConstFactor();
             immCtx->UpdateSubresource(mCbScenePrimitive, 0, nullptr, &cbScenePrimitive, 0, 0);
             break;
         }
@@ -2309,7 +2313,9 @@ SceneMaterial::SceneMaterial() :
     mSpecularConstFactor(XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
 
     mNormalTexture(L"NormalTexture"),
-    mOcclusionTexture(L"OcclusionTexture")
+    mOcclusionTexture(L"OcclusionTexture"),
+    mEmissionTexture(L"EmissionTexture", SceneTexture::eSrgb, XMFLOAT4(0.f, 0.f, 0.f, 1.f)),
+    mEmissionConstFactor(XMFLOAT4(0.f, 0.f, 0.f, 1.f))
 {}
 
 
@@ -2332,6 +2338,10 @@ bool SceneMaterial::CreatePbrSpecularity(IRenderingContext &ctx,
 
     if (!mOcclusionTexture.CreateNeutral(ctx))
         return false;
+
+    if (!mEmissionTexture.CreateNeutral(ctx))
+        return false;
+    mEmissionConstFactor = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
 
     mWorkflow = MaterialWorkflow::kPbrSpecularity;
 
@@ -2358,6 +2368,10 @@ bool SceneMaterial::CreatePbrMetalness(IRenderingContext &ctx,
 
     if (!mOcclusionTexture.CreateNeutral(ctx))
         return false;
+
+    if (!mEmissionTexture.CreateNeutral(ctx))
+        return false;
+    mEmissionConstFactor = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
 
     mWorkflow = MaterialWorkflow::kPbrMetalness;
 
@@ -2398,6 +2412,16 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
     if (!mOcclusionTexture.LoadTextureFromGltf(material.occlusionTexture, model, ctx, logPrefix))
         return false;
 
+    if (!mEmissionTexture.LoadTextureFromGltf(material.emissiveTexture.index, ctx, model, logPrefix))
+        return false;
+
+    GltfUtils::FloatArrayToColor(mEmissionConstFactor, material.emissiveFactor);
+
+    Log::Debug(L"%s%s: %s",
+               logPrefix.c_str(),
+               L"EmissionConstFactor",
+               GltfUtils::ColorToWstring(mEmissionConstFactor).c_str());
+
     mWorkflow = MaterialWorkflow::kPbrMetalness;
 
     return true;
@@ -2411,5 +2435,6 @@ void SceneMaterial::Animate(IRenderingContext &ctx)
     // debug
     //auto val = cos(totalAnimPos * XM_2PI) * 0.5f + 0.5f;
     ////mNormalTexture.SetScale(val);
-    //mOcclusionTexture.SetStrength(val >= .2f ? 1.f : 0.f);
+    ////mOcclusionTexture.SetStrength(val >= .2f ? 1.f : 0.f);
+    //mEmissionConstFactor = XMFLOAT4(val, val, val, 1.f);
 }

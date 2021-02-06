@@ -16,6 +16,7 @@ Texture2D SpecularTexture       : register(t3);
 // Both workflows
 Texture2D NormalTexture         : register(t4);
 Texture2D OcclusionTexture      : register(t5);
+Texture2D EmissionTexture       : register(t6);
 
 SamplerState LinearSampler : register(s0);
 
@@ -57,8 +58,9 @@ cbuffer cbScenePrimitive : register(b3)
     float4 SpecularFactor;
 
     // Both workflows
-    float NormalTexScale;
-    float OcclusionTexStrength;
+    float  NormalTexScale;
+    float  OcclusionTexStrength;
+    float4 EmissionFactor;
 };
 
 struct VS_INPUT
@@ -134,11 +136,17 @@ float4 PsDebugVisualizer(PS_INPUT input)
     //const float3 tex = DiffuseTexture.Sample(LinearSampler, input.Tex).xyz;
     //return float4(tex, 1.);
 
-    const float occlusionTex = OcclusionTexture.Sample(LinearSampler, input.Tex).r;
-    //return float4(occlusionTex, occlusionTex, occlusionTex, 1.);
-    //return float4(OcclusionTexStrength, OcclusionTexStrength, OcclusionTexStrength, 1.);
-    const float occlusion = lerp(1., occlusionTex, OcclusionTexStrength);
-    return float4(occlusion, occlusion, occlusion, 1.);
+    //const float occlusionTex = OcclusionTexture.Sample(LinearSampler, input.Tex).r;
+    ////return float4(occlusionTex, occlusionTex, occlusionTex, 1.);
+    ////return float4(OcclusionTexStrength, OcclusionTexStrength, OcclusionTexStrength, 1.);
+    //const float occlusion = lerp(1., occlusionTex, OcclusionTexStrength);
+    //return float4(occlusion, occlusion, occlusion, 1.);
+
+    const float4 emissionTex = EmissionTexture.Sample(LinearSampler, input.Tex);
+    //return float4(emissionTex.rgb, 1.);
+    //return float4(EmissionFactor.rgb, 1.);
+    const float4 emission = emissionTex * EmissionFactor;
+    return float4(emission.rgb, 1.);
 }
 
 
@@ -351,6 +359,7 @@ float4 PbrM_BRDF(float3 lightDir, PbrM_ShadingCtx shadingCtx, PbrM_MatInfo matIn
 
     const float4 specular = fresnelHV * vis * distr;
 
+    // Diffuse
 #if defined USE_SMOOTH_REFRACTION_APPROX
     const float4 fresnelNV  = FresnelSchlick(matInfo, NdotV);
     const float4 fresnelNL  = FresnelSchlick(matInfo, NdotL);
@@ -439,7 +448,6 @@ float4 PbrM_PointLightContrib(float3 surfPos,
 PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
 {
     const float4 baseColor      = BaseColorTexture.Sample(LinearSampler, input.Tex) * BaseColorFactor;
-    const float  occlusionTex   = OcclusionTexture.Sample(LinearSampler, input.Tex).r;
 
     const float4 metalRoughness = MetalRoughnessTexture.Sample(LinearSampler, input.Tex) * MetallicRoughnessFactor;
     const float4 metalness      = float4(metalRoughness.bbb, 1);
@@ -459,7 +467,7 @@ PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
     matInfo.diffuse     = lerp(diffuseDiel,  diffuseMetal,  metalness);
     matInfo.f0          = lerp(f0Diel, f0Metal, metalness);
     matInfo.alphaSq     = max(roughness * roughness, 0.0001f);
-    matInfo.occlusion   = lerp(1., occlusionTex, OcclusionTexStrength);
+    matInfo.occlusion   = lerp(1., OcclusionTexture.Sample(LinearSampler, input.Tex).r, OcclusionTexStrength);
 
     return matInfo;
 }
@@ -494,6 +502,8 @@ float4 PsPbrMetalness(PS_INPUT input) : SV_Target
                                          PointLightIntensities[i],
                                          shadingCtx,
                                          matInfo);
+
+    output += EmissionTexture.Sample(LinearSampler, input.Tex) * EmissionFactor;
 
     output.a = 1;
     return output;

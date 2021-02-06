@@ -53,7 +53,7 @@ float4 FinalPassPS(QUAD_VS_OUTPUT Input) : SV_TARGET
     float4 render = Texture0.Sample(PointSampler, Input.Tex);
     float4 bloom = Texture1.Sample(LinearSampler, Input.Tex);
 
-    const float bloomStrength = 0.010f;
+    const float bloomStrength = 0.020f;
 
     return render * (1 - bloomStrength) + bloom * bloomStrength;
 }

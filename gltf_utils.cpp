@@ -244,14 +244,21 @@ std::wstring GltfUtils::ParameterValueToWstring(const tinygltf::Parameter &param
 
 bool GltfUtils::FloatArrayToColor(XMFLOAT4 &color, const std::vector<double> &vector)
 {
-    if (vector.size() == 4)
+    switch (vector.size())
     {
+    case 4:
         color = XMFLOAT4((float)vector[0],
                          (float)vector[1],
                          (float)vector[2],
                          (float)vector[3]);
         return true;
+    case 3:
+        color = XMFLOAT4((float)vector[0],
+                         (float)vector[1],
+                         (float)vector[2],
+                         1.0);
+        return true;
+    default:
+        return false;
     }
-
-    return false;
 }
