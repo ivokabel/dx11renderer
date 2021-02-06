@@ -38,7 +38,7 @@ int RunSingleScene(HINSTANCE instance, int cmdShow, bool startWithAnimationActiv
 {
     Scene::SceneId sceneId =
         //Scene::eHardwiredSimpleDebugSphere
-        //Scene::eHardwiredMaterialConstFactors
+        //Scene::eHardwiredMaterialFactors
         //Scene::eHardwiredPbrMetalnesDebugSphere
         //Scene::eHardwiredEarth
         //Scene::eHardwiredThreePlanets
@@ -60,7 +60,7 @@ int RunSingleScene(HINSTANCE instance, int cmdShow, bool startWithAnimationActiv
         //Scene::eGltfSampleDuck
         //Scene::eGltfSampleBoomBox
         //Scene::eGltfSampleBoomBoxWithAxes
-        Scene::eGltfSampleDamagedHelmet
+        //Scene::eGltfSampleDamagedHelmet
         //Scene::eGltfSampleFlightHelmet
 
         //Scene::eWolfBaseMesh
@@ -69,7 +69,7 @@ int RunSingleScene(HINSTANCE instance, int cmdShow, bool startWithAnimationActiv
         //Scene::eSpotMiniRigged
         //Scene::eMandaloriansHelmet
         //Scene::eWeltron2001SpaceballRadio
-        //Scene::eTheRocket
+        Scene::eTheRocket
         //Scene::eRoboV1
         //Scene::eRockJacket
         //Scene::eSalazarSkull
@@ -120,7 +120,7 @@ int WINAPI wWinMain(HINSTANCE instance,
     Log::Debug(L"WinMain: %s config, cmd \"%s\", current dir \"%s\"",
                Utils::ConfigName(), cmdLine, buffer);
 
-    return RunSingleScene(instance, cmdShow, false);
+    return RunSingleScene(instance, cmdShow, true);
     //return RunManyScenes(Scene::eFirstSampleGltf, Scene::eLastSampleGltf, instance, cmdShow, false, 3.);
     //return RunManyScenes(Scene::eFirst, Scene::eLast, instance, cmdShow, true, 2.);
 }
