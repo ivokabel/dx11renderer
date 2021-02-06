@@ -15,6 +15,7 @@ Texture2D SpecularTexture       : register(t3);
 
 // Both workflows
 Texture2D NormalTexture         : register(t4);
+Texture2D OcclusionTexture      : register(t5);
 
 SamplerState LinearSampler : register(s0);
 
@@ -57,6 +58,7 @@ cbuffer cbScenePrimitive : register(b3)
 
     // Both workflows
     float NormalTexScale;
+    float OcclusionTexStrength;
 };
 
 struct VS_INPUT
@@ -118,12 +120,12 @@ float3 ComputeNormal(PS_INPUT input)
 
 float4 PsDebugVisualizer(PS_INPUT input)
 {
-    const float3 dir = ComputeNormal(input);
-    //const float3 dir = normalize(input.Normal);
-    //const float3 dir = normalize(input.Tangent.xyz);
-    //const float3 dir = normalize(cross(normalize(input.Normal), normalize(input.Tangent.xyz)) * input.Tangent.w); // bitangent
-    const float3 color = (dir + 1) / 2;
-    return float4(color, 1.);
+    //const float3 dir = ComputeNormal(input);
+    ////const float3 dir = normalize(input.Normal);
+    ////const float3 dir = normalize(input.Tangent.xyz);
+    ////const float3 dir = normalize(cross(normalize(input.Normal), normalize(input.Tangent.xyz)) * input.Tangent.w); // bitangent
+    //const float3 color = (dir + 1) / 2;
+    //return float4(color, 1.);
 
     //const float3 normalTex = NormalTexture.Sample(LinearSampler, input.Tex).xyz;
     ////const float3 localNormal = normalize((normalTex * 2 - 1) * float3(NormalTexScale, NormalTexScale, 1.0));
@@ -131,6 +133,12 @@ float4 PsDebugVisualizer(PS_INPUT input)
 
     //const float3 tex = DiffuseTexture.Sample(LinearSampler, input.Tex).xyz;
     //return float4(tex, 1.);
+
+    const float occlusionTex = OcclusionTexture.Sample(LinearSampler, input.Tex).r;
+    //return float4(occlusionTex, occlusionTex, occlusionTex, 1.);
+    //return float4(OcclusionTexStrength, OcclusionTexStrength, OcclusionTexStrength, 1.);
+    const float occlusion = lerp(1., occlusionTex, OcclusionTexStrength);
+    return float4(occlusion, occlusion, occlusion, 1.);
 }
 
 
@@ -271,7 +279,8 @@ struct PbrM_MatInfo
 {
     float4 diffuse;
     float4 f0;
-    float alphaSq;
+    float  alphaSq;
+    float  occlusion;
 
     float specPower; // temporary blinn-phong approximation
 };
@@ -391,7 +400,7 @@ float4 PbrM_AmbLightContrib(float4 luminance,
     const float4 specular = matInfo.f0; // assuming that full specular lobe integrates to 1
 #endif
 
-    return (diffuse + specular) * luminance;
+    return (diffuse + specular) * luminance * matInfo.occlusion;
 }
 
 
@@ -430,6 +439,7 @@ float4 PbrM_PointLightContrib(float3 surfPos,
 PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
 {
     const float4 baseColor      = BaseColorTexture.Sample(LinearSampler, input.Tex) * BaseColorFactor;
+    const float  occlusionTex   = OcclusionTexture.Sample(LinearSampler, input.Tex).r;
 
     const float4 metalRoughness = MetalRoughnessTexture.Sample(LinearSampler, input.Tex) * MetallicRoughnessFactor;
     const float4 metalness      = float4(metalRoughness.bbb, 1);
@@ -449,6 +459,8 @@ PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
     matInfo.diffuse     = lerp(diffuseDiel,  diffuseMetal,  metalness);
     matInfo.f0          = lerp(f0Diel, f0Metal, metalness);
     matInfo.alphaSq     = max(roughness * roughness, 0.0001f);
+    matInfo.occlusion   = lerp(1., occlusionTex, OcclusionTexStrength);
+
     return matInfo;
 }
 

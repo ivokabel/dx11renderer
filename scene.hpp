@@ -199,15 +199,14 @@ public:
 class SceneNormalTexture : public SceneTexture
 {
 public:
-    SceneNormalTexture(const std::wstring &name, ValueType valueType, XMFLOAT4 neutralConstFactor) :
-        SceneTexture(name, valueType, neutralConstFactor) {}
+    SceneNormalTexture(const std::wstring &name) :
+        SceneTexture(name, SceneTexture::eLinear, XMFLOAT4(0.5f, 0.5f, 1.f, 1.f)) {}
     ~SceneNormalTexture() {}
 
     bool CreateNeutral(IRenderingContext &ctx);
-    bool LoadTextureFromGltf(const int textureIndex,
-                             const double scale,
-                             IRenderingContext &ctx,
+    bool LoadTextureFromGltf(const tinygltf::NormalTextureInfo &normalTextureInfo,
                              const tinygltf::Model &model,
+                             IRenderingContext &ctx,
                              const std::wstring &logPrefix);
 
     void    SetScale(float scale)   { mScale = scale; }
@@ -215,6 +214,27 @@ public:
 
 private:
     float mScale = 1.f;
+};
+
+
+class SceneOcclusionTexture : public SceneTexture
+{
+public:
+    SceneOcclusionTexture(const std::wstring &name) :
+        SceneTexture(name, SceneTexture::eLinear, XMFLOAT4(1.f, 0.f, 0.f, 1.f)) {}
+    ~SceneOcclusionTexture() {}
+
+    bool CreateNeutral(IRenderingContext &ctx);
+    bool LoadTextureFromGltf(const tinygltf::OcclusionTextureInfo &occlusionTextureInfo,
+                             const tinygltf::Model &model,
+                             IRenderingContext &ctx,
+                             const std::wstring &logPrefix);
+
+    void    SetStrength(float strength) { mStrength = strength; }
+    float   GetStrength() const         { return mStrength; }
+
+private:
+    float mStrength = 1.f;
 };
 
 
@@ -254,16 +274,16 @@ public:
 
     MaterialWorkflow GetWorkflow() const { return mWorkflow; }
 
-    const SceneTexture &        GetBaseColorTexture()              const { return mBaseColorTexture; };
-    XMFLOAT4                    GetBaseColorConstFactor()          const { return mBaseColorConstFactor; }
-    const SceneTexture &        GetMetallicRoughnessTexture()      const { return mMetallicRoughnessTexture; };
-    XMFLOAT4                    GetMetallicRoughnessConstFactor()  const { return mMetallicRoughnessConstFactor; }
+    const SceneTexture &        GetBaseColorTexture()               const { return mBaseColorTexture; };
+    XMFLOAT4                    GetBaseColorConstFactor()           const { return mBaseColorConstFactor; }
+    const SceneTexture &        GetMetallicRoughnessTexture()       const { return mMetallicRoughnessTexture; };
+    XMFLOAT4                    GetMetallicRoughnessConstFactor()   const { return mMetallicRoughnessConstFactor; }
 
-    const SceneTexture &        GetSpecularTexture()               const { return mSpecularTexture; };
-    XMFLOAT4                    GetSpecularConstFactor()           const { return mSpecularConstFactor; }
+    const SceneTexture &        GetSpecularTexture()                const { return mSpecularTexture; };
+    XMFLOAT4                    GetSpecularConstFactor()            const { return mSpecularConstFactor; }
 
-    const SceneNormalTexture &  GetNormalTexture()                 const { return mNormalTexture; };
-    // TODO: mOcclusionTexture
+    const SceneNormalTexture &  GetNormalTexture()                  const { return mNormalTexture; };
+    const SceneOcclusionTexture & GetOcclusionTexture()             const { return mOcclusionTexture; };
 
     void Animate(IRenderingContext &ctx);
 
@@ -271,19 +291,20 @@ private:
 
     MaterialWorkflow    mWorkflow;
 
-    // PBR metal/roughness workflow
+    // Metal/roughness workflow
     SceneTexture        mBaseColorTexture;
     XMFLOAT4            mBaseColorConstFactor;
     SceneTexture        mMetallicRoughnessTexture;
     XMFLOAT4            mMetallicRoughnessConstFactor;
 
-    // PBR specularity workflow
+    // Specularity workflow
     SceneTexture        mSpecularTexture;
     XMFLOAT4            mSpecularConstFactor;
     //TODO...
 
-    SceneNormalTexture  mNormalTexture;
-    //SceneOcclusionTexture  mOcclusionTexture;
+    // Both workflows
+    SceneNormalTexture      mNormalTexture;
+    SceneOcclusionTexture   mOcclusionTexture;
 };
 
 
