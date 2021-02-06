@@ -85,7 +85,9 @@ struct CbScenePrimitive
 
     // Both workflows
     float NormalTexScale;
-    float dummy_padding[3];  // padding to 16 bytes multiple
+    float OcclusionTexStrength;
+
+    float dummy_padding[2];  // padding to 16 bytes multiple
 };
 
 Scene::Scene(const SceneId sceneId) :
@@ -534,8 +536,8 @@ void Scene::AnimateFrame(IRenderingContext &ctx)
         return;
 
     // debug: Materials
-    //for (auto &material : mMaterials)
-    //    material.Animate(ctx);
+    for (auto &material : mMaterials)
+        material.Animate(ctx);
 
     // Scene geometry
     for (auto &node : mRootNodes)
@@ -754,7 +756,7 @@ void Scene::RenderNode(IRenderingContext &ctx,
             immCtx->PSSetShaderResources(0, 1, &material.GetBaseColorTexture().srv);
             immCtx->PSSetShaderResources(1, 1, &material.GetMetallicRoughnessTexture().srv);
             immCtx->PSSetShaderResources(4, 1, &material.GetNormalTexture().srv);
-            // TODO: mOcclusionTexture
+            immCtx->PSSetShaderResources(5, 1, &material.GetOcclusionTexture().srv);
 
             CbScenePrimitive cbScenePrimitive;
             cbScenePrimitive.BaseColorFactor         = material.GetBaseColorConstFactor();
@@ -762,7 +764,7 @@ void Scene::RenderNode(IRenderingContext &ctx,
             cbScenePrimitive.DiffuseColorFactor      = UNUSED_COLOR;
             cbScenePrimitive.SpecularFactor          = UNUSED_COLOR;
             cbScenePrimitive.NormalTexScale          = material.GetNormalTexture().GetScale();
-            // TODO: mOcclusionTexture
+            cbScenePrimitive.OcclusionTexStrength    = material.GetOcclusionTexture().GetStrength();
             immCtx->UpdateSubresource(mCbScenePrimitive, 0, nullptr, &cbScenePrimitive, 0, 0);
             break;
         }
@@ -772,7 +774,7 @@ void Scene::RenderNode(IRenderingContext &ctx,
             immCtx->PSSetShaderResources(2, 1, &material.GetBaseColorTexture().srv);
             immCtx->PSSetShaderResources(3, 1, &material.GetSpecularTexture().srv);
             immCtx->PSSetShaderResources(4, 1, &material.GetNormalTexture().srv);
-            // TODO: mOcclusionTexture
+            immCtx->PSSetShaderResources(5, 1, &material.GetOcclusionTexture().srv);
 
             CbScenePrimitive cbScenePrimitive;
             cbScenePrimitive.DiffuseColorFactor      = material.GetBaseColorConstFactor();
@@ -780,7 +782,7 @@ void Scene::RenderNode(IRenderingContext &ctx,
             cbScenePrimitive.BaseColorFactor         = UNUSED_COLOR;
             cbScenePrimitive.MetallicRoughnessFactor = UNUSED_COLOR;
             cbScenePrimitive.NormalTexScale          = material.GetNormalTexture().GetScale();
-            // TODO: mOcclusionTexture
+            cbScenePrimitive.OcclusionTexStrength    = material.GetOcclusionTexture().GetStrength();
             immCtx->UpdateSubresource(mCbScenePrimitive, 0, nullptr, &cbScenePrimitive, 0, 0);
             break;
         }
@@ -2249,21 +2251,47 @@ bool SceneNormalTexture::CreateNeutral(IRenderingContext &ctx)
 }
 
 
-bool SceneNormalTexture::LoadTextureFromGltf(const int textureIndex,
-                                             const double scale,
-                                             IRenderingContext &ctx,
+bool SceneNormalTexture::LoadTextureFromGltf(const tinygltf::NormalTextureInfo &normalTextureInfo,
                                              const tinygltf::Model &model,
+                                             IRenderingContext &ctx,
                                              const std::wstring &logPrefix)
 {
-    if (!SceneTexture::LoadTextureFromGltf(textureIndex, ctx, model, logPrefix))
+    if (!SceneTexture::LoadTextureFromGltf(normalTextureInfo.index, ctx, model, logPrefix))
         return false;
 
-    mScale = (float)scale;
+    mScale = (float)normalTextureInfo.scale;
 
     Log::Debug(L"%s%s: scale %f",
                logPrefix.c_str(),
                GetName().c_str(),
                mScale);
+
+    return true;
+
+}
+
+
+bool SceneOcclusionTexture::CreateNeutral(IRenderingContext &ctx)
+{
+    mStrength = 1.f;
+    return SceneTexture::CreateNeutral(ctx);
+}
+
+
+bool SceneOcclusionTexture::LoadTextureFromGltf(const tinygltf::OcclusionTextureInfo &occlusionTextureInfo,
+                                                const tinygltf::Model &model,
+                                                IRenderingContext &ctx,
+                                                const std::wstring &logPrefix)
+{
+    if (!SceneTexture::LoadTextureFromGltf(occlusionTextureInfo.index, ctx, model, logPrefix))
+        return false;
+
+    mStrength = (float)occlusionTextureInfo.strength;
+
+    Log::Debug(L"%s%s: strength %f",
+               logPrefix.c_str(),
+               GetName().c_str(),
+               mStrength);
 
     return true;
 
@@ -2280,8 +2308,8 @@ SceneMaterial::SceneMaterial() :
     mSpecularTexture(L"SpecularTexture", SceneTexture::eLinear, XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
     mSpecularConstFactor(XMFLOAT4(1.f, 1.f, 1.f, 1.f)),
 
-    mNormalTexture(L"NormalTexture", SceneTexture::eLinear, XMFLOAT4(0.5f, 0.5f, 1.f, 1.f))
-    // TODO: mOcclusionTexture
+    mNormalTexture(L"NormalTexture"),
+    mOcclusionTexture(L"OcclusionTexture")
 {}
 
 
@@ -2302,7 +2330,8 @@ bool SceneMaterial::CreatePbrSpecularity(IRenderingContext &ctx,
     if (!mNormalTexture.CreateNeutral(ctx))
         return false;
 
-    // TODO: mOcclusionTexture
+    if (!mOcclusionTexture.CreateNeutral(ctx))
+        return false;
 
     mWorkflow = MaterialWorkflow::kPbrSpecularity;
 
@@ -2327,7 +2356,8 @@ bool SceneMaterial::CreatePbrMetalness(IRenderingContext &ctx,
     if (!mNormalTexture.CreateNeutral(ctx))
         return false;
 
-    // TODO: mOcclusionTexture
+    if (!mOcclusionTexture.CreateNeutral(ctx))
+        return false;
 
     mWorkflow = MaterialWorkflow::kPbrMetalness;
 
@@ -2362,12 +2392,11 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
                L"MetallicRoughnessConstFactor",
                GltfUtils::ColorToWstring(mBaseColorConstFactor).c_str());
 
-    if (!mNormalTexture.LoadTextureFromGltf(material.normalTexture.index,
-                                            material.normalTexture.scale,
-                                            ctx, model, logPrefix))
+    if (!mNormalTexture.LoadTextureFromGltf(material.normalTexture, model, ctx, logPrefix))
         return false;
 
-    // TODO: mOcclusionTexture
+    if (!mOcclusionTexture.LoadTextureFromGltf(material.occlusionTexture, model, ctx, logPrefix))
+        return false;
 
     mWorkflow = MaterialWorkflow::kPbrMetalness;
 
@@ -2380,6 +2409,7 @@ void SceneMaterial::Animate(IRenderingContext &ctx)
     const float totalAnimPos = ctx.GetFrameAnimationTime() / 3.f/*seconds*/;
 
     // debug
-    mNormalTexture.SetScale(cos(totalAnimPos * XM_2PI) * 0.5f + 0.5f);
-    // TODO: mOcclusionTexture
+    //auto val = cos(totalAnimPos * XM_2PI) * 0.5f + 0.5f;
+    ////mNormalTexture.SetScale(val);
+    //mOcclusionTexture.SetStrength(val >= .2f ? 1.f : 0.f);
 }
