@@ -4,7 +4,7 @@ Simple DirectX 11 pet renderer.
 
  - Materials
     - PBR metalness material with layered approximation
-    - Normal mapping
+    - Normal, emission, and ambient occlusion
  - Lights
    - Point, directional, ambient (constant background)
    - Defined in physical quantities/units
