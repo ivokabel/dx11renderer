@@ -397,8 +397,9 @@ public:
         eRoboV1,
         eRockJacket,
         eSalazarSkull,
+        eHardhead,
 
-        eLast = eSalazarSkull, // Keep last!
+        eLast = eHardhead, // Keep last!
     };
 
     Scene(const SceneId sceneId);

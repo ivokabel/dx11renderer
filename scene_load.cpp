@@ -368,6 +368,29 @@ bool Scene::Load(IRenderingContext &ctx)
         break;
     }
 
+    case eHardhead:
+    {
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Felipe Oliveira Gall - Hardhead/scene.gltf"))
+            return false;
+
+        AddScaleToRoots(0.75);
+        AddTranslationToRoots({ 0., -3., 0. });
+        //AddRotationQuaternionToRoots({ 0.000, 0.131, 0.000, 0.991 }); // 15°y
+        AddRotationQuaternionToRoots({ 0.000, 0.259, 0.000, 0.966 }); // 30°y
+
+        const float amb = 0.35f;
+        mAmbientLight.luminance = XMFLOAT4(amb, amb, amb, 1.0f);
+
+        const float lum = 3.0f;
+        mDirectLights.resize(1);
+        mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+
+        SetupPointLights(0, 5.5f, 4.0f, 0, 0);
+
+        break;
+    }
+
     case eHardwiredSimpleDebugSphere:
     {
         mMaterials.clear();
