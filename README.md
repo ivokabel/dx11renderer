@@ -17,14 +17,30 @@ Simple DirectX 11 pet renderer.
 
 ## Screenshots
 
-![Flight Helmet](./Doc/Screenshots/3.jpg)
+<img src="./Doc/Screenshots/1.jpeg" alt="Battle Damaged Sci-fi Helmet"  />
 
-Model donated by Microsoft for glTF testing.
+"Battle Damaged Sci-fi Helmet" model by [theblueturtle_](https://sketchfab.com/theblueturtle_).
 
-![Battle Damaged Sci-fi Helmet](./Doc/Screenshots/1.jpg)
 
-Model by [theblueturtle_](https://sketchfab.com/theblueturtle_).
 
-![Skull Salazar](./Doc/Screenshots/2.jpg)
+<img src="./Doc/Screenshots/2.jpeg" alt="Flight Helmet"  />
 
-Model by [João Vitor Souza](https://sketchfab.com/jvitorsouzadesign).
+"Flight Helmet" model donated by Microsoft for glTF testing.
+
+
+
+<img src="./Doc/Screenshots/5.jpeg" alt="Skull Salazar"  />
+
+"Skull Salazar" model by [João Vitor Souza](https://sketchfab.com/jvitorsouzadesign).
+
+
+
+<img src="./Doc/Screenshots/3.jpeg" alt="Spot Mini"  />
+
+"Spot Mini" model by [Greg McKechnie](https://sketchfab.com/mckechniegreg6).
+
+
+
+<img src="./Doc/Screenshots/4.jpeg" alt="The Rocket"  />
+
+"The Rocket" model by [TuppsM](https://sketchfab.com/TuppsM).
