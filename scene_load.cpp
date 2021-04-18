@@ -119,7 +119,7 @@ bool Scene::Load(IRenderingContext &ctx)
         mAmbientLight.luminance = SceneUtils::SrgbColorToFloat(amb, amb, amb);
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-        SetupPointLights(pointLightCount, 20.f, ints, 0, 0);
+        SetupPointLights(pointLightCount, ints, 20.f, 0, 0);
 
         // Camera pos
         mViewData.eye = XMVectorSet(0.0f, 0.0f, 10.f, 1.0f);
@@ -149,7 +149,7 @@ bool Scene::Load(IRenderingContext &ctx)
         AddScaleToRoots(3.6f);
         AddRotationQuaternionToRoots({ -0.174, 0.000, 0.000,  0.985 }); // -20°x
 
-        SetupPointLights(8, 8.0f, 6.5f, 0, 0);
+        SetupPointLights(8, 6.5f, 8.0f, 0, 0);
         break;
     }
 
@@ -213,7 +213,7 @@ bool Scene::Load(IRenderingContext &ctx)
         const float lum = 0.8f;
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-        SetupPointLights(5, 6.5f, 5.0f, 0, 0);
+        SetupPointLights(5, 5.0f, 6.5f, 0, 0);
 
         break;
     }
@@ -232,7 +232,7 @@ bool Scene::Load(IRenderingContext &ctx)
         const float lum = 4.0f;
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-        SetupPointLights(5, 6.5f, 4.0f, 0, 0);
+        SetupPointLights(5, 4.0f, 6.5f, 0, 0);
         break;
     }
 
@@ -375,7 +375,7 @@ bool Scene::Load(IRenderingContext &ctx)
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
 
-        SetupPointLights(3, 5.0f, 7.0f, 0, 0);
+        SetupPointLights(3, 7.0f, 5.0f, 0, 0);
 
         break;
     }
@@ -398,7 +398,7 @@ bool Scene::Load(IRenderingContext &ctx)
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
 
-        SetupPointLights(0, 5.5f, 4.0f, 0, 0);
+        SetupPointLights(0, 4.0f, 5.5f, 0, 0);
 
         break;
     }
@@ -611,7 +611,7 @@ bool Scene::Load(IRenderingContext &ctx)
         mDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance  = XMFLOAT4(lum, lum, lum, 1.0f);
 
-        SetupPointLights(3, 5.5f, 3.5f);
+        SetupPointLights(3, 3.5f, 5.5f);
 
         break;
     }
@@ -686,7 +686,7 @@ bool Scene::Load(IRenderingContext &ctx)
         mDirectLights.resize(1);
         mDirectLights[0].dir       = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
-        SetupPointLights(3, 5.3f, 4.0f, -XM_PI / 8, XM_PI / 8);
+        SetupPointLights(3, 4.0f, 5.3f, -XM_PI / 8, XM_PI / 8);
 
         break;
     }
@@ -780,7 +780,7 @@ bool Scene::Load(IRenderingContext &ctx)
         mDirectLights.resize(1);
         mDirectLights[0].dir        = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance  = XMFLOAT4(lum, lum, lum, 1.0f);
-        SetupPointLights(3, 6.5f, 4.0f);
+        SetupPointLights(3, 4.0f, 6.5f);
 
         break;
     }

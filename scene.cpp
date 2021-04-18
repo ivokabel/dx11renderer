@@ -666,8 +666,8 @@ void Scene::SetupDefaultLights()
 
 
 bool Scene::SetupPointLights(size_t count,
-                             float orbitRadius,
                              float intensity,
+                             float orbitRadius,
                              float orbitInclMin,
                              float orbitInclMax)
 {
