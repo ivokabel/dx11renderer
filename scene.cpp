@@ -653,7 +653,7 @@ void Scene::RenderFrame(IRenderingContext &ctx)
 
 void Scene::SetupDefaultLights()
 {
-    const uint8_t amb = 60;
+    const uint8_t amb = 120;
     mAmbientLight.luminance = SceneUtils::SrgbColorToFloat(amb, amb, amb);
 
     const float lum = 3.0f;
@@ -2408,12 +2408,16 @@ bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
 
     if (!mNormalTexture.LoadTextureFromGltf(material.normalTexture, model, ctx, logPrefix))
         return false;
-
     if (!mOcclusionTexture.LoadTextureFromGltf(material.occlusionTexture, model, ctx, logPrefix))
         return false;
-
     if (!mEmissionTexture.LoadTextureFromGltf(material.emissiveTexture.index, ctx, model, logPrefix))
         return false;
+    //if (!mNormalTexture.CreateNeutral(ctx))
+    //    return false;
+    //if (!mOcclusionTexture.CreateNeutral(ctx))
+    //    return false;
+    //if (!mEmissionTexture.CreateNeutral(ctx))
+    //    return false;
 
     GltfUtils::FloatArrayToColor(mEmissionFactor, material.emissiveFactor);
 

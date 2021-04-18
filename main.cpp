@@ -85,12 +85,11 @@ int WINAPI wWinMain(HINSTANCE instance,
     Log::Debug(L"WinMain: %s config, cmd \"%s\", current dir \"%s\"",
                Utils::ConfigName(), cmdLine, buffer);
 
-    RunSingleScene(Scene::eGltfSampleDamagedHelmet, instance, cmdShow, true, 5.);
-    RunSingleScene(Scene::eGltfSampleFlightHelmet, instance, cmdShow, true, 5.);
-    RunSingleScene(Scene::eSpotMiniRigged, instance, cmdShow, true, 5.);
-    RunSingleScene(Scene::eTheRocket, instance, cmdShow, true, 5.);
-    RunSingleScene(Scene::eSalazarSkull, instance, cmdShow, true, 5.);
-    RunSingleScene(Scene::eHardhead, instance, cmdShow, false, 5.);
+    RunSingleScene(Scene::eGltfSampleDamagedHelmet, instance, cmdShow, false);
+    RunSingleScene(Scene::eGltfSampleFlightHelmet, instance, cmdShow, false);
+    RunSingleScene(Scene::eSpotMiniRigged, instance, cmdShow, false);
+    RunSingleScene(Scene::eTheRocket, instance, cmdShow, false);
+    RunSingleScene(Scene::eSalazarSkull, instance, cmdShow, false);
     return 0;
 
     //return RunManyScenes(Scene::eFirstSampleGltf, Scene::eLastSampleGltf, instance, cmdShow, false, 3.);
