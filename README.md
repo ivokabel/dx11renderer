@@ -44,3 +44,9 @@ Simple DirectX 11 pet renderer.
 <img src="./Doc/Screenshots/4.jpeg" alt="The Rocket"  />
 
 "The Rocket" model by [TuppsM](https://sketchfab.com/TuppsM).
+
+## Licenses (under construction)
+
+- [ACES Filmic Tone Mapping Curve](https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/) by [Krzysztof Narkowicz](https://knarkowicz.wordpress.com/author/knarkowicz/): [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- &hellip;
+

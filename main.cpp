@@ -37,7 +37,7 @@ int RunRenderer(HINSTANCE instance,
 int RunSingleScene(Scene::SceneId sceneId,
                    HINSTANCE instance,
                    int cmdShow,
-                   bool startWithAnimationActive,
+                   bool startWithAnimationActive = true,
                    double timeout = 0)
 {
     return RunRenderer(instance, cmdShow, sceneId, startWithAnimationActive, timeout);
@@ -49,7 +49,7 @@ int RunManyScenes(Scene::SceneId firstScene,
                   Scene::SceneId lastScene,
                   HINSTANCE instance,
                   int cmdShow,
-                  bool startWithAnimationActive,
+                  bool startWithAnimationActive = true,
                   double timeout = 0)
 {
     for (int sceneId = firstScene; sceneId <= lastScene; sceneId++)
@@ -90,9 +90,9 @@ int WINAPI wWinMain(HINSTANCE instance,
     //RunSingleScene(Scene::eSpotMiniRigged, instance, cmdShow, false);
     //RunSingleScene(Scene::eTheRocket, instance, cmdShow, false);
     //RunSingleScene(Scene::eSalazarSkull, instance, cmdShow, false);
-    return 0;
+    //return 0;
 
-    //return RunManyScenes(Scene::eFirstSampleGltf, Scene::eLastSampleGltf, instance, cmdShow, false, 3.);
+    //return RunManyScenes(Scene::eFirstSampleGltf, Scene::eLastSampleGltf, instance, cmdShow);
     //return RunManyScenes(Scene::eLowPolyDrifter, Scene::eHardhead, instance, cmdShow, false, 5.);
     //return RunManyScenes(Scene::eFirst, Scene::eLast, instance, cmdShow, true, 2.);
 }
