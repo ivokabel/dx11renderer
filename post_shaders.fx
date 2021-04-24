@@ -58,6 +58,16 @@ float4 FinalPassPS(QUAD_VS_OUTPUT Input) : SV_TARGET
     return render * (1 - bloomStrength) + bloom * bloomStrength;
 }
 
+// Simplified ACES tonemapping by Krzysztof Narkowicz (Unreal Engine 4?)
+float3 ACESFilm(float3 x)
+{
+    float a = 2.51f;
+    float b = 0.03f;
+    float c = 2.43f;
+    float d = 0.59f;
+    float e = 0.14f;
+    return saturate((x*(a*x + b)) / (x*(c*x + d) + e));
+}
 
 float4 DebugPS(QUAD_VS_OUTPUT Input) : SV_TARGET
 {
@@ -87,7 +97,9 @@ float4 DebugPS(QUAD_VS_OUTPUT Input) : SV_TARGET
 
     //return float4(0.7f * color.rgb, 1);
 
-    //return float4(0.9f * pow(color.rgb, 0.85f.xxx), 1); // simple tonemapping
+    //return float4(0.9f * pow(color.rgb, 0.85f.xxx), 1); // naive tonemapping
 
-    return float4(color.rgb, 1); // identity
+    return float4(ACESFilm(color.rgb), 1);
+
+    //return float4(color.rgb, 1); // identity
 }
