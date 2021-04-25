@@ -242,7 +242,7 @@ float4 PsPbrSpecularity(PS_INPUT input) : SV_Target
 
     PbrS_LightContrib lightContribs = { {0, 0, 0, 0}, {0, 0, 0, 0} };
 
-    const float specPower = 100.f;
+    const float specPower = 100.f; // Fixed for now
 
     lightContribs = PbrS_AmbLightContrib(AmbientLightLuminance);
 

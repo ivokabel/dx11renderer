@@ -785,6 +785,52 @@ bool Scene::Load(IRenderingContext &ctx)
         break;
     }
 
+    case eHardwiredLightsOverQuad:
+    {
+        mMaterials.clear();
+        mMaterials.resize(1, SceneMaterial());
+        if (mMaterials.size() != 1)
+            return false;
+
+        auto &material0 = mMaterials[0];
+        if (!material0.CreatePbrSpecularity(ctx,
+                                            nullptr,
+                                            XMFLOAT4(1.f, 1.f, 1.f, 1.f),
+                                            nullptr,
+                                            XMFLOAT4(0.f, 0.f, 0.f, 1.f)))
+            return false;
+
+        mRootNodes.clear();
+        mRootNodes.resize(1, SceneNode(true));
+        if (mRootNodes.size() != 1)
+            return false;
+
+        auto &node0 = mRootNodes[0];
+        auto primitive = node0.CreateEmptyPrimitive();
+        if (!primitive)
+            return false;
+
+        if (!primitive->CreateQuad(ctx))
+            return false;
+        primitive->SetMaterialIdx(0);
+        node0.AddScale({ 100.f, 100.f, 100.f });
+        node0.AddTranslation({ 0.f, -0.5f, 0.f });
+
+        mAmbientLight.luminance = XMFLOAT4(0.f, 0.f, 0.f, 1.0f);
+        mDirectLights.resize(0);
+        SetupPointLights({ XMFLOAT4(3.8f, 1.2f, 1.2f, 1.0f),   // R
+                           XMFLOAT4(1.2f, 3.0f, 1.2f, 1.0f),   // G
+                           XMFLOAT4(1.2f, 1.2f, 6.0f, 1.0f),   // B
+                           XMFLOAT4(2.6f, 2.6f, 2.6f, 1.0f) }, // W
+                         4.0f, 0.f, 0.f);
+
+        mViewData.eye = XMVectorSet(0.0f,  6.5f, 10.0f, 1.0f);
+        mViewData.at  = XMVectorSet(0.0f,  0.0f,  2.5f, 1.0f);
+        mViewData.up  = XMVectorSet(0.0f,  1.0f,  0.0f, 1.0f);
+
+        break;
+    }
+
     case  eDebugGradientBox:
     {
         if (!LoadExternal(ctx, L"../Scenes/Debugging/GradientBox/GradientBox.gltf"))

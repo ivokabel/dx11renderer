@@ -93,9 +93,9 @@ struct CbScenePrimitive
 Scene::Scene(const SceneId sceneId) :
     mSceneId(sceneId)
 {
-    mViewData.eye = XMVectorSet(0.0f, 4.0f, 10.0f, 1.0f);
-    mViewData.at  = XMVectorSet(0.0f, -0.2f, 0.0f, 1.0f);
-    mViewData.up  = XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f);
+    mViewData.eye = XMVectorSet(0.0f,  4.0f, 10.0f, 1.0f);
+    mViewData.at  = XMVectorSet(0.0f, -0.2f,  0.0f, 1.0f);
+    mViewData.up  = XMVectorSet(0.0f,  1.0f,  0.0f, 1.0f);
 }
 
 Scene::~Scene()
@@ -200,7 +200,6 @@ bool Scene::Init(IRenderingContext &ctx)
                                                0.01f, 100.0f);
 
     // Scene constant buffer can be updated now
-
     CbScene cbScene;
     cbScene.ViewMtrx = XMMatrixTranspose(mViewMtrx);
     XMStoreFloat4(&cbScene.CameraPos, mViewData.eye);
@@ -691,6 +690,43 @@ bool Scene::SetupPointLights(size_t count,
 }
 
 
+bool Scene::SetupPointLights(const std::initializer_list<XMFLOAT4> &intensities,
+                             float orbitRadius,
+                             float orbitInclMin,
+                             float orbitInclMax)
+{
+    if (intensities.size() > POINT_LIGHTS_MAX_COUNT)
+    {
+        Log::Error(L"SetupPointLights: requested number of point lights (%d) exceeds the limit (%d)",
+                   intensities.size(), POINT_LIGHTS_MAX_COUNT);
+        return false;
+    }
+
+    if (intensities.size() != intensities.size())
+    {
+        Log::Error(L"SetupPointLights: provided intensities count (%d) doesn't match the light count (%d)",
+                   intensities.size(), POINT_LIGHTS_MAX_COUNT);
+        return false;
+    }
+
+    mPointLights.resize(intensities.size());
+
+    auto itLight = mPointLights.begin();
+    auto itIntensity = intensities.begin();
+    for (; itLight != mPointLights.end() && itIntensity != intensities.end(); ++itLight, ++itIntensity)
+    {
+        auto &light = *itLight;
+
+        light.intensity = *itIntensity;
+        light.orbitRadius = orbitRadius;
+        light.orbitInclinationMin = orbitInclMin;
+        light.orbitInclinationMax = orbitInclMax;
+    }
+
+    return true;
+}
+
+
 void Scene::AddScaleToRoots(double scale)
 {
     for (auto &rootNode : mRootNodes)
@@ -877,6 +913,17 @@ ScenePrimitive::~ScenePrimitive()
 }
 
 
+bool ScenePrimitive::CreateQuad(IRenderingContext & ctx)
+{
+    if (!GenerateQuadGeometry())
+        return false;
+    if (!CreateDeviceBuffers(ctx))
+        return false;
+
+    return true;
+}
+
+
 bool ScenePrimitive::CreateCube(IRenderingContext & ctx)
 {
     if (!GenerateCubeGeometry())
@@ -907,6 +954,30 @@ bool ScenePrimitive::CreateSphere(IRenderingContext & ctx,
         return false;
     if (!CreateDeviceBuffers(ctx))
         return false;
+
+    return true;
+}
+
+
+bool ScenePrimitive::GenerateQuadGeometry()
+{
+    mVertices =
+    {
+        SceneVertex{ XMFLOAT3(-1.0f, 0.0f, -1.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(0.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3( 1.0f, 0.0f, -1.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(1.0f, 0.0f) },
+        SceneVertex{ XMFLOAT3( 1.0f, 0.0f,  1.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(1.0f, 1.0f) },
+        SceneVertex{ XMFLOAT3(-1.0f, 0.0f,  1.0f),  XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT4(0,0,0,0), XMFLOAT2(0.0f, 1.0f) },
+    };
+    
+    mIndices =
+    {
+        3, 1, 0,
+        2, 1, 3,
+    };
+
+    mTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+    CalculateTangentsIfNeeded();
 
     return true;
 }
@@ -2348,6 +2419,7 @@ bool SceneMaterial::CreatePbrSpecularity(IRenderingContext &ctx,
     return true;
 }
 
+
 bool SceneMaterial::CreatePbrMetalness(IRenderingContext &ctx,
                                        const wchar_t * baseColorTexPath,
                                        XMFLOAT4 baseColorFactor,
@@ -2377,6 +2449,7 @@ bool SceneMaterial::CreatePbrMetalness(IRenderingContext &ctx,
 
     return true;
 }
+
 
 bool SceneMaterial::LoadFromGltf(IRenderingContext &ctx,
                                  const tinygltf::Model &model,
