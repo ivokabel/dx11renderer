@@ -57,7 +57,6 @@ float4 FinalPassPS(QUAD_VS_OUTPUT Input) : SV_TARGET
     return render * (1 - bloomStrength) + bloom * bloomStrength;
 }
 
-//#include "aces_tonemapper_simple.fx"
 #include "aces_tonemapper.fx"
 
 float4 DebugPS(QUAD_VS_OUTPUT Input) : SV_TARGET

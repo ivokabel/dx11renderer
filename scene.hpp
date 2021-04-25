@@ -42,6 +42,7 @@ public:
     ScenePrimitive& operator = (const ScenePrimitive&);
     ScenePrimitive& operator = (ScenePrimitive&&);
 
+    bool CreateQuad(IRenderingContext & ctx);
     bool CreateCube(IRenderingContext & ctx);
     bool CreateOctahedron(IRenderingContext & ctx);
     bool CreateSphere(IRenderingContext & ctx,
@@ -79,6 +80,7 @@ public:
 
 private:
 
+    bool GenerateQuadGeometry();
     bool GenerateCubeGeometry();
     bool GenerateOctahedronGeometry();
     bool GenerateSphereGeometry(const WORD vertSegmCount, const WORD stripCount);
@@ -367,6 +369,7 @@ public:
 
         eDebugGradientBox,
         eDebugMetalRoughSpheresNoTextures,
+        eHardwiredLightsOverQuad,
 
         eFirstSampleGltf, // Keep here!
         //eGltfSampleTriangleWithoutIndices, // Non-indexed geometry not yet supported!
@@ -443,6 +446,10 @@ private:
     void SetupDefaultLights();
     bool SetupPointLights(size_t count,
                           float intensity = 6.5f,
+                          float orbitRadius = 5.5f,
+                          float orbitInclMin = -XM_PIDIV4,
+                          float orbitInclMax = XM_PIDIV4);
+    bool SetupPointLights(const std::initializer_list<XMFLOAT4> &intensities,
                           float orbitRadius = 5.5f,
                           float orbitInclMin = -XM_PIDIV4,
                           float orbitInclMax = XM_PIDIV4);
