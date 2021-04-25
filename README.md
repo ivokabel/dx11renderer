@@ -47,6 +47,7 @@ Simple DirectX 11 pet renderer.
 
 ## Licenses (under construction)
 
-- [ACES Filmic Tone Mapping Curve](https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/) by [Krzysztof Narkowicz](https://knarkowicz.wordpress.com/author/knarkowicz/): [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- [ACES Tone Mapping Curve](https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/) by [Krzysztof Narkowicz](https://knarkowicz.wordpress.com/author/knarkowicz/): [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- [ACES Tone Mapping Curve](https://github.com/TheRealMJP/BakingLab/blob/master/BakingLab/ACES.hlsl) by [Stephen Hill](https://twitter.com/self_shadow): MIT license
 - &hellip;
 
