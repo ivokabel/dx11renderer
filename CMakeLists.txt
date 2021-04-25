@@ -14,6 +14,8 @@ set(RENDERER_SOURCES
     renderer.hpp
     renderer.cpp
     post_shaders.fx
+    aces_tonemapper.fx
+    aces_tonemapper_simple.fx
     iscene.hpp
     scene.hpp
     scene.cpp
