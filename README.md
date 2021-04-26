@@ -14,6 +14,7 @@ Simple DirectX 11 pet renderer.
     - Hard-wired
  - Post processing
     - Physically-based bloom
+    - ACES tone mapping curve
 
 ## Screenshots
 
