@@ -229,7 +229,7 @@ bool Scene::Load(IRenderingContext &ctx)
 
         const uint8_t amb = 120;
         mAmbientLight.luminance = SceneUtils::SrgbColorToFloat(amb, amb, amb);
-        const float lum = 4.0f;
+        const float lum = 2.5f;
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
         SetupPointLights(5, 4.0f, 6.5f, 0, 0);
@@ -280,9 +280,9 @@ bool Scene::Load(IRenderingContext &ctx)
         AddScaleToRoots(.00028f);
         AddTranslationToRoots({ 0., 0., 2.8 });
         AddRotationQuaternionToRoots({ 0.000, 0.383, 0.000, 0.924 }); // 45°y
-        const uint8_t amb = 140;
+        const uint8_t amb = 120;
         mAmbientLight.luminance = SceneUtils::SrgbColorToFloat(amb, amb, amb);
-        const float lum = 3.0f;
+        const float lum = 2.0f;
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
         break;
     }
@@ -320,8 +320,8 @@ bool Scene::Load(IRenderingContext &ctx)
         AddTranslationToRoots({ -0.1, -1., 0. });
         AddRotationQuaternionToRoots({ 0.000, 0.259, 0.000, 0.966 }); // 30°y
 
-        const uint8_t amb = 15;
-        mAmbientLight.luminance = SceneUtils::SrgbColorToFloat(amb, amb, 2*amb);
+        const uint8_t amb = 30;
+        mAmbientLight.luminance = SceneUtils::SrgbColorToFloat((uint8_t)(1.0*amb), (uint8_t)(1.2*amb), (uint8_t)(1.5*amb));
         const float lum = 3.0f;
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
         break;
@@ -370,7 +370,7 @@ bool Scene::Load(IRenderingContext &ctx)
         const uint8_t amb = 100;
         mAmbientLight.luminance = SceneUtils::SrgbColorToFloat(amb, amb, amb);
 
-        const float lum = 0.6f;
+        const float lum = 2.0f;
         mDirectLights.resize(1);
         mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
         mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
