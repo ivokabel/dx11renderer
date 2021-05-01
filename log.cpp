@@ -1,6 +1,6 @@
 #include "log.hpp"
 
-const Log::ELoggingLevel Log::sLoggingLevel = Log::eDebug;
+Log::ELoggingLevel Log::sLoggingLevel = Log::eDebug;
 
 
 const wchar_t * Log::LogLevelToString(ELoggingLevel level)
@@ -9,6 +9,8 @@ const wchar_t * Log::LogLevelToString(ELoggingLevel level)
     {
     case eDebug:
         return L"Debug";
+    case eInfo:
+        return L"Info";
     case eWarning:
         return L"Warning";
     case eError:

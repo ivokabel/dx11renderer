@@ -9,11 +9,12 @@ namespace Log
         eNone,
         eError,
         eWarning,
+        eInfo,
         eDebug,
     };
 
 
-    extern const ELoggingLevel sLoggingLevel;
+    extern ELoggingLevel sLoggingLevel;
 
 
     const wchar_t * LogLevelToString(ELoggingLevel level);
@@ -39,6 +40,13 @@ namespace Log
     void Debug(const wchar_t *msg, Args... args)
     {
         Write(ELoggingLevel::eDebug, msg, args...);
+    }
+
+
+    template <typename... Args>
+    void Info(const wchar_t *msg, Args... args)
+    {
+        Write(ELoggingLevel::eInfo, msg, args...);
     }
 
 
