@@ -40,6 +40,12 @@ int RunSingleScene(Scene::SceneId sceneId,
                    bool startWithAnimationActive = true,
                    double timeout = 0)
 {
+    Log::Info(L"");
+    Log::Info(L"-------------------------------");
+    Log::Info(L"RunSingleScene: scene %d", sceneId);
+    Log::Info(L"-------------------------------");
+    Log::Info(L"");
+
     return RunRenderer(instance, cmdShow, sceneId, startWithAnimationActive, timeout);
 }
 
@@ -54,11 +60,11 @@ int RunManyScenes(Scene::SceneId firstScene,
 {
     for (int sceneId = firstScene; sceneId <= lastScene; sceneId++)
     {
-        Log::Debug(L"");
-        Log::Debug(L"-------------------------------");
-        Log::Debug(L"RunManyScenes: scene %d", sceneId);
-        Log::Debug(L"-------------------------------");
-        Log::Debug(L"");
+        Log::Info(L"");
+        Log::Info(L"-------------------------------");
+        Log::Info(L"RunManyScenes: scene %d", sceneId);
+        Log::Info(L"-------------------------------");
+        Log::Info(L"");
 
         auto ret = RunRenderer(instance, cmdShow, (Scene::SceneId)sceneId, startWithAnimationActive, timeout);
         if (ret != 0)
@@ -79,6 +85,8 @@ int WINAPI wWinMain(HINSTANCE instance,
     UNREFERENCED_PARAMETER(prevInstance);
     UNREFERENCED_PARAMETER(cmdLine);
     UNREFERENCED_PARAMETER(cmdShow);
+
+    Log::sLoggingLevel = Log::eInfo;
 
     wchar_t buffer[1024] = {};
     GetCurrentDirectory(1024, buffer);

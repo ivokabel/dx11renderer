@@ -155,7 +155,6 @@ LRESULT CALLBACK SimpleDX11Renderer::WndProc(HWND wnd,
     case WM_TIMER:
         if (wParam == mTimeoutTimerID)
         {
-            Log::Debug(L"Stopping on timeout timer (%.1fs)", mTimeout);
             KillTimer(wnd, mTimeoutTimerID);
             ::DestroyWindow(wnd);
         }
@@ -197,14 +196,13 @@ void SimpleDX11Renderer::SetTimeout(double timeout)
 
 int SimpleDX11Renderer::Run()
 {
-    Log::Debug(L"Running renderer...");
-    Log::Debug(L"-------------------");
-
     if (mTimeout > 0.)
     {
-        Log::Debug(L"Setting timeout timer to (%.1fs)", mTimeout);
+        Log::Info(L"Running renderer with timeout %.1fs...", mTimeout);
         SetTimer(mWnd, mTimeoutTimerID, (UINT)(mTimeout * 1000), NULL);
     }
+    else
+        Log::Info(L"Running renderer...");
 
     const DWORD startTime = GetTickCount();
     uint32_t frameCount = 0;
@@ -233,13 +231,12 @@ int SimpleDX11Renderer::Run()
     const auto avgFps = (timeElapsed > 0.0001f) ? frameCount / timeElapsed : 0;
     const auto avgDuration = frameCount ? timeElapsed / frameCount : 0;
 
-    Log::Debug(L"-------------------");
-    Log::Debug(L"Renderer finished: "
-               L"time elapsed %.1f, "
-               L"frames count %d, "
-               L"average fps %.1f, "
-               L"average frame duration %.3f ms",
-               timeElapsed, frameCount, avgFps, avgDuration * 1000.f);
+    Log::Info(L"Renderer finished: "
+              L"time elapsed %.1f, "
+              L"frames count %d, "
+              L"average fps %.1f, "
+              L"average frame duration %.1f ms",
+              timeElapsed, frameCount, avgFps, avgDuration * 1000.f);
 
     return (int)msg.wParam;
 }
