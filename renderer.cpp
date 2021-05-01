@@ -600,8 +600,8 @@ bool SimpleDX11Renderer::CreatePostprocessingResources()
         mRenderBuffMS.Create(*this, msaaBufferFlags, 1);
     mRenderBuff.Create(*this, postBufferFlags, 1);
     mBloomHorzBuff.Create(*this, postBufferFlags, mBloomDownscaleFactor);
-    mBloomBuff.Create(*this, postBufferFlags, mBloomDownscaleFactor);
-    mDebugBuff.Create(*this, postBufferFlags, 1);
+    mBloomVertBuff.Create(*this, postBufferFlags, mBloomDownscaleFactor);
+    mBloomBuff.Create(*this, postBufferFlags, 1);
 
     // Samplers
     D3D11_SAMPLER_DESC descSampler;
@@ -632,9 +632,9 @@ bool SimpleDX11Renderer::CreatePostprocessingResources()
         return false;
 
     // Shaders
-    if (!CreatePixelShader(L"../post_shaders.fx", "BloomPS", "ps_4_0", mBloomPS))
+    if (!CreatePixelShader(L"../post_shaders.fx", "BloomPrePassPS", "ps_4_0", mBloomPrePassPS))
         return false;
-    if (!CreatePixelShader(L"../post_shaders.fx", "FinalPassPS", "ps_4_0", mFinalPassPS))
+    if (!CreatePixelShader(L"../post_shaders.fx", "BloomFinalPassPS", "ps_4_0", mBloomFinalPassPS))
         return false;
     if (!CreatePixelShader(L"../post_shaders.fx", "DebugPS", "ps_4_0", mDebugPS))
         return false;
@@ -659,11 +659,11 @@ void SimpleDX11Renderer::DestroyDevice()
     mRenderBuff.Destroy();
     mRenderBuffMS.Destroy();
     mBloomHorzBuff.Destroy();
+    mBloomVertBuff.Destroy();
     mBloomBuff.Destroy();
-    mDebugBuff.Destroy();
     Utils::ReleaseAndMakeNull(mBloomCB);
-    Utils::ReleaseAndMakeNull(mBloomPS);
-    Utils::ReleaseAndMakeNull(mFinalPassPS);
+    Utils::ReleaseAndMakeNull(mBloomPrePassPS);
+    Utils::ReleaseAndMakeNull(mBloomFinalPassPS);
     Utils::ReleaseAndMakeNull(mDebugPS);
     Utils::ReleaseAndMakeNull(mSamplerStatePoint);
     Utils::ReleaseAndMakeNull(mSamplerStateLinear);
@@ -940,40 +940,40 @@ void SimpleDX11Renderer::RenderFrame()
     {
         // Bloom - part 1: Scale image down & blur horizontally
 
-        SetBloomCB(true);
+        SetBloomPrePassCB(true);
 
         mImmediateContext->GenerateMips(mRenderBuff.GetSRV()); // for nicer downscaling
 
         ExecuteRenderPass({ mRenderBuff.GetSRV() },
                           { mSamplerStatePoint, mSamplerStateLinear },
-                          mBloomPS,
+                          mBloomPrePassPS,
                           mBloomHorzBuff.GetRTV(), nullptr,
                           mWndWidth / mBloomDownscaleFactor,
                           mWndHeight / mBloomDownscaleFactor);
 
         // Bloom - part 2: blur (downscaled image) vertically
 
-        SetBloomCB(false);
+        SetBloomPrePassCB(false);
 
         ExecuteRenderPass({ mBloomHorzBuff.GetSRV() },
                           { mSamplerStatePoint, mSamplerStateLinear },
-                          mBloomPS,
-                          mBloomBuff.GetRTV(), nullptr,
+                          mBloomPrePassPS,
+                          mBloomVertBuff.GetRTV(), nullptr,
                           mWndWidth / mBloomDownscaleFactor,
                           mWndHeight / mBloomDownscaleFactor);
+
+        // Final bloom pass: Compose original and (upscaled) blurred image
+
+        ExecuteRenderPass({ mRenderBuff.GetSRV(), mBloomVertBuff.GetSRV() },
+                            { mSamplerStatePoint, mSamplerStateLinear },
+                            mBloomFinalPassPS,
+                            (mPostProcessingMode & kDebug) ? mBloomBuff.GetRTV() : swapChainRTV,
+                            (mPostProcessingMode & kDebug) ? nullptr : swapChainDSV,
+                            mWndWidth, mWndHeight);
     }
 
-    // Final bloom pass: Compose original and (upscaled) blurred image
-    if (mPostProcessingMode & kBloom)
-        ExecuteRenderPass({ mRenderBuff.GetSRV(), mBloomBuff.GetSRV() },
-                          { mSamplerStatePoint, mSamplerStateLinear },
-                          mFinalPassPS,
-                          (mPostProcessingMode & kDebug) ? mDebugBuff.GetRTV() : swapChainRTV,
-                          (mPostProcessingMode & kDebug) ? nullptr             : swapChainDSV,
-                          mWndWidth, mWndHeight);
-
     if (mPostProcessingMode & kDebug)
-        ExecuteRenderPass({ (mPostProcessingMode & kBloom) ? mDebugBuff.GetSRV() : mRenderBuff.GetSRV() },
+        ExecuteRenderPass({ (mPostProcessingMode & kBloom) ? mBloomBuff.GetSRV() : mRenderBuff.GetSRV() },
                           { mSamplerStatePoint, mSamplerStateLinear },
                           mDebugPS,
                           swapChainRTV, swapChainDSV, // restores swap chain buffers
@@ -1087,7 +1087,7 @@ void SimpleDX11Renderer::GetBloomCoeffs(DWORD textureSize,
 }
 
 
-void SimpleDX11Renderer::SetBloomCB(bool horizontal)
+void SimpleDX11Renderer::SetBloomPrePassCB(bool horizontal)
 {
     D3D11_MAPPED_SUBRESOURCE mappedRes;
     mImmediateContext->Map(mBloomCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes);

@@ -32,7 +32,7 @@ cbuffer cbBloom
     float4 BlurWeights[15];
 }
 
-float4 BloomPS(QUAD_VS_OUTPUT Input) : SV_TARGET
+float4 BloomPrePassPS(QUAD_VS_OUTPUT Input) : SV_TARGET
 {
     // Convolute by blurring filter in one dimension
     float4 convolution = 0.0f;
@@ -47,14 +47,14 @@ float4 BloomPS(QUAD_VS_OUTPUT Input) : SV_TARGET
     return convolution;
 }
 
-float4 FinalPassPS(QUAD_VS_OUTPUT Input) : SV_TARGET
+float4 BloomFinalPassPS(QUAD_VS_OUTPUT Input) : SV_TARGET
 {
     float4 render = Texture0.Sample(PointSampler, Input.Tex);
-    float4 bloom = Texture1.Sample(LinearSampler, Input.Tex);
+    float4 blur = Texture1.Sample(LinearSampler, Input.Tex);
 
     const float bloomStrength = 0.020f;
 
-    return render * (1 - bloomStrength) + bloom * bloomStrength;
+    return render * (1 - bloomStrength) + blur * bloomStrength;
 }
 
 #include "aces_tonemapper.fx"
@@ -84,10 +84,6 @@ float4 DebugPS(QUAD_VS_OUTPUT Input) : SV_TARGET
     //    isfinite(color.g) ? 0 : 1,
     //    isfinite(color.b) ? 0 : 1,
     //    1);
-
-    //return float4(0.7f * color.rgb, 1);
-
-    //return float4(0.9f * pow(color.rgb, 0.85f.xxx), 1); // naive tonemapping
 
     return float4(AcesTonemap(color.rgb), 1);
 
