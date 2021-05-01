@@ -116,7 +116,7 @@ private:
                                                    float weights[15],
                                                    float offsets[15]);
 
-    void                            SetBloomCB(bool horizontal);
+    void                            SetBloomPrePassCB(bool horizontal);
 
 
 private:
@@ -189,8 +189,8 @@ private:
     PassBuffer                  mRenderBuff;
     PassBuffer                  mRenderBuffMS;
     PassBuffer                  mBloomHorzBuff;
+    PassBuffer                  mBloomVertBuff;
     PassBuffer                  mBloomBuff;
-    PassBuffer                  mDebugBuff;
     uint32_t                    mBloomDownscaleFactor = 4;
     struct BloomCB
     {
@@ -198,8 +198,8 @@ private:
         XMFLOAT4 weights[15];
     };
     ID3D11Buffer*               mBloomCB = NULL;
-    ID3D11PixelShader*          mBloomPS = nullptr;
-    ID3D11PixelShader*          mFinalPassPS = nullptr;
+    ID3D11PixelShader*          mBloomPrePassPS = nullptr;
+    ID3D11PixelShader*          mBloomFinalPassPS = nullptr;
     ID3D11PixelShader*          mDebugPS = nullptr;
     ID3D11SamplerState*         mSamplerStatePoint = nullptr;
     ID3D11SamplerState*         mSamplerStateLinear = nullptr;
@@ -216,7 +216,7 @@ private: // Options
     };
 
     const bool                  mUseMSAA = true;
-    PostProcessingModes         mPostProcessingMode = PostProcessingModes(kBloom | kDebug); //kBloom;// 
+    PostProcessingModes         mPostProcessingMode = PostProcessingModes(kBloom | kDebug);
     DWORD                       mAnimationStartTime = 0;
     bool                        mIsAnimationActive = false;// true;//
 };
