@@ -1,4 +1,4 @@
-Simple DirectX 11 pet renderer.
+A simple DirectX 11 renderer.
 
 ## Things done
 
