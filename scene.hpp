@@ -317,7 +317,7 @@ private:
 
 struct AmbientLight
 {
-    XMFLOAT4 luminance; // omnidirectional luminance: lm * sr-1 * m-2
+    XMFLOAT4 luminance; // constant omnidirectional luminance: lm * sr-1 * m-2
 
     AmbientLight() :
         luminance{}

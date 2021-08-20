@@ -58,6 +58,7 @@ struct CbFrame
 
     XMFLOAT4 DirectLightDirs[DIRECT_LIGHTS_MAX_COUNT];
     XMFLOAT4 DirectLightLuminances[DIRECT_LIGHTS_MAX_COUNT];
+    // TODO: DirectLightShadowMap data: projection transform, ...
 
     XMFLOAT4 PointLightPositions[POINT_LIGHTS_MAX_COUNT];
     XMFLOAT4 PointLightIntensities[POINT_LIGHTS_MAX_COUNT];

@@ -5,6 +5,8 @@
 
 static const float PI = 3.14159265f;
 
+// TODO: DirectLightShadowMap
+
 // Metalness workflow
 Texture2D BaseColorTexture      : register(t0);
 Texture2D MetalRoughnessTexture : register(t1);
@@ -33,6 +35,7 @@ cbuffer cbFrame : register(b1)
 
     float4 DirectLightDirs[DIRECT_LIGHTS_MAX_COUNT];
     float4 DirectLightLuminances[DIRECT_LIGHTS_MAX_COUNT];
+    // TODO: DirectLightShadowMap data: projection transform, ...
 
     float4 PointLightPositions[POINT_LIGHTS_MAX_COUNT];
     float4 PointLightIntensities[POINT_LIGHTS_MAX_COUNT];
@@ -412,6 +415,9 @@ float4 PbrM_AmbLightContrib(float4 luminance,
     return (diffuse + specular) * luminance * matInfo.occlusion;
 }
 
+
+// TODO: float4 IsDirLightVisible(...)
+// Shadow mapping...
 
 float4 PbrM_DirLightContrib(float3 lightDir,
                             float4 luminance,
