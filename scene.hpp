@@ -401,8 +401,11 @@ public:
         eRockJacket,
         eSalazarSkull,
         eHardhead,
+        eBuldozer,
+        eMitterkirchen,
+        eSciFiStool,
 
-        eLast = eHardhead, // Keep last!
+        eLast = eSciFiStool, // Keep last!
     };
 
     Scene(const SceneId sceneId);

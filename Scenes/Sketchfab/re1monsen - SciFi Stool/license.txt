@@ -1,0 +1,11 @@
+Model Information:
+* title:	SciFi Stool
+* source:	https://sketchfab.com/3d-models/scifi-stool-e92f746ebacb4599ab1793bc6fb6fb2f
+* author:	re1monsen (https://sketchfab.com/re1monsen)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "SciFi Stool" (https://sketchfab.com/3d-models/scifi-stool-e92f746ebacb4599ab1793bc6fb6fb2f) by re1monsen (https://sketchfab.com/re1monsen) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

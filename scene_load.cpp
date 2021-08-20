@@ -403,6 +403,71 @@ bool Scene::Load(IRenderingContext &ctx)
         break;
     }
 
+    case eBuldozer:
+    {
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Mohamed Fsili - 3D bulldozer/scene.gltf"))
+            return false;
+
+        AddScaleToRoots(7.2);
+        AddTranslationToRoots({ 0.2, 2.2, 0. });
+        //AddRotationQuaternionToRoots({ 0.000, 0.131, 0.000, 0.991 }); // 15°y
+        AddRotationQuaternionToRoots({ 0.000, 0.259, 0.000, 0.966 }); // 30°y
+
+        const uint8_t amb = 70;
+        mAmbientLight.luminance = SceneUtils::SrgbColorToFloat(amb, amb, amb);
+
+        const float lum = 4.f;
+        mDirectLights.resize(1);
+        mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+
+        SetupPointLights(0, 24.0f, 6.5f, 0, 0);
+
+        break;
+    }
+
+    case eMitterkirchen:
+    {
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/Mario_Wallner - Mitterkirchen - Tisch/scene.gltf"))
+            return false;
+
+        AddScaleToRoots(1.5);
+        AddTranslationToRoots({ -0.1, 0.9, 6. });
+
+        const uint8_t amb = 70;
+        mAmbientLight.luminance = SceneUtils::SrgbColorToFloat(amb, amb, amb);
+
+        const float lum = 4.f;
+        mDirectLights.resize(1);
+        mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+
+        SetupPointLights(0, 24.0f, 6.5f, 0, 0);
+
+        break;
+    }
+
+    case eSciFiStool:
+    {
+        if (!LoadExternal(ctx, L"../Scenes/Sketchfab/re1monsen - SciFi Stool/scene.gltf"))
+            return false;
+
+        AddScaleToRoots(9.0);
+        AddTranslationToRoots({ 0.5, -2.0, -0.4 });
+
+        const uint8_t amb = 70;
+        mAmbientLight.luminance = SceneUtils::SrgbColorToFloat(amb, amb, amb);
+
+        const float lum = 6.f;
+        mDirectLights.resize(1);
+        mDirectLights[0].dir = XMFLOAT4(0.f, 1.f, 0.f, 1.0f);
+        mDirectLights[0].luminance = XMFLOAT4(lum, lum, lum, 1.0f);
+
+        SetupPointLights(0, 24.0f, 5.5f, 0, 0);
+
+        break;
+    }
+
     case eHardwiredSimpleDebugSphere:
     {
         mMaterials.clear();

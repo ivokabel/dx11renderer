@@ -1,0 +1,11 @@
+Model Information:
+* title:	Mitterkirchen - Tisch
+* source:	https://sketchfab.com/3d-models/mitterkirchen-tisch-459676ef54e8475dabaa9a49a7b1a8c8
+* author:	Mario_Wallner (https://sketchfab.com/Mario_Wallner)
+
+Model License:
+* license type:	CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
+* requirements:	Author must be credited. No commercial use.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Mitterkirchen - Tisch" (https://sketchfab.com/3d-models/mitterkirchen-tisch-459676ef54e8475dabaa9a49a7b1a8c8) by Mario_Wallner (https://sketchfab.com/Mario_Wallner) licensed under CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
