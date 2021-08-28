@@ -883,6 +883,22 @@ void SimpleDX11Renderer::RenderFrame()
 {
     StartFrame();
 
+    // TODO: AnimateFrame should be called before rendering anything (including shadow maps)
+    if (mScene)
+        mScene->AnimateFrame(*this);
+
+    // TODO: Render shadow maps?
+    {
+        //SetRenderTarget
+        //ClearRenderTarget
+        //...
+        //GenerateLightViewMatrix
+        //GetLightViewMatrix
+        //GetLightProjectionMatrix
+        //...
+        //Render the whole scene from the view of (each) light with the shadow map shader into the (appropriate) shadow map
+    }
+
     ID3D11RenderTargetView* swapChainRTV = nullptr;
     ID3D11DepthStencilView* swapChainDSV = nullptr;
     mImmediateContext->OMGetRenderTargets(1, &swapChainRTV, &swapChainDSV);
@@ -915,7 +931,7 @@ void SimpleDX11Renderer::RenderFrame()
     // Render scene
     if (mScene)
     {
-        mScene->AnimateFrame(*this);
+        //mScene->AnimateFrame(*this);
         mScene->RenderFrame(*this);
     }
 

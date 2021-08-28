@@ -598,6 +598,7 @@ void Scene::RenderFrame(IRenderingContext &ctx)
     {
         cbFrame.DirectLightDirs[i]       = mDirectLights[i].dirTransf;
         cbFrame.DirectLightLuminances[i] = mDirectLights[i].luminance;
+        // TODO: DirectLightShadowMap data: projection transform, ...
     }
     cbFrame.PointLightsCount = (int32_t)mPointLights.size();
     for (int i = 0; i < cbFrame.PointLightsCount; i++)
