@@ -889,14 +889,17 @@ void SimpleDX11Renderer::RenderFrame()
 
     // TODO: Render shadow maps?
     {
-        //SetRenderTarget
-        //ClearRenderTarget
-        //...
-        //GenerateLightViewMatrix
-        //GetLightViewMatrix
-        //GetLightProjectionMatrix
-        //...
-        //Render the whole scene from the view of (each) light with the shadow map shader into the (appropriate) shadow map
+        // SetRenderTarget
+        // ClearRenderTarget
+        // ...
+        // GenerateLightViewMatrix
+        // GetLightViewMatrix
+        // GetLightProjectionMatrix
+        // ...
+        // Render the whole scene from the view of (each) light with the shadow map shader into the (appropriate) shadow map
+        // For now use the full-fat scene data structure used for final rendering
+        // TODO: Use light data version? How???
+        // TODO: Use the native depth buffer instead of rendering my own??
     }
 
     ID3D11RenderTargetView* swapChainRTV = nullptr;
@@ -909,7 +912,7 @@ void SimpleDX11Renderer::RenderFrame()
     mImmediateContext->ClearRenderTargetView(swapChainRTV, ambientColor);
     mImmediateContext->ClearDepthStencilView(swapChainDSV, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-    // Pass 0: Replace render target view with our buffer
+    // Replace render target view with our buffer
     if (mPostProcessingMode != kNone)
     {
         if (mUseMSAA)
@@ -930,10 +933,10 @@ void SimpleDX11Renderer::RenderFrame()
 
     // Render scene
     if (mScene)
-    {
-        //mScene->AnimateFrame(*this);
+    //{
+    //    mScene->AnimateFrame(*this);
         mScene->RenderFrame(*this);
-    }
+    //}
 
     // Resolve multisampled buffer into single sampled before post processing
     if ((mPostProcessingMode != kNone) && mUseMSAA)

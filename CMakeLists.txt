@@ -21,6 +21,7 @@ set(RENDERER_SOURCES
     scene.cpp
     scene_load.cpp
     scene_shaders.fx
+    depth_map_shader.fx
     scene_utils.hpp
     scene_utils.cpp
     gltf_utils.hpp

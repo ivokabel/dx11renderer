@@ -145,11 +145,14 @@ float4 PsDebugVisualizer(PS_INPUT input)
     //const float occlusion = lerp(1., occlusionTex, OcclusionTexStrength);
     //return float4(occlusion, occlusion, occlusion, 1.);
 
-    const float4 emissionTex = EmissionTexture.Sample(LinearSampler, input.Tex);
-    //return float4(emissionTex.rgb, 1.);
-    //return float4(EmissionFactor.rgb, 1.);
-    const float4 emission = emissionTex * EmissionFactor;
-    return float4(emission.rgb, 1.);
+    //const float4 emissionTex = EmissionTexture.Sample(LinearSampler, input.Tex);
+    ////return float4(emissionTex.rgb, 1.);
+    ////return float4(EmissionFactor.rgb, 1.);
+    //const float4 emission = emissionTex * EmissionFactor;
+    //return float4(emission.rgb, 1.);
+
+    float depthValue = input.PosProj.z / input.PosProj.w;
+    return float4(depthValue, depthValue, depthValue, 1.);
 }
 
 
@@ -482,7 +485,7 @@ PbrM_MatInfo PbrM_ComputeMatInfo(PS_INPUT input)
 float4 PsPbrMetalness(PS_INPUT input) : SV_Target
 {
     // debug
-    //return PsDebugVisualizer(input);
+    return PsDebugVisualizer(input);
 
 
     PbrM_ShadingCtx shadingCtx;

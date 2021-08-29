@@ -102,9 +102,9 @@ int WINAPI wWinMain(HINSTANCE instance,
     //RunSingleScene(Scene::eSalazarSkull, instance, cmdShow, false);
     //return 0;
 
-    RunSingleScene(Scene::eBuldozer, instance, cmdShow, false);
+    //RunSingleScene(Scene::eBuldozer, instance, cmdShow, false);
     RunSingleScene(Scene::eMitterkirchen, instance, cmdShow, false);
-    RunSingleScene(Scene::eSciFiStool, instance, cmdShow, false);
+    //RunSingleScene(Scene::eSciFiStool, instance, cmdShow, false);
     return 0;
 
     //return RunManyScenes(Scene::eFirstSampleGltf, Scene::eLastSampleGltf, instance, cmdShow);
