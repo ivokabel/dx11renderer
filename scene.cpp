@@ -543,7 +543,7 @@ void Scene::AnimateFrame(IRenderingContext &ctx)
     for (auto &node : mRootNodes)
         node.Animate(ctx);
 
-    // Directional lights (are steady for now)
+    // Directional lights (steady for now)
     for (auto &dirLight : mDirectLights)
         dirLight.dirTransf = dirLight.dir;
 

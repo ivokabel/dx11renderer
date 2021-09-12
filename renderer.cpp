@@ -887,19 +887,38 @@ void SimpleDX11Renderer::RenderFrame()
     if (mScene)
         mScene->AnimateFrame(*this);
 
-    // TODO: Render shadow maps?
+    // TODO: Render shadow map(s)
     {
-        // SetRenderTarget
+        // debug
+        ID3D11RenderTargetView* swapChainRTV = nullptr;
+        ID3D11DepthStencilView* swapChainDSV = nullptr;
+        mImmediateContext->OMGetRenderTargets(1, &swapChainRTV, &swapChainDSV);
+
+        // TODO: SetRenderTarget
+
         // ClearRenderTarget
-        // ...
-        // GenerateLightViewMatrix
-        // GetLightViewMatrix
-        // GetLightProjectionMatrix
-        // ...
-        // Render the whole scene from the view of (each) light with the shadow map shader into the (appropriate) shadow map
-        // For now use the full-fat scene data structure used for final rendering
-        // TODO: Use light data version? How???
+        float ambientColor[4] = {};
+        mImmediateContext->ClearRenderTargetView(swapChainRTV, ambientColor);
+        mImmediateContext->ClearDepthStencilView(swapChainDSV, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+        // TODO: Update cbScene
+        // TODO: Create special CbShadowMap.
+        // TODO: Merge CbScene into CbFrame?
+        // - LightViewMatrix
+        // - LightProjectionMatrix
+
+        // TODO: Render the whole scene from the view of (each) light with the shadow map shader into the (appropriate) shadow map.
+        // TODO: Use specialized CBs and vertex/pixel shaders.
         // TODO: Use the native depth buffer instead of rendering my own??
+        if (mScene)
+            mScene->RenderFrame(*this);
+
+        Utils::ReleaseAndMakeNull(swapChainRTV);
+        Utils::ReleaseAndMakeNull(swapChainDSV);
+
+        // debug
+        mSwapChain->Present(0, 0);
+        return;
     }
 
     ID3D11RenderTargetView* swapChainRTV = nullptr;
@@ -933,10 +952,7 @@ void SimpleDX11Renderer::RenderFrame()
 
     // Render scene
     if (mScene)
-    //{
-    //    mScene->AnimateFrame(*this);
         mScene->RenderFrame(*this);
-    //}
 
     // Resolve multisampled buffer into single sampled before post processing
     if ((mPostProcessingMode != kNone) && mUseMSAA)
